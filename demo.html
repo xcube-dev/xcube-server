@@ -48,11 +48,11 @@
                         url: 'http://localhost:8080/xcts/demo/conc_chl/{z}/{y}/{x}.png',
                         projection: ol.proj.get('EPSG:4326'),
                         minZoom: 0,
-                        maxZoom: 3,
+                        maxZoom: 2,
                         tileGrid: new ol.tilegrid.TileGrid({
                             extent: demoExtend,
                             origin: demoOrigin,
-                            resolutions: [demoRes0, demoRes0/2, demoRes0/4, demoRes0/8],
+                            resolutions: [demoRes0, demoRes0/2, demoRes0/4],
                             tileSize: [demoTileSize, demoTileSize],
                         })
                     })
