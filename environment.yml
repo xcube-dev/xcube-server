@@ -1,0 +1,23 @@
+name: xcube-wmts-dev
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python =3.6*
+  - cython =0.28.2
+  - h5netcdf =0.5.1
+  - matplotlib =2.1.1
+  - netcdf4 =1.4.0
+  - numpy =1.14.3
+  - pillow =5.1.0
+  - tornado =5.0.2
+  - xarray =0.10.4
+  - zarr =2.2.0
+  #
+  # development tools
+  #
+  - pytest =3.5.1
+  - pytest-cov =2.5.1
+  - flake8 =3.5.0
