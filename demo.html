@@ -9,7 +9,7 @@
       }
     </style>
     <script src="https://openlayers.org/en/v4.6.5/build/ol.js" type="text/javascript"></script>
-    <title>xcube-wmts demo</title>
+    <title>xcube-tileserver demo</title>
   </head>
   <body>
     <h2>Natural Earth 2</h2>
@@ -31,7 +31,7 @@
             layers: [
                 new ol.layer.Tile({
                     source: new ol.source.XYZ({
-                        url: 'http://localhost:8080/xcube-wmts/ne2/{z}/{y}/{x}.jpg',
+                        url: 'http://localhost:8080/xcts/ne2/{z}/{y}/{x}.jpg',
                         projection: ol.proj.get('EPSG:4326'),
                         minZoom: 0,
                         maxZoom: 2,
@@ -45,7 +45,7 @@
                 }),
                 new ol.layer.Tile({
                     source: new ol.source.XYZ({
-                        url: 'http://localhost:8080/xcube-wmts/demo/conc_chl/{z}/{y}/{x}.png',
+                        url: 'http://localhost:8080/xcts/demo/conc_chl/{z}/{y}/{x}.png',
                         projection: ol.proj.get('EPSG:4326'),
                         minZoom: 0,
                         maxZoom: 3,

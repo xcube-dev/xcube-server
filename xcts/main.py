@@ -40,8 +40,8 @@ def new_application():
     application = Application([
         ('/_static/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'resources')}),
         (url_pattern('/'), InfoHandler),
-        (url_pattern('/xcube-wmts/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), TileHandler),
-        (url_pattern('/xcube-wmts/ne2/{{z}}/{{y}}/{{x}}.jpg'), NE2Handler),
+        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), TileHandler),
+        (url_pattern('/xcts/ne2/{{z}}/{{y}}/{{x}}.jpg'), NE2Handler),
     ])
     return application
 

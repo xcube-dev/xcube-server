@@ -37,7 +37,7 @@ from tornado.web import RequestHandler, Application, HTTPError
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-_LOG = logging.getLogger('xcube-wmts')
+_LOG = logging.getLogger('xcts')
 
 ApplicationFactory = Callable[[], Application]
 
@@ -49,14 +49,14 @@ class Service:
 
     def __init__(self,
                  application: Application,
-                 log_file_prefix: str = 'xcube-wmts.log',
+                 log_file_prefix: str = 'xcts.log',
                  log_to_stderr: bool = False,
                  update_period: float = 1.0,
                  port: int = 8080,
                  address: str = 'localhost') -> None:
 
         """
-        Start a WMTS service.
+        Start a tile service.
 
         The *service_info_file*, if given, represents the service in the filesystem, similar to
         the ``/var/run/`` directory on Linux systems.
@@ -77,7 +77,7 @@ class Service:
             os.makedirs(log_dir, exist_ok=True)
 
         options = tornado.options.options
-        options.log_file_prefix = log_file_prefix or 'xcube-wmts.log'
+        options.log_file_prefix = log_file_prefix or 'xcts.log'
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
@@ -103,17 +103,17 @@ class Service:
     @classmethod
     def get_service(cls, application: Application) -> 'Service':
         """
-        Retrieves the associated WMTS service from the given Tornado web application.
+        Retrieves the associated tile service from the given Tornado web application.
 
         :param application: The Tornado web application
-        :return: The WMTS instance, or None
+        :return: The tile instance, or None
         """
         return application.service if application and hasattr(application, 'service') else None
 
     def start(self):
         address = self.service_info['address']
         port = self.service_info['port']
-        print(f'xcube-wmts: service running, listening on {address}:{port} (press CTRL+C to stop service)')
+        print(f'xcts: service running, listening on {address}:{port} (press CTRL+C to stop service)')
         IOLoop.current().start()
 
     def stop(self, kill=False):
@@ -127,7 +127,7 @@ class Service:
 
     def _on_shut_down(self):
 
-        print('xcube-wmts: stopping service...')
+        print('xcts: stopping service...')
 
         # noinspection PyUnresolvedReferences,PyBroadException
         try:
@@ -143,7 +143,7 @@ class Service:
 
     # noinspection PyUnusedLocal
     def _sig_handler(self, sig, frame):
-        print(f'xcube-wmts: caught signal {sig}')
+        print(f'xcts: caught signal {sig}')
         IOLoop.current().add_callback_from_signal(self._on_shut_down)
 
     def _install_update_check(self):
@@ -151,7 +151,7 @@ class Service:
 
     def _check_for_updates(self):
         # TODO: reload local configuration
-        _LOG.info('xcube-wmts: checking for updates...')
+        _LOG.info('xcts: checking for updates...')
         self._install_update_check()
 
 
@@ -303,19 +303,19 @@ class _GlobalEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
 
 class ServiceError(HTTPError):
     """
-    Exception raised by WMTS service request handlers.
+    Exception raised by tile service request handlers.
     """
 
 
 class ServiceConfigError(ServiceError):
     """
-    Exception raised by WMTS service request handlers.
+    Exception raised by tile service request handlers.
     """
 
 
 class ServiceRequestError(ServiceError):
     """
-    Exception raised by WMTS service request handlers.
+    Exception raised by tile service request handlers.
     """
 
 

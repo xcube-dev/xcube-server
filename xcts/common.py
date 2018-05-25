@@ -25,7 +25,7 @@ from typing import Optional
 
 _DEBUG_MODE = False
 
-LOGGER = logging.getLogger('xcube-wmts')
+LOGGER = logging.getLogger('xcts')
 
 
 def is_debug_mode() -> bool:

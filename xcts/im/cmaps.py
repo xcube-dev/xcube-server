@@ -31,7 +31,7 @@ from PIL import Image
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-_LOG = logging.getLogger('xcube-wmts')
+_LOG = logging.getLogger('xcts')
 
 # Have colormaps separated into categories:
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
