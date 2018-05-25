@@ -58,6 +58,9 @@ THREAD_POOL = concurrent.futures.ThreadPoolExecutor()
 # TODO: move into Service class
 DATASET_CACHE = dict()
 
+DEFAULT_CBAR = 'jet'
+DEFAULT_VMIN = 0.
+DEFAULT_VMAX = 1.
 
 # noinspection PyAbstractClass,PyBroadException
 class TileHandler(ServiceRequestHandler):
@@ -66,7 +69,7 @@ class TileHandler(ServiceRequestHandler):
 
     def get(self, ds_name, var_name, z, y, x):
         dataset = self.get_dataset(ds_name)
-        cmap_name, cmap_min, cmap_max = self.get_color_mapping(var_name)
+        cmap_name, cmap_min, cmap_max = self.get_color_mapping(ds_name, var_name)
 
         # GLOBAL_LOCK.acquire()
 
@@ -181,31 +184,38 @@ class TileHandler(ServiceRequestHandler):
 
         # GLOBAL_LOCK.release()
 
+    # TODO: move into Service class
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
-    def get_color_mapping(self, var_name):
-        # TODO: load from yaml
-        color_mappings = dict(conc_chl=('plasma', 0., 24.),
-                              conc_tsm=('PuBuGn', 0., 100.),
-                              kd489=('jet', 0., 6.))
-        return color_mappings.get(var_name, ('jet', 0., 1.))
+    def get_dataset_descriptor(self, ds_name):
+        datasets = self.service.config.get('datasets')
+        if not datasets:
+            raise ServiceConfigError(reason=f"missing datasets in configuration")
+        if ds_name not in datasets:
+            raise ServiceConfigError(reason=f"unknown dataset {ds_name!r}")
+        return datasets[ds_name]
 
+    # TODO: move into Service class
+    # noinspection PyMethodMayBeStatic,PyUnusedLocal
+    def get_color_mapping(self, ds_name, var_name):
+        dataset_descriptor = self.get_dataset_descriptor(ds_name)
+        color_profile_name = dataset_descriptor.get('color_profile', 'default')
+        color_profiles = dataset_descriptor.get('color_profiles')
+        if color_profiles:
+            color_profile = color_profiles.get(color_profile_name)
+            if color_profile:
+                cmap = color_profile.get('cmap', DEFAULT_CBAR)
+                vmin, vmax = color_profile.get('vrange', (DEFAULT_VMIN, DEFAULT_VMAX))
+                return cmap, vmin, vmax
+        return DEFAULT_CBAR, DEFAULT_VMIN, DEFAULT_VMAX
+
+    # TODO: move into Service class
     # noinspection PyMethodMayBeStatic,PyUnusedLocal
     def get_dataset(self, ds_name):
         global DATASET_CACHE
         if ds_name in DATASET_CACHE:
             ds, _ = DATASET_CACHE[ds_name]
         else:
-
-            # TODO: load from yaml
-            dataset_descriptors = {'demo': {'path': './demo.nc'},
-                                   'highroc-cube': {'path': 'dcs4cop-obs-01/highroc-cube.zarr',
-                                                    'fs': 'obs',
-                                                    'region': 'eu-de',
-                                                    'endpoint': 'http://obs.eu-de.otc.t-systems.com'}}
-
-            if ds_name not in dataset_descriptors:
-                raise ValueError(f'unknown dataset {ds_name!r}')
-            dataset_descriptor = dataset_descriptors[ds_name]
+            dataset_descriptor = self.get_dataset_descriptor(ds_name)
 
             path = dataset_descriptor.get('path')
             if not path:

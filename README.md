@@ -24,7 +24,7 @@ Install
 
 To run the server on default port 9090:
 
-    $ xcts
+    $ xcts -v -c demo.yml
 
 
 ### Client

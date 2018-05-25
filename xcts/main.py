@@ -29,7 +29,7 @@ from tornado.web import Application, StaticFileHandler
 from xcts import __version__, __description__
 from xcts.common import LOGGER
 from xcts.handlers import NE2Handler, TileHandler, InfoHandler
-from xcts.service import url_pattern, Service
+from xcts.service import url_pattern, Service, DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, DEFAULT_CONFIG_FILE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -52,12 +52,22 @@ def new_service(args=None) -> Service:
 
     parser = argparse.ArgumentParser(description=__description__)
     parser.add_argument('--version', '-V', action='version', version=__version__)
-    parser.add_argument('--port', '-p', dest='port', metavar='PORT', type=int, default=8080,
-                        help='port number where the service will listen on')
     parser.add_argument('--address', '-a', dest='address', metavar='ADDRESS',
-                        help='server address, if omitted "localhost" is used', default='localhost')
-    parser.add_argument('--update', '-u', dest='update_period', metavar='UPDATE_PERIOD', type=float, default=1.,
-                        help="if given, service will update after given seconds of inactivity")
+                        help='Server address. '
+                             f'Defaults to {DEFAULT_ADDRESS!r}.',
+                        default=DEFAULT_ADDRESS)
+    parser.add_argument('--port', '-p', dest='port', metavar='PORT', type=int,
+                        default=DEFAULT_PORT,
+                        help='Port number where the service will listen on. '
+                             f'Defaults to {DEFAULT_PORT}.')
+    parser.add_argument('--update', '-u', dest='update_period', metavar='UPDATE_PERIOD', type=float,
+                        default=DEFAULT_UPDATE_PERIOD,
+                        help='Service will update after given seconds of inactivity. '
+                             f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
+    parser.add_argument('--config', '-c', dest='config_file', metavar='CONFIG_FILE',
+                        default=DEFAULT_CONFIG_FILE,
+                        help='Configuration file. '
+                             f'Defaults to {DEFAULT_CONFIG_FILE!r}.')
     parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',
                         help="if given, logging will be delegated to the console (stderr)")
 
@@ -67,6 +77,7 @@ def new_service(args=None) -> Service:
                    log_to_stderr=args_obj.verbose,
                    port=args_obj.port,
                    address=args_obj.address,
+                   config_file=args_obj.config_file,
                    update_period=args_obj.update_period)
 
 

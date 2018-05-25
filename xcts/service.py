@@ -22,13 +22,14 @@
 import asyncio
 import json
 import logging
-import os.path
+import os
 import signal
 import sys
 import time
 import traceback
 from datetime import datetime
 from typing import Callable, Optional, Tuple
+import yaml
 
 import tornado.options
 from tornado.ioloop import IOLoop
@@ -41,6 +42,11 @@ _LOG = logging.getLogger('xcts')
 
 ApplicationFactory = Callable[[], Application]
 
+DEFAULT_ADDRESS = 'localhost'
+DEFAULT_PORT = 8080
+DEFAULT_CONFIG_FILE = './wcts.yml'
+DEFAULT_UPDATE_PERIOD = 2.
+
 
 class Service:
     """
@@ -49,11 +55,12 @@ class Service:
 
     def __init__(self,
                  application: Application,
+                 address: str = DEFAULT_ADDRESS,
+                 port: int = DEFAULT_PORT,
+                 config_file: str = DEFAULT_CONFIG_FILE,
+                 update_period: float = DEFAULT_UPDATE_PERIOD,
                  log_file_prefix: str = 'xcts.log',
-                 log_to_stderr: bool = False,
-                 update_period: float = 1.0,
-                 port: int = 8080,
-                 address: str = 'localhost') -> None:
+                 log_to_stderr: bool = False) -> None:
 
         """
         Start a tile service.
@@ -65,11 +72,12 @@ class Service:
         this function simply returns without taking any other actions.
 
         :param application: The Tornado web application
+        :param address: the address
+        :param port: the port number
+        :param config_file: configuration file
+        :param update_period: if not-None, time of idleness in seconds before service is updated
         :param log_file_prefix: Log file prefix, default is "xcts.log"
         :param log_to_stderr: Whether logging should be shown on stderr
-        :param update_period: if not-None, time of idleness in seconds before service is updated
-        :param port: the port number
-        :param address: the address
         :return: service information dictionary
         """
         log_dir = os.path.dirname(log_file_prefix)
@@ -81,12 +89,15 @@ class Service:
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
+        self.config_file = config_file
+        self.config_mtime = None
         self.update_period = update_period
         self.update_timer = None
         self.service_info = dict(port=port,
                                  address=address,
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
+        self.config = None
 
         application.service = self
         application.time_of_last_activity = time.clock()
@@ -98,6 +109,7 @@ class Service:
         # Register handlers for common termination signals
         signal.signal(signal.SIGINT, self._sig_handler)
         signal.signal(signal.SIGTERM, self._sig_handler)
+        self._maybe_load_config()
         self._install_update_check()
 
     @classmethod
@@ -113,7 +125,7 @@ class Service:
     def start(self):
         address = self.service_info['address']
         port = self.service_info['port']
-        print(f'xcts: service running, listening on {address}:{port} (press CTRL+C to stop service)')
+        _LOG.info(f'service running, listening on {address}:{port} (press CTRL+C to stop service)')
         IOLoop.current().start()
 
     def stop(self, kill=False):
@@ -127,7 +139,7 @@ class Service:
 
     def _on_shut_down(self):
 
-        print('xcts: stopping service...')
+        _LOG.info('stopping service...')
 
         # noinspection PyUnresolvedReferences,PyBroadException
         try:
@@ -143,16 +155,23 @@ class Service:
 
     # noinspection PyUnusedLocal
     def _sig_handler(self, sig, frame):
-        print(f'xcts: caught signal {sig}')
+        _LOG.warning(f'caught signal {sig}')
         IOLoop.current().add_callback_from_signal(self._on_shut_down)
 
     def _install_update_check(self):
         IOLoop.current().call_later(self.update_period, self._check_for_updates)
 
     def _check_for_updates(self):
-        # TODO: reload local configuration
-        _LOG.info('xcts: checking for updates...')
+        self._maybe_load_config()
         self._install_update_check()
+
+    def _maybe_load_config(self):
+        stat = os.stat(self.config_file)
+        if self.config is None or self.config_mtime != stat.st_mtime:
+            self.config_mtime = stat.st_mtime
+            with open(self.config_file) as stream:
+                self.config = yaml.load(stream)
+            _LOG.info(f'configuration loaded from {self.config_file!r}')
 
 
 # noinspection PyAbstractClass
@@ -175,11 +194,11 @@ class ServiceRequestHandler(RequestHandler):
         :raise: ServiceRequestError
         """
         if value is None:
-            raise ServiceRequestError('%s must be an integer, but was None' % name)
+            raise ServiceRequestError(reason='%s must be an integer, but was None' % name)
         try:
             return int(value)
         except ValueError as e:
-            raise ServiceRequestError('%s must be an integer, but was "%s"' % (name, value)) from e
+            raise ServiceRequestError(reason='%s must be an integer, but was "%s"' % (name, value)) from e
 
     @classmethod
     def to_int_tuple(cls, name: str, value: str) -> Tuple[int, ...]:
@@ -191,11 +210,11 @@ class ServiceRequestHandler(RequestHandler):
         :raise: ServiceRequestError
         """
         if value is None:
-            raise ServiceRequestError('%s must be a list of integers, but was None' % name)
+            raise ServiceRequestError(reason='%s must be a list of integers, but was None' % name)
         try:
             return tuple(map(int, value.split(','))) if value else ()
         except ValueError as e:
-            raise ServiceRequestError('%s must be a list of integers, but was "%s"' % (name, value)) from e
+            raise ServiceRequestError(reason='%s must be a list of integers, but was "%s"' % (name, value)) from e
 
     @classmethod
     def to_float(cls, name: str, value: str) -> float:
@@ -207,11 +226,11 @@ class ServiceRequestHandler(RequestHandler):
         :raise: ServiceRequestError
         """
         if value is None:
-            raise ServiceRequestError('%s must be a number, but was None' % name)
+            raise ServiceRequestError(reason='%s must be a number, but was None' % name)
         try:
             return float(value)
         except ValueError as e:
-            raise ServiceRequestError('%s must be a number, but was "%s"' % (name, value)) from e
+            raise ServiceRequestError(reason='%s must be a number, but was "%s"' % (name, value)) from e
 
     def get_query_argument_int(self, name: str, default: int) -> Optional[int]:
         """

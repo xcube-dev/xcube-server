@@ -1,0 +1,21 @@
+datasets:
+  demo:
+    path: ./demo.nc
+
+  highroc-cube:
+    path: dcs4cop-obs-01/highroc-cube.zarr
+    endpoint: http://obs.eu-de.otc.t-systems.com
+    fs: obs
+    region: eu-de
+
+color_profiles:
+  default:
+    conc_chl:
+      cbar: plasma
+      vrange: [0., 24.]
+    conc_tsm:
+      cbar: PuBuGn
+      vrange: [0., 100.]
+    kd489:
+      cbar: jet
+      vrange: [0., 6.]
