@@ -27,6 +27,8 @@ import warnings
 import numpy as np
 import s3fs
 import xarray as xr
+import zarr
+
 from xcts import __version__, __description__
 from xcts.cache import Cache, MemoryCacheStore, FileCacheStore
 from xcts.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, GeoExtent, TilingScheme, Optional
@@ -193,6 +195,7 @@ class TileHandler(ServiceRequestHandler):
         if ds_name in DATASET_CACHE:
             ds, _ = DATASET_CACHE[ds_name]
         else:
+
             # TODO: load from yaml
             dataset_descriptors = {'demo': {'path': './demo.nc'},
                                    'highroc-cube': {'path': 'dcs4cop-obs-01/highroc-cube.zarr',
@@ -208,9 +211,11 @@ class TileHandler(ServiceRequestHandler):
             if not path:
                 raise ServiceConfigError(reason=f"missing 'path' entry in dataset descriptor {ds_name}")
 
+            t1 = time.clock()
+
             fs_type = dataset_descriptor.get('fs', 'local')
             if fs_type == 'obs':
-                data_format = dataset_descriptor.get('format', 'nc')
+                data_format = dataset_descriptor.get('format', 'zarr')
                 if data_format != 'zarr':
                     raise ServiceConfigError(reason=f"invalid format={data_format!r} in dataset descriptor {ds_name!r}")
                 client_kwargs = {}
@@ -220,9 +225,10 @@ class TileHandler(ServiceRequestHandler):
                     client_kwargs['region_name'] = dataset_descriptor['region']
                 s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
                 store = s3fs.S3Map(root=path, s3=s3, check=False)
-                ds = xr.open_zarr(store)
+                cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+                ds = xr.open_zarr(cached_store)
             elif fs_type == 'local':
-                data_format = dataset_descriptor.get('format', 'zarr')
+                data_format = dataset_descriptor.get('format', 'nc')
                 if data_format == 'nc':
                     ds = xr.open_dataset(path)
                 elif data_format == 'zarr':
@@ -233,6 +239,11 @@ class TileHandler(ServiceRequestHandler):
                 raise ServiceConfigError(reason=f"invalid fs={fs_type!r} in dataset descriptor {ds_name!r}")
 
             DATASET_CACHE[ds_name] = ds, dataset_descriptor
+
+            t2 = time.clock()
+
+            if TRACE_PERF:
+                print(f'PERF: opening {ds_name!r} took {t2-t1} seconds')
 
         return ds
 
