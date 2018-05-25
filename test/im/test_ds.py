@@ -17,7 +17,7 @@ class NaturalEarth2Test(TestCase):
 
 # import time
 # import h5py
-# from cate.util.im.image import ColorMappedRgbaImage, ImagePyramid
+# from xcube_wmts.im.image import ColorMappedRgbaImage, ImagePyramid
 #
 # class H5PyDatasetImageTest(TestCase):
 #     def setUp(self):

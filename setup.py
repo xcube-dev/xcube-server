@@ -32,6 +32,7 @@ requirements = [
     'netcdf4',
     'numpy',
     'pillow',
+    's3fs',
     'tornado',
     'xarray',
     'zarr',

@@ -22,7 +22,7 @@
 <!-- -->
 
 <TileMap version="1.0.0" tilemapservice="http://tms.osgeo.org/1.0.0">
-      <Title>NE2_HR_LC_SR_W_DR_recolored.tif</Title>
+      <Title>Natural Earth 2</Title>
       <Abstract></Abstract>
       <SRS>EPSG:4326</SRS>
       <BoundingBox minx="-90.00000000000000" miny="-180.00000000000000" maxx="90.00000000000000" maxy="180.00000000000000"/>

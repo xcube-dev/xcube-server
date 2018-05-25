@@ -24,28 +24,29 @@ import argparse
 import os
 import sys
 
-from xcube_wmts import __version__, __description__
-from xcube_wmts.service import url_pattern, Service
-from xcube_wmts.rest import NE2Handler, TileHandler
-from xcube_wmts.common import LOGGER
-
 from tornado.web import Application, StaticFileHandler
+
+from xcube_wmts import __version__, __description__
+from xcube_wmts.common import LOGGER
+from xcube_wmts.handlers import NE2Handler, TileHandler, InfoHandler
+from xcube_wmts.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = LOGGER
 
 
-def create_application():
+def new_application():
     application = Application([
         ('/_static/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'resources')}),
-        (url_pattern('/ws/res/tile/{{base_dir}}/{{res_id}}/{{z}}/{{y}}/{{x}}.png'), TileHandler),
-        (url_pattern('/ws/ne2/tile/{{z}}/{{y}}/{{x}}.jpg'), NE2Handler),
+        (url_pattern('/'), InfoHandler),
+        (url_pattern('/xcube-wmts/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), TileHandler),
+        (url_pattern('/xcube-wmts/ne2/{{z}}/{{y}}/{{x}}.jpg'), NE2Handler),
     ])
     return application
 
 
-def main(args=None) -> int:
+def new_service(args=None) -> Service:
     if args is None:
         args = sys.argv[1:]
 
@@ -60,16 +61,20 @@ def main(args=None) -> int:
     parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',
                         help="if given, logging will be delegated to the console (stderr)")
 
+    args_obj = parser.parse_args(args)
+
+    return Service(new_application(),
+                   log_to_stderr=args_obj.verbose,
+                   port=args_obj.port,
+                   address=args_obj.address,
+                   update_period=args_obj.update_period)
+
+
+def main(args=None) -> int:
     try:
-        args_obj = parser.parse_args(args)
-
-        service = Service()
-        service.start(create_application(),
-                      log_to_stderr=args_obj.verbose,
-                      port=args_obj.port,
-                      address=args_obj.address,
-                      update_period=args_obj.update_period)
-
+        print(f'{__description__}, version {__version__}')
+        service = new_service(args)
+        service.start()
         return 0
     except Exception as e:
         print('error: %s' % e)
