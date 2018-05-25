@@ -42,22 +42,22 @@ packages = find_packages(exclude=["test", "test.*"])
 
 __version__ = None
 __description__ = None
-with open('xcube_wmts/__init__.py') as f:
+with open('xcts/__init__.py') as f:
     exec(f.read())
 
 setup(
-    name="xcube-wmts",
+    name="xcube-tileserver",
     version=__version__,
     description=__description__,
     license='MIT',
     author='xcube Development Team',
     packages=packages,
     package_data={
-        'xcube_wmts.util.im.ds.NaturalEarth2': ['*/*/*.jpg'],
+        'xcts.util.im.ds.NaturalEarth2': ['*/*/*.jpg'],
     },
     entry_points={
         'console_scripts': [
-            'xcube-wmts = xcube_wmts.main:main',
+            'xcts = xcts.main:main',
         ],
     },
     install_requires=requirements,

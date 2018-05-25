@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from xcube_wmts.undefined import UNDEFINED
+from xcts.undefined import UNDEFINED
 
 
 class UndefinedTest(TestCase):

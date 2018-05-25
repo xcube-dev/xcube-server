@@ -26,10 +26,10 @@ import sys
 
 from tornado.web import Application, StaticFileHandler
 
-from xcube_wmts import __version__, __description__
-from xcube_wmts.common import LOGGER
-from xcube_wmts.handlers import NE2Handler, TileHandler, InfoHandler
-from xcube_wmts.service import url_pattern, Service
+from xcts import __version__, __description__
+from xcts.common import LOGGER
+from xcts.handlers import NE2Handler, TileHandler, InfoHandler
+from xcts.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

@@ -1,7 +1,7 @@
 import re
 import unittest
 
-from xcube_wmts import service
+from xcts import service
 
 
 class UrlPatternTest(unittest.TestCase):

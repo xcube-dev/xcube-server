@@ -65,7 +65,7 @@ class Service:
         this function simply returns without taking any other actions.
 
         :param application: The Tornado web application
-        :param log_file_prefix: Log file prefix, default is "xcube_wmts.log"
+        :param log_file_prefix: Log file prefix, default is "xcts.log"
         :param log_to_stderr: Whether logging should be shown on stderr
         :param update_period: if not-None, time of idleness in seconds before service is updated
         :param port: the port number

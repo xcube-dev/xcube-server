@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from xcube_wmts.im.cmaps import get_cmaps
+from xcts.im.cmaps import get_cmaps
 
 
 class CmapsTest(TestCase):

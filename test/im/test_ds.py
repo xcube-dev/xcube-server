@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-import xcube_wmts.im.ds as ds
+import xcts.im.ds as ds
 
 
 class NaturalEarth2Test(TestCase):
@@ -17,7 +17,7 @@ class NaturalEarth2Test(TestCase):
 
 # import time
 # import h5py
-# from xcube_wmts.im.image import ColorMappedRgbaImage, ImagePyramid
+# from xcts.im.image import ColorMappedRgbaImage, ImagePyramid
 #
 # class H5PyDatasetImageTest(TestCase):
 #     def setUp(self):

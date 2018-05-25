@@ -4,7 +4,7 @@ import unittest
 
 from tornado.testing import AsyncHTTPTestCase
 
-from xcube_wmts.main import new_service, new_application
+from xcts.main import new_service, new_application
 
 NETCDF_TEST_FILE = os.path.join(os.path.dirname(__file__), '..', 'data', 'precip_and_temp.nc')
 

@@ -27,11 +27,11 @@ import warnings
 import numpy as np
 import s3fs
 import xarray as xr
-from xcube_wmts import __version__, __description__
-from xcube_wmts.cache import Cache, MemoryCacheStore, FileCacheStore
-from xcube_wmts.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, GeoExtent, TilingScheme, Optional
-from xcube_wmts.im.ds import NaturalEarth2Image
-from xcube_wmts.service import ServiceRequestHandler, ServiceError, ServiceConfigError
+from xcts import __version__, __description__
+from xcts.cache import Cache, MemoryCacheStore, FileCacheStore
+from xcts.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, GeoExtent, TilingScheme, Optional
+from xcts.im.ds import NaturalEarth2Image
+from xcts.service import ServiceRequestHandler, ServiceError, ServiceConfigError
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

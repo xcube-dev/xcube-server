@@ -2,10 +2,10 @@ from unittest import TestCase
 
 import numpy as np
 
-from xcube_wmts.im import TilingScheme, GeoExtent
-from xcube_wmts.im.image import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
+from xcts.im import TilingScheme, GeoExtent
+from xcts.im.image import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
     TransformArrayImage, FastNdarrayDownsamplingImage
-from xcube_wmts.im.utils import aggregate_ndarray_mean
+from xcts.im.utils import aggregate_ndarray_mean
 
 
 class MyTiledImage(OpImage):

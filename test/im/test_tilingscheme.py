@@ -1,7 +1,7 @@
 from unittest import TestCase
 
-from xcube_wmts.im import GeoExtent
-from xcube_wmts.im.tilingscheme import TilingScheme, pow2_1d_subdivisions, pow2_2d_subdivision
+from xcts.im import GeoExtent
+from xcts.im.tilingscheme import TilingScheme, pow2_1d_subdivisions, pow2_2d_subdivision
 
 POS_Y_AXIS_GLOBAL_RECT = GeoExtent(-180., -90., +180., +90., inv_y=False)
 NEG_Y_AXIS_GLOBAL_RECT = GeoExtent(-180., -90., +180., +90., inv_y=True)

@@ -1,4 +1,4 @@
-name: xcube-wmts-dev
+name: xcts-dev
 
 channels:
   - conda-forge
