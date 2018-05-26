@@ -28,7 +28,7 @@ from tornado.web import Application, StaticFileHandler
 
 from xcts import __version__, __description__
 from xcts.common import LOGGER
-from xcts.handlers import NE2Handler, TileHandler, InfoHandler
+from xcts.handlers import NE2TileHandler, DatasetTileHandler, InfoHandler
 from xcts.service import url_pattern, Service, DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, DEFAULT_CONFIG_FILE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -40,8 +40,10 @@ def new_application():
     application = Application([
         ('/_static/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'resources')}),
         (url_pattern('/'), InfoHandler),
-        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), TileHandler),
-        (url_pattern('/xcts/ne2/{{z}}/{{y}}/{{x}}.jpg'), NE2Handler),
+        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tile/{{z}}/{{y}}/{{x}}.png'), DatasetTileHandler),
+        (url_pattern('/xcts/ne2/tile/{{z}}/{{y}}/{{x}}.jpg'), NE2TileHandler),
+        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tileschema/ol4.json'), DatasetTileSchemaHandler),
+        (url_pattern('/xcts/ne2/tileschema/ol4.json'), NE2TileSchemaHandler),
     ])
     return application
 

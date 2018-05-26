@@ -62,8 +62,9 @@ DEFAULT_CBAR = 'jet'
 DEFAULT_VMIN = 0.
 DEFAULT_VMAX = 1.
 
+
 # noinspection PyAbstractClass,PyBroadException
-class TileHandler(ServiceRequestHandler):
+class DatasetTileHandler(ServiceRequestHandler):
     # TODO: move into Service class
     PYRAMIDS = None
 
@@ -78,8 +79,8 @@ class TileHandler(ServiceRequestHandler):
         cmap_min = self.get_query_argument_float('vmin', default=cmap_min)
         cmap_max = self.get_query_argument_float('vmax', default=cmap_max)
 
-        if TileHandler.PYRAMIDS is None:
-            TileHandler.PYRAMIDS = dict()
+        if DatasetTileHandler.PYRAMIDS is None:
+            DatasetTileHandler.PYRAMIDS = dict()
 
         array_id = '%s-%s-%s' % (ds_name,
                                  var_name,
@@ -91,8 +92,8 @@ class TileHandler(ServiceRequestHandler):
 
         pyramid_id = 'impy-%s' % image_id
 
-        if pyramid_id in TileHandler.PYRAMIDS:
-            pyramid = TileHandler.PYRAMIDS[pyramid_id]
+        if pyramid_id in DatasetTileHandler.PYRAMIDS:
+            pyramid = DatasetTileHandler.PYRAMIDS[pyramid_id]
         else:
             variable = dataset[var_name]
             no_data_value = variable.attrs.get('_FillValue')
@@ -162,7 +163,7 @@ class TileHandler(ServiceRequestHandler):
                                                          encode=True,
                                                          format='PNG',
                                                          tile_cache=rgb_tile_cache))
-            TileHandler.PYRAMIDS[image_id] = pyramid
+            DatasetTileHandler.PYRAMIDS[image_id] = pyramid
             if TRACE_PERF:
                 print('Created pyramid "%s":' % image_id)
                 print('  tile_size:', pyramid.tile_size)
@@ -258,6 +259,48 @@ class TileHandler(ServiceRequestHandler):
         return ds
 
 
+# noinspection PyAbstractClass
+class DatasetTileSchemaHandler(ServiceRequestHandler):
+
+    def get(self, ds_name, var_name):
+        dataset = self.get_dataset(ds_name)
+        variable = dataset[var_name]
+        tiling_scheme = get_tiling_scheme(variable)
+        if tiling_scheme is None:
+            raise ServiceError(reason=f'Failed computing tiling scheme for variable {var_name!r}')
+        self.set_header('Content-Type', 'text/json')
+        # TODO
+        self.write(json.dumps(dict(todo='Fill me!'), indent=2))
+
+
+# noinspection PyAbstractClass
+class NE2TileHandler(ServiceRequestHandler):
+    # TODO: move into Service class
+    PYRAMID = NaturalEarth2Image.get_pyramid()
+
+    def get(self, z, y, x):
+        # print('NE2Handler.get(%s, %s, %s)' % (z, y, x))
+        self.set_header('Content-Type', 'image/jpg')
+        self.write(NE2TileHandler.PYRAMID.get_tile(int(x), int(y), int(z)))
+
+
+# noinspection PyAbstractClass
+class NE2TileSchemaHandler(ServiceRequestHandler):
+
+    def get(self):
+        self.set_header('Content-Type', 'text/json')
+        # TODO
+        self.write(json.dumps(dict(todo='Fill me!'), indent=2))
+
+
+# noinspection PyAbstractClass
+class InfoHandler(ServiceRequestHandler):
+
+    def get(self):
+        self.set_header('Content-Type', 'text/json')
+        self.write(json.dumps(dict(name='xcts', description=__description__, version=__version__), indent=2))
+
+
 def get_tiling_scheme(var: xr.DataArray) -> Optional[TilingScheme]:
     """
     Compute a tiling scheme for the given variable *var*.
@@ -282,22 +325,3 @@ def get_tiling_scheme(var: xr.DataArray) -> Optional[TilingScheme]:
         return TilingScheme.create(width, height, 360, 360, geo_extent)
     except ValueError:
         return TilingScheme(1, 1, 1, width, height, geo_extent)
-
-
-# noinspection PyAbstractClass
-class InfoHandler(ServiceRequestHandler):
-
-    def get(self):
-        self.set_header('Content-Type', 'text/json')
-        self.write(json.dumps(dict(name='xcts', description=__description__, version=__version__)))
-
-
-# noinspection PyAbstractClass
-class NE2Handler(ServiceRequestHandler):
-    # TODO: move into Service class
-    PYRAMID = NaturalEarth2Image.get_pyramid()
-
-    def get(self, z, y, x):
-        # print('NE2Handler.get(%s, %s, %s)' % (z, y, x))
-        self.set_header('Content-Type', 'image/jpg')
-        self.write(NE2Handler.PYRAMID.get_tile(int(x), int(y), int(z)))

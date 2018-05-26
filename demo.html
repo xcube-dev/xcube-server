@@ -18,25 +18,25 @@
   <body>
     <div id="map" class="map"></div>
     <script type="text/javascript">
-
+        let ne2Url = 'http://localhost:8080/xcts/ne2/tile/{z}/{y}/{x}.jpg';
         let ne2Extend = [-180, -90, 180, 90];
         let ne2Origin = [ne2Extend[0], ne2Extend[3]];
         let ne2TileSize = 256;
         let ne2Res0 = (ne2Extend[3] - ne2Extend[1]) / ne2TileSize;
 
+        let demoUrl = 'http://localhost:8080/xcts/demo/conc_chl/tile/{z}/{y}/{x}.png';
+        // let demoUrl = 'http://localhost:8080/xcts/highroc-cube/conc_chl/tile/{z}/{y}/{x}.png';
         let demoExtend = [0, 50.0, 5.0, 52.5]
         let demoOrigin = [demoExtend[0], demoExtend[3]];
         let demoTileSize = 250;
         let demoRes0 = (demoExtend[3] - demoExtend[1])  / demoTileSize;
-        let demoUrl = 'http://localhost:8080/xcts/demo/conc_chl/{z}/{y}/{x}.png';
-        // let demoUrl = 'http://localhost:8080/xcts/highroc-cube/conc_chl/{z}/{y}/{x}.png';
 
         var map = new ol.Map({
             target: 'map',
             layers: [
                 new ol.layer.Tile({
                     source: new ol.source.XYZ({
-                        url: 'http://localhost:8080/xcts/ne2/{z}/{y}/{x}.jpg',
+                        url: ne2Url,
                         projection: ol.proj.get('EPSG:4326'),
                         minZoom: 0,
                         maxZoom: 2,
