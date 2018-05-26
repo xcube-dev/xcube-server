@@ -29,9 +29,9 @@ import time
 import traceback
 from datetime import datetime
 from typing import Callable, Optional, Tuple
-import yaml
 
 import tornado.options
+import yaml
 from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application, HTTPError
@@ -44,8 +44,9 @@ ApplicationFactory = Callable[[], Application]
 
 DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
-DEFAULT_CONFIG_FILE = './wcts.yml'
+DEFAULT_CONFIG_FILE = 'wcts.yml'
 DEFAULT_UPDATE_PERIOD = 2.
+DEFAULT_LOG_PREFIX = 'xcts.log'
 
 
 class Service:
@@ -59,7 +60,7 @@ class Service:
                  port: int = DEFAULT_PORT,
                  config_file: str = DEFAULT_CONFIG_FILE,
                  update_period: float = DEFAULT_UPDATE_PERIOD,
-                 log_file_prefix: str = 'xcts.log',
+                 log_file_prefix: str = DEFAULT_LOG_PREFIX,
                  log_to_stderr: bool = False) -> None:
 
         """
@@ -166,12 +167,20 @@ class Service:
         self._install_update_check()
 
     def _maybe_load_config(self):
-        stat = os.stat(self.config_file)
+        try:
+            stat = os.stat(self.config_file)
+        except OSError as e:
+            _LOG.error(f'configuration file {self.config_file!r}: {e}')
+            return
         if self.config is None or self.config_mtime != stat.st_mtime:
             self.config_mtime = stat.st_mtime
-            with open(self.config_file) as stream:
-                self.config = yaml.load(stream)
-            _LOG.info(f'configuration loaded from {self.config_file!r}')
+            try:
+                with open(self.config_file) as stream:
+                    self.config = yaml.load(stream)
+                _LOG.info(f'configuration file {self.config_file!r} successfully loaded')
+            except (yaml.YAMLError, OSError) as e:
+                _LOG.error(f'configuration file {self.config_file!r}: {e}')
+                return
 
 
 # noinspection PyAbstractClass
