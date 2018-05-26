@@ -47,7 +47,7 @@ with open('xcts/__init__.py') as f:
     exec(f.read())
 
 setup(
-    name="xcube-tileserver",
+    name="xcts",
     version=__version__,
     description=__description__,
     license='MIT',
