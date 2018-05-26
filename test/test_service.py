@@ -40,10 +40,3 @@ class UrlPatternTest(unittest.TestCase):
         with self.assertRaises(ValueError) as cm:
             service.url_pattern('/info/{{id}')
         self.assertEqual(str(cm.exception), 'no matching "}}" after "{{" in "/info/{{id}"')
-
-
-class ServiceRequestErrorTest(unittest.TestCase):
-    def test_same_base_type(self):
-        self.assertIsInstance(service.ServiceConfigError(), service.ServiceError)
-        self.assertIsInstance(service.ServiceRequestError(), service.ServiceError)
-

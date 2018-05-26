@@ -22,7 +22,7 @@ Install
     $ python setup.py develop
     $ pytest -v --cov=xcts test
 
-To run the server on default port 9090:
+To run the server on default port 8080:
 
     $ xcts -v -c demo.yml
 

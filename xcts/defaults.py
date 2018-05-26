@@ -19,50 +19,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import logging
-import traceback
-from typing import Optional
+DEFAULT_ADDRESS = 'localhost'
+DEFAULT_PORT = 8080
+DEFAULT_CONFIG_FILE = 'wcts.yml'
+DEFAULT_UPDATE_PERIOD = 2.
+DEFAULT_LOG_PREFIX = 'xcts.log'
 
-_DEBUG_MODE = False
+DEFAULT_CBAR = 'jet'
+DEFAULT_VMIN = 0.
+DEFAULT_VMAX = 1.
 
-LOGGER = logging.getLogger('xcts')
+DEFAULT_MAX_THREAD_COUNT = None
 
+FILE_TILE_CACHE_CAPACITY = 1000
+FILE_TILE_CACHE_ENABLED = False
+FILE_TILE_CACHE_PATH = './image-cache'
 
-def is_debug_mode() -> bool:
-    global _DEBUG_MODE
-    return _DEBUG_MODE
+MEM_TILE_CACHE_CAPACITY = 1000
 
-
-def set_debug_mode(value: bool):
-    """ For testing only """
-    global _DEBUG_MODE
-    _DEBUG_MODE = value
-
-
-def log_debug(*args):
-    global _DEBUG_MODE
-    if _DEBUG_MODE:
-        print('WEBSOCKET RPC DEBUG:', *args)
-
-
-def exception_to_json(exc_info, method=None) -> dict:
-    exc_type, exc_value, exc_tb = exc_info
-    return dict(method=method,
-                exception=_get_exception_name(exc_type),
-                traceback=''.join(traceback.format_exception(exc_type, exc_value, exc_tb)))
-
-
-def _get_exception_name(exc_type: type) -> Optional[str]:
-    try:
-        name = exc_type.__name__
-    except AttributeError:
-        return str(exc_type)
-
-    try:
-        module = exc_type.__module__
-    except AttributeError:
-        module = None
-
-    if module and module != 'builtins':
-        return '%s.%s' % (module, name)
-    return name
+TRACE_PERF = True

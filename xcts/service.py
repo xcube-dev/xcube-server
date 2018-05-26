@@ -28,25 +28,21 @@ import sys
 import time
 import traceback
 from datetime import datetime
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 import tornado.options
 import yaml
 from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
-from tornado.web import RequestHandler, Application, HTTPError
+from tornado.web import RequestHandler, Application
+
+from .context import ServiceContext
+from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX
+from .errors import ServiceRequestError
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcts')
-
-ApplicationFactory = Callable[[], Application]
-
-DEFAULT_ADDRESS = 'localhost'
-DEFAULT_PORT = 8080
-DEFAULT_CONFIG_FILE = 'wcts.yml'
-DEFAULT_UPDATE_PERIOD = 2.
-DEFAULT_LOG_PREFIX = 'xcts.log'
 
 
 class Service:
@@ -98,7 +94,8 @@ class Service:
                                  address=address,
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
-        self.config = None
+        self.context = ServiceContext()
+        self._maybe_load_config()
 
         application.service = self
         application.time_of_last_activity = time.clock()
@@ -110,7 +107,6 @@ class Service:
         # Register handlers for common termination signals
         signal.signal(signal.SIGINT, self._sig_handler)
         signal.signal(signal.SIGTERM, self._sig_handler)
-        self._maybe_load_config()
         self._install_update_check()
 
     @classmethod
@@ -172,11 +168,11 @@ class Service:
         except OSError as e:
             _LOG.error(f'configuration file {self.config_file!r}: {e}')
             return
-        if self.config is None or self.config_mtime != stat.st_mtime:
+        if self.config_mtime != stat.st_mtime:
             self.config_mtime = stat.st_mtime
             try:
                 with open(self.config_file) as stream:
-                    self.config = yaml.load(stream)
+                    self.context.config = yaml.load(stream)
                 _LOG.info(f'configuration file {self.config_file!r} successfully loaded')
             except (yaml.YAMLError, OSError) as e:
                 _LOG.error(f'configuration file {self.config_file!r}: {e}')
@@ -192,6 +188,10 @@ class ServiceRequestHandler(RequestHandler):
     @property
     def service(self) -> Service:
         return Service.get_service(self.application)
+
+    @property
+    def service_context(self) -> ServiceContext:
+        return self.service.context
 
     @classmethod
     def to_int(cls, name: str, value: str) -> int:
@@ -241,7 +241,7 @@ class ServiceRequestHandler(RequestHandler):
         except ValueError as e:
             raise ServiceRequestError(reason='%s must be a number, but was "%s"' % (name, value)) from e
 
-    def get_query_argument_int(self, name: str, default: int) -> Optional[int]:
+    def get_query_argument_int(self, name: str, default: Optional[int]) -> Optional[int]:
         """
         Get query argument of type int.
         :param name: Query argument name
@@ -252,7 +252,7 @@ class ServiceRequestHandler(RequestHandler):
         value = self.get_query_argument(name, default=None)
         return self.to_int(name, value) if value is not None else default
 
-    def get_query_argument_int_tuple(self, name: str, default: Tuple[int, ...]) -> Optional[Tuple[int, ...]]:
+    def get_query_argument_int_tuple(self, name: str, default: Optional[Tuple[int, ...]]) -> Optional[Tuple[int, ...]]:
         """
         Get query argument of type int list.
         :param name: Query argument name
@@ -263,7 +263,7 @@ class ServiceRequestHandler(RequestHandler):
         value = self.get_query_argument(name, default=None)
         return self.to_int_tuple(name, value) if value is not None else default
 
-    def get_query_argument_float(self, name: str, default: float) -> Optional[float]:
+    def get_query_argument_float(self, name: str, default: Optional[float]) -> Optional[float]:
         """
         Get query argument of type float.
         :param name: Query argument name
@@ -327,24 +327,6 @@ class _GlobalEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
 
     def get_event_loop(self):
         return self._global_loop
-
-
-class ServiceError(HTTPError):
-    """
-    Exception raised by tile service request handlers.
-    """
-
-
-class ServiceConfigError(ServiceError):
-    """
-    Exception raised by tile service request handlers.
-    """
-
-
-class ServiceRequestError(ServiceError):
-    """
-    Exception raised by tile service request handlers.
-    """
 
 
 def url_pattern(pattern: str):
