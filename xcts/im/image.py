@@ -131,8 +131,8 @@ class TiledImage(metaclass=ABCMeta):
     @abstractmethod
     def get_tile(self, tile_x, tile_y) -> Tile:
         """
-        :param tile_y: the tile coordinate in X direction
         :param tile_x: the tile coordinate in Y direction
+        :param tile_y: the tile coordinate in X direction
         :return: The image's tile data at tile_x, tile_y.
         """
         pass
