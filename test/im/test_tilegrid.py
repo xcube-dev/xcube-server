@@ -26,9 +26,9 @@ class TilingSchemeTest(TestCase):
 
     def test_repr(self):
         ts = TileGrid(4, 2, 1, 540, 540, POS_Y_AXIS_GLOBAL_RECT)
-        self.assertEqual(repr(ts), 'TilingScheme(4, 2, 1, 540, 540, GeoExtend())')
+        self.assertEqual(repr(ts), 'TileGrid(4, 2, 1, 540, 540, GeoExtend())')
         ts = TileGrid(4, 2, 1, 540, 540, NEG_Y_AXIS_GLOBAL_RECT)
-        self.assertEqual(repr(ts), 'TilingScheme(4, 2, 1, 540, 540, GeoExtend(inv_y=True))')
+        self.assertEqual(repr(ts), 'TileGrid(4, 2, 1, 540, 540, GeoExtend(inv_y=True))')
 
     def test_str(self):
         ts = TileGrid(4, 2, 1, 540, 540, POS_Y_AXIS_GLOBAL_RECT)

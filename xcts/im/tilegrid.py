@@ -125,7 +125,7 @@ class TileGrid:
                                                                       w=self.max_width, h=self.max_height)])
 
     def __repr__(self):
-        return 'TilingScheme(%s, %s, %s, %s, %s, %s)' % (
+        return 'TileGrid(%s, %s, %s, %s, %s, %s)' % (
             self.num_levels, self.num_level_zero_tiles_x, self.num_level_zero_tiles_y,
             self.tile_width, self.tile_height, repr(self.geo_extent))
 
