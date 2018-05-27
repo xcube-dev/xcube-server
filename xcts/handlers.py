@@ -21,6 +21,9 @@
 
 import json
 
+from tornado import gen
+from tornado.ioloop import IOLoop
+
 from . import __version__, __description__
 from .service import ServiceRequestHandler
 
@@ -30,7 +33,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 # noinspection PyAbstractClass,PyBroadException
 class DatasetTileHandler(ServiceRequestHandler):
 
-    # TODO: make this coroutine, see https://stackoverflow.com/questions/32374238/caching-and-reusing-a-function-result-in-tornado?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+    @gen.coroutine
     def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
         # GLOBAL_LOCK.acquire()
 
@@ -40,10 +43,12 @@ class DatasetTileHandler(ServiceRequestHandler):
         cmap_min = self.get_query_argument_float('vmin', default=None)
         cmap_max = self.get_query_argument_float('vmax', default=None)
 
-        tile = self.service_context.get_dataset_tile(ds_name, var_name,
-                                                     x, y, z,
-                                                     var_index,
-                                                     cmap_name, cmap_min, cmap_max)
+        tile = yield IOLoop.current().run_in_executor(None,
+                                                      self.service_context.get_dataset_tile,
+                                                      ds_name, var_name,
+                                                      x, y, z,
+                                                      var_index,
+                                                      cmap_name, cmap_min, cmap_max)
 
         self.set_header('Content-Type', 'image/png')
         self.write(tile)
@@ -63,10 +68,10 @@ class DatasetTileGridHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class NE2TileHandler(ServiceRequestHandler):
 
-    # TODO: make this coroutine, see https://stackoverflow.com/questions/32374238/caching-and-reusing-a-function-result-in-tornado?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
+    @gen.coroutine
     def get(self, z: str, x: str, y: str):
         x, y, z = int(x), int(y), int(z)
-        tile = self.service_context.get_ne2_tile(x, y, z)
+        tile = yield IOLoop.current().run_in_executor(None, self.service_context.get_ne2_tile, x, y, z)
         self.set_header('Content-Type', 'image/jpg')
         self.write(tile)
 
