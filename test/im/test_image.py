@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from xcts.im import TilingScheme, GeoExtent
+from xcts.im import TileGrid, GeoExtent
 from xcts.im.image import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
     TransformArrayImage, FastNdarrayDownsamplingImage
 from xcts.im.utils import aggregate_ndarray_mean
@@ -245,7 +245,7 @@ class ImagePyramidTest(TestCase):
         # Typical NetCDF shape: time, lat, lon
         array = np.zeros((1, height, width))
 
-        tiling_scheme = TilingScheme.create(width, height, 270, 270, geo_extent=GeoExtent())
+        tiling_scheme = TileGrid.create(width, height, 270, 270, geo_extent=GeoExtent())
         pyramid = ImagePyramid.create_from_array(array, tiling_scheme)
 
         self.assertEqual((270, 270), pyramid.tile_size)

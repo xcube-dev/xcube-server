@@ -32,9 +32,9 @@ MODE_EQ = 0
 MODE_GE = 1
 
 
-class TilingScheme:
+class TileGrid:
     """
-    Image pyramid tiling scheme.
+    Image pyramid tile grid.
 
     :param num_levels: Number of pyramid levels.
     :param num_level_zero_tiles_x: Number of tiles at level zero in X direction.
@@ -145,7 +145,7 @@ class TilingScheme:
     def create(cls,
                w: int, h: int,
                tile_width: int, tile_height: int,
-               geo_extent: GeoExtent) -> 'TilingScheme':
+               geo_extent: GeoExtent) -> 'TileGrid':
         """
         Create a new TilingScheme object for image size given by *w* and *h*.
 
@@ -225,7 +225,7 @@ class TilingScheme:
                                north=gsb_y2_new,
                                inv_y=geo_extent.inv_y,
                                eps=geo_extent.eps)
-        return TilingScheme(nl, nt0x, nt0y, tw, th, new_extent)
+        return TileGrid(nl, nt0x, nt0y, tw, th, new_extent)
 
 
 @functools.lru_cache(maxsize=256)

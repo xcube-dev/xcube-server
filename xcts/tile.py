@@ -3,15 +3,15 @@ from typing import Optional
 
 import xarray as xr
 
-from xcts.im import GeoExtent, TilingScheme
+from xcts.im import GeoExtent, TileGrid
 
 
-def get_tiling_scheme(var: xr.DataArray) -> Optional[TilingScheme]:
+def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
     """
-    Compute a tiling scheme for the given variable *var*.
+    Compute an efficient tile grid for the given variable *var*.
 
     :param var: A variable of an xarray dataset.
-    :return:  a new TilingScheme object or None if *var* cannot be represented as a spatial image
+    :return:  a new TileGrid object or None if *var* cannot be represented as a spatial image
     """
     lat_dim_name = 'lat'
     lon_dim_name = 'lon'
@@ -23,10 +23,10 @@ def get_tiling_scheme(var: xr.DataArray) -> Optional[TilingScheme]:
     try:
         geo_extent = GeoExtent.from_coord_arrays(lons, lats)
     except ValueError as e:
-        warnings.warn(f'failed to derive geo-extent for tiling scheme: {e}')
+        warnings.warn(f'failed to derive geo-extent for tile grid: {e}')
         # Create a default geo-extent which is probably wrong, but at least we see something
         geo_extent = GeoExtent()
     try:
-        return TilingScheme.create(width, height, 360, 360, geo_extent)
+        return TileGrid.create(width, height, 360, 360, geo_extent)
     except ValueError:
-        return TilingScheme(1, 1, 1, width, height, geo_extent)
+        return TileGrid(1, 1, 1, width, height, geo_extent)

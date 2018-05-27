@@ -1,6 +1,6 @@
 datasets:
   demo:
-    path: ./demo.nc
+    path: demo.nc
 
   highroc-cube:
     path: dcs4cop-obs-01/highroc-cube.zarr

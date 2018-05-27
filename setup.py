@@ -54,11 +54,11 @@ setup(
     author='xcube Development Team',
     packages=packages,
     package_data={
-        'xcts.util.im.ds.NaturalEarth2': ['*/*/*.jpg'],
+        'xcts.util.im.ne2.tilemap': ['*/*/*.jpg'],
     },
     entry_points={
         'console_scripts': [
-            'xcts = xcts.main:main',
+            'xcts = xcts.app:main',
         ],
     },
     install_requires=requirements,

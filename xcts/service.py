@@ -36,7 +36,7 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
-from .context import ServiceContext
+from .context import ServiceContext, Config
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX
 from .errors import ServiceRequestError
 
@@ -54,10 +54,11 @@ class Service:
                  application: Application,
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
-                 config_file: str = DEFAULT_CONFIG_FILE,
-                 update_period: float = DEFAULT_UPDATE_PERIOD,
+                 config_file: Optional[str] = DEFAULT_CONFIG_FILE,
+                 update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
                  log_file_prefix: str = DEFAULT_LOG_PREFIX,
-                 log_to_stderr: bool = False) -> None:
+                 log_to_stderr: bool = False,
+                 config: Optional[Config] = None) -> None:
 
         """
         Start a tile service.
@@ -71,7 +72,7 @@ class Service:
         :param application: The Tornado web application
         :param address: the address
         :param port: the port number
-        :param config_file: configuration file
+        :param config_file: optional configuration file
         :param update_period: if not-None, time of idleness in seconds before service is updated
         :param log_file_prefix: Log file prefix, default is "xcts.log"
         :param log_to_stderr: Whether logging should be shown on stderr
@@ -86,7 +87,7 @@ class Service:
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
-        self.config_file = config_file
+        self.config_file = os.path.abspath(config_file) if config_file else None
         self.config_mtime = None
         self.update_period = update_period
         self.update_timer = None
@@ -94,10 +95,10 @@ class Service:
                                  address=address,
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
-        self.context = ServiceContext()
+        self.context = ServiceContext(config=config, base_dir=os.path.dirname(self.config_file or os.path.abspath('')))
         self._maybe_load_config()
 
-        application.service = self
+        application.service_context = self.context
         application.time_of_last_activity = time.clock()
         self.application = application
 
@@ -107,17 +108,8 @@ class Service:
         # Register handlers for common termination signals
         signal.signal(signal.SIGINT, self._sig_handler)
         signal.signal(signal.SIGTERM, self._sig_handler)
-        self._install_update_check()
-
-    @classmethod
-    def get_service(cls, application: Application) -> 'Service':
-        """
-        Retrieves the associated tile service from the given Tornado web application.
-
-        :param application: The Tornado web application
-        :return: The tile instance, or None
-        """
-        return application.service if application and hasattr(application, 'service') else None
+        self._maybe_load_config()
+        self._maybe_install_update_check()
 
     def start(self):
         address = self.service_info['address']
@@ -155,14 +147,18 @@ class Service:
         _LOG.warning(f'caught signal {sig}')
         IOLoop.current().add_callback_from_signal(self._on_shut_down)
 
-    def _install_update_check(self):
-        IOLoop.current().call_later(self.update_period, self._check_for_updates)
+    def _maybe_install_update_check(self):
+        if self.update_period is None:
+            return
+        IOLoop.current().call_later(self.update_period, self._maybe_check_for_updates)
 
-    def _check_for_updates(self):
+    def _maybe_check_for_updates(self):
         self._maybe_load_config()
-        self._install_update_check()
+        self._maybe_install_update_check()
 
     def _maybe_load_config(self):
+        if self.config_file is None:
+            return
         try:
             stat = os.stat(self.config_file)
         except OSError as e:
@@ -186,12 +182,12 @@ class ServiceRequestHandler(RequestHandler):
         super(ServiceRequestHandler, self).__init__(application, request, **kwargs)
 
     @property
-    def service(self) -> Service:
-        return Service.get_service(self.application)
+    def service_context(self) -> ServiceContext:
+        return self.application.service_context
 
     @property
-    def service_context(self) -> ServiceContext:
-        return self.service.context
+    def base_url(self):
+        return self.request.protocol + '://' + self.request.host
 
     @classmethod
     def to_int(cls, name: str, value: str) -> int:
@@ -240,6 +236,11 @@ class ServiceRequestHandler(RequestHandler):
             return float(value)
         except ValueError as e:
             raise ServiceRequestError(reason='%s must be a number, but was "%s"' % (name, value)) from e
+
+    def set_default_headers(self):
+        self.set_header("Access-Control-Allow-Origin", "*")
+        self.set_header("Access-Control-Allow-Headers", "x-requested-with")
+        self.set_header('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS')
 
     def get_query_argument_int(self, name: str, default: Optional[int]) -> Optional[int]:
         """

@@ -1,73 +1,64 @@
 <!doctype html>
 <html lang="en">
-  <head>
+<head>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
     <style>
-      body {
-        padding: 0;
-        margin: 0;
-      }
-      .map {
-        height: 100%;
-        width: 100%;
-      }
+
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
+        .map {
+            height: 100%;
+            width: 100%;
+        }
+
     </style>
     <script src="https://openlayers.org/en/v4.6.5/build/ol.js" type="text/javascript"></script>
     <title>xcube Tile Server Demo</title>
-  </head>
-  <body>
-    <div id="map" class="map"></div>
-    <script type="text/javascript">
-        let ne2Url = 'http://localhost:8080/xcts/ne2/tile/{z}/{y}/{x}.jpg';
-        let ne2Extend = [-180, -90, 180, 90];
-        let ne2Origin = [ne2Extend[0], ne2Extend[3]];
-        let ne2TileSize = 256;
-        let ne2Res0 = (ne2Extend[3] - ne2Extend[1]) / ne2TileSize;
+</head>
+<body>
+<div id="map" class="map"></div>
+<script type="text/javascript">
 
-        let demoUrl = 'http://localhost:8080/xcts/demo/conc_chl/tile/{z}/{y}/{x}.png';
-        // let demoUrl = 'http://localhost:8080/xcts/highroc-cube/conc_chl/tile/{z}/{y}/{x}.png';
-        let demoExtend = [0, 50.0, 5.0, 52.5]
-        let demoOrigin = [demoExtend[0], demoExtend[3]];
-        let demoTileSize = 250;
-        let demoRes0 = (demoExtend[3] - demoExtend[1])  / demoTileSize;
+    function getXYZ(url) {
+        return fetch(url)
+                .then(response => response.json())
+                .then(options => {
+                    return new ol.source.XYZ({
+                        url: options.url,
+                        projection: ol.proj.get(options.projection),
+                        minZoom: options.minZoom,
+                        maxZoom: options.minZoom,
+                        tileGrid: new ol.tilegrid.TileGrid(options.tileGrid)
+                    });
+                });
+    }
 
+    var ne2Source = null;
+    var demoSource = null;
+
+    getXYZ('http://localhost:8080/xcts/ne2/tilegrid/ol4.json')
+    .then(source => {
+        ne2Source = source;
+        return getXYZ('http://localhost:8080/xcts/demo/conc_chl/tilegrid/ol4.json')
+    })
+    .then(source => {
+        demoSource = source;
         var map = new ol.Map({
             target: 'map',
             layers: [
-                new ol.layer.Tile({
-                    source: new ol.source.XYZ({
-                        url: ne2Url,
-                        projection: ol.proj.get('EPSG:4326'),
-                        minZoom: 0,
-                        maxZoom: 2,
-                        tileGrid: new ol.tilegrid.TileGrid({
-                            extent: ne2Extend,
-                            origin: ne2Origin,
-                            resolutions: [ne2Res0, ne2Res0/2, ne2Res0/4],
-                            tileSize: [ne2TileSize, ne2TileSize],
-                        })
-                    })
-                }),
-                new ol.layer.Tile({
-                    source: new ol.source.XYZ({
-                        url: demoUrl,
-                        projection: ol.proj.get('EPSG:4326'),
-                        minZoom: 0,
-                        maxZoom: 2,
-                        tileGrid: new ol.tilegrid.TileGrid({
-                            extent: demoExtend,
-                            origin: demoOrigin,
-                            resolutions: [demoRes0, demoRes0/2, demoRes0/4],
-                            tileSize: [demoTileSize, demoTileSize],
-                        })
-                    })
-                }),
+                new ol.layer.Tile({source: ne2Source}),
+                new ol.layer.Tile({source: demoSource}),
             ],
             view: new ol.View({
-                  center: ol.proj.fromLonLat([0, 0]),
-                  zoom: 0
+                center: ol.proj.fromLonLat([0, 0]),
+                zoom: 0
             })
         });
-    </script>
-  </body>
+    });
+
+</script>
+</body>
 </html>

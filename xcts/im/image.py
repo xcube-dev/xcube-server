@@ -31,7 +31,7 @@ from PIL import Image
 
 from .cmaps import ensure_cmaps_loaded
 from .geoextent import GeoExtent
-from .tilingscheme import TilingScheme
+from .tilegrid import TileGrid
 from .utils import downsample_ndarray, aggregate_ndarray_first
 from xcts.cache import Cache, MemoryCacheStore
 
@@ -711,24 +711,24 @@ class ImagePyramid:
         """
         if geo_extent is None:
             geo_extent = GeoExtent()
-        tiling_scheme = TilingScheme.create(source_image.size[0], source_image.size[1],
-                                            source_image.tile_size[0], source_image.tile_size[1],
-                                            geo_extent)
-        level_images = [None] * tiling_scheme.num_levels
-        z_index_max = tiling_scheme.num_levels - 1
+        tile_grid = TileGrid.create(source_image.size[0], source_image.size[1],
+                                    source_image.tile_size[0], source_image.tile_size[1],
+                                    geo_extent)
+        level_images = [None] * tile_grid.num_levels
+        z_index_max = tile_grid.num_levels - 1
         level_images[z_index_max] = source_image
         level_image = source_image
-        for i in range(1, tiling_scheme.num_levels):
+        for i in range(1, tile_grid.num_levels):
             z_index = z_index_max - i
             image_id = '%s/%d' % (source_image.id, z_index)
             level_images[z_index] = level_image = level_transformer(source_image, level_image, i,
                                                                     image_id=image_id, **kwargs)
-        return ImagePyramid(tiling_scheme, level_images)
+        return ImagePyramid(tile_grid, level_images)
 
     @classmethod
     def create_from_array(cls,
                           array: np.ndarray,
-                          tiling_scheme: TilingScheme,
+                          tile_grid: TileGrid,
                           level_image_id_factory: LevelImageIdFactory = None,
                           **kwargs) -> 'ImagePyramid':
 
@@ -740,13 +740,13 @@ class ImagePyramid:
 
         :param array: numpy-like array that supports stepping in it's subscript operator, e.g.
                       array[..., y::step, x:step]
-        :param tiling_scheme:the tiling scheme
+        :param tile_grid: the tile grid
         :param level_image_id_factory: a factory function for unique image identifiers
         :param kwargs: keyword arguments passed to FastNdarrayDownsamplingImage constructor
         :return: a new ImagePyramid instance
         """
-        tile_size = tiling_scheme.tile_size
-        num_levels = tiling_scheme.num_levels
+        tile_size = tile_grid.tile_size
+        num_levels = tile_grid.num_levels
         level_images = [None] * num_levels
         z_index_max = num_levels - 1
         for i in range(0, num_levels):
@@ -756,31 +756,31 @@ class ImagePyramid:
                                                                  tile_size,
                                                                  i,
                                                                  image_id=image_id, **kwargs)
-        return ImagePyramid(tiling_scheme, level_images)
+        return ImagePyramid(tile_grid, level_images)
 
     def __init__(self,
-                 tiling_scheme: TilingScheme,
+                 tile_grid: TileGrid,
                  level_images: TiledImageCollection):
-        if tiling_scheme.num_levels != len(level_images):
-            raise ValueError('level_images do not match tiling_scheme')
-        self._tiling_scheme = tiling_scheme
+        if tile_grid.num_levels != len(level_images):
+            raise ValueError('level_images do not match tile_grid')
+        self._tile_grid = tile_grid
         self._level_images = list(level_images)
 
     @property
-    def tiling_scheme(self) -> TilingScheme:
-        return self._tiling_scheme
+    def tile_grid(self) -> TileGrid:
+        return self._tile_grid
 
     @property
     def num_level_zero_tiles(self) -> Size2D:
-        return self._tiling_scheme.num_level_zero_tiles_x, self._tiling_scheme.num_level_zero_tiles_y
+        return self._tile_grid.num_level_zero_tiles_x, self._tile_grid.num_level_zero_tiles_y
 
     @property
     def tile_size(self) -> Size2D:
-        return self._tiling_scheme.tile_width, self._tiling_scheme.tile_height
+        return self._tile_grid.tile_width, self._tile_grid.tile_height
 
     @property
     def num_levels(self) -> int:
-        return self._tiling_scheme.num_levels
+        return self._tile_grid.num_levels
 
     def get_level_image(self, z_index: int) -> TiledImage:
         return self._level_images[z_index]
@@ -795,7 +795,7 @@ class ImagePyramid:
 
     def apply(self, level_mapper: LevelMapper, *args, **kwargs):
         level_images = self._level_images
-        return ImagePyramid(self._tiling_scheme,
+        return ImagePyramid(self._tile_grid,
                             [level_mapper(level_images[level], level, *args, **kwargs)
                              for level in range(len(level_images))])
 

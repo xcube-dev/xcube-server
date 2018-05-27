@@ -23,7 +23,7 @@ import os
 
 from ..geoextent import GeoExtent
 from ..image import AbstractTiledImage, ImagePyramid
-from ..tilingscheme import TilingScheme
+from ..tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -41,7 +41,7 @@ class NaturalEarth2Image(AbstractTiledImage):
     TILE_SIZE = 256
 
     @staticmethod
-    def get_pyramid():
+    def get_pyramid() -> ImagePyramid:
         """
         Return an instance of a 'Natural Earth v2' image pyramid:
         * global coverage
@@ -50,13 +50,13 @@ class NaturalEarth2Image(AbstractTiledImage):
         * tile size: 256 pixels
         * 2 x 1 tiles on level zero
         """
-        dir_path = os.path.join(os.path.dirname(__file__), 'NaturalEarth2')
-        return ImagePyramid(TilingScheme(NaturalEarth2Image.NUM_LEVELS,
-                                         NaturalEarth2Image.NUM_LEVEL_0_TILES_X,
-                                         NaturalEarth2Image.NUM_LEVEL_0_TILES_Y,
-                                         NaturalEarth2Image.TILE_SIZE,
-                                         NaturalEarth2Image.TILE_SIZE,
-                                         GeoExtent()),
+        dir_path = os.path.join(os.path.dirname(__file__), 'tilemap')
+        return ImagePyramid(TileGrid(NaturalEarth2Image.NUM_LEVELS,
+                                     NaturalEarth2Image.NUM_LEVEL_0_TILES_X,
+                                     NaturalEarth2Image.NUM_LEVEL_0_TILES_Y,
+                                     NaturalEarth2Image.TILE_SIZE,
+                                     NaturalEarth2Image.TILE_SIZE,
+                                     GeoExtent()),
                             [NaturalEarth2Image(dir_path, level) for level in range(NaturalEarth2Image.NUM_LEVELS)])
 
     def __init__(self, dir_path, z_index):

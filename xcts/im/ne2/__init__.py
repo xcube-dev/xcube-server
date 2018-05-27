@@ -21,11 +21,5 @@
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-from .ne2 import NaturalEarth2Image
-from .h5py import H5PyDatasetImage
+from .im import NaturalEarth2Image
 
-__all__ = [
-    'NaturalEarth2Image',
-    'H5PyDatasetImage',
-    'H5PyDatasetRgbaImage',
-]

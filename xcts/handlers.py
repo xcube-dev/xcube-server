@@ -31,7 +31,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 class DatasetTileHandler(ServiceRequestHandler):
 
     # TODO: make this coroutine, see https://stackoverflow.com/questions/32374238/caching-and-reusing-a-function-result-in-tornado?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
-    def get(self, ds_name: str, var_name: str, z: str, y: str, x: str):
+    def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
         # GLOBAL_LOCK.acquire()
 
         x, y, z = int(x), int(y), int(z)
@@ -52,10 +52,10 @@ class DatasetTileHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class DatasetTileSchemaHandler(ServiceRequestHandler):
+class DatasetTileGridHandler(ServiceRequestHandler):
 
     def get(self, ds_name: str, var_name: str, format_name: str):
-        ts = self.service_context.get_dataset_tile_schema(ds_name, var_name, format_name)
+        ts = self.service_context.get_dataset_tile_grid(ds_name, var_name, format_name, self.base_url)
         self.set_header('Content-Type', 'text/json')
         self.write(json.dumps(ts, indent=2))
 
@@ -64,7 +64,7 @@ class DatasetTileSchemaHandler(ServiceRequestHandler):
 class NE2TileHandler(ServiceRequestHandler):
 
     # TODO: make this coroutine, see https://stackoverflow.com/questions/32374238/caching-and-reusing-a-function-result-in-tornado?utm_medium=organic&utm_source=google_rich_qa&utm_campaign=google_rich_qa
-    def get(self, z: str, y: str, x: str):
+    def get(self, z: str, x: str, y: str):
         x, y, z = int(x), int(y), int(z)
         tile = self.service_context.get_ne2_tile(x, y, z)
         self.set_header('Content-Type', 'image/jpg')
@@ -72,10 +72,10 @@ class NE2TileHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class NE2TileSchemaHandler(ServiceRequestHandler):
+class NE2TileGridHandler(ServiceRequestHandler):
 
     def get(self, format_name: str):
-        ts = self.service_context.get_ne2_tile_schema(format_name)
+        ts = self.service_context.get_ne2_tile_grid(format_name, self.base_url)
         self.set_header('Content-Type', 'text/json')
         self.write(json.dumps(ts, indent=2))
 

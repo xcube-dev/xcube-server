@@ -27,8 +27,8 @@ import sys
 from tornado.web import Application, StaticFileHandler
 
 from xcts import __version__, __description__
-from xcts.handlers import NE2TileHandler, DatasetTileHandler, InfoHandler, NE2TileSchemaHandler, \
-    DatasetTileSchemaHandler
+from xcts.handlers import NE2TileHandler, DatasetTileHandler, InfoHandler, NE2TileGridHandler, \
+    DatasetTileGridHandler
 from xcts.service import url_pattern, Service, DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, DEFAULT_CONFIG_FILE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -38,10 +38,10 @@ def new_application():
     application = Application([
         ('/_static/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'resources')}),
         (url_pattern('/'), InfoHandler),
-        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tile/{{z}}/{{y}}/{{x}}.png'), DatasetTileHandler),
-        (url_pattern('/xcts/ne2/tile/{{z}}/{{y}}/{{x}}.jpg'), NE2TileHandler),
-        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tileschema/{{format_name}}'), DatasetTileSchemaHandler),
-        (url_pattern('/xcts/ne2/tileschema/{{format_name}}'), NE2TileSchemaHandler),
+        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tile/{{z}}/{{x}}/{{y}}.png'), DatasetTileHandler),
+        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tilegrid/{{format_name}}'), DatasetTileGridHandler),
+        (url_pattern('/xcts/ne2/tile/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),
+        (url_pattern('/xcts/ne2/tilegrid/{{format_name}}'), NE2TileGridHandler),
     ])
     return application
 
