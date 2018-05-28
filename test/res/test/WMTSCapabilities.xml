@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Capabilities xmlns="http://www.opengis.net/wmts/1.0"
+              xmlns:ows="http://www.opengis.net/ows/1.1"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0.0/wmtsGetCapabilities_response.xsd"
+              version="1.0.0">
+    <ows:ServiceIdentification>
+        <ows:Title>xcube WMTS</ows:Title>
+        <ows:Abstract>Web Map Tile Service (WMTS) for xcube-conformant data cubes</ows:Abstract>
+        <ows:Keywords>
+            <ows:Keyword>tile</ows:Keyword>
+            <ows:Keyword>tile matrix set</ows:Keyword>
+            <ows:Keyword>map</ows:Keyword>
+        </ows:Keywords>
+        <ows:ServiceType>OGC WMTS</ows:ServiceType>
+        <ows:ServiceTypeVersion>1.0.0</ows:ServiceTypeVersion>
+        <ows:Fees>none</ows:Fees>
+        <ows:AccessConstraints>none</ows:AccessConstraints>
+    </ows:ServiceIdentification>
+
+    <ows:ServiceProvider>
+        <ows:ProviderName>Brockmann Consult GmbH</ows:ProviderName>
+        <ows:ProviderSite xlink:href="https://www.brockmann-consult.de"/>
+        <ows:ServiceContact>
+            <ows:IndividualName>Norman Fomferra</ows:IndividualName>
+            <ows:PositionName>Senior Software Engineer</ows:PositionName>
+            <ows:ContactInfo>
+                <ows:Phone>
+                    <ows:Voice>+49 4152 889 303</ows:Voice>
+                    <ows:Facsimile>+49 4152 889 330</ows:Facsimile>
+                </ows:Phone>
+                <ows:Address>
+                    <ows:DeliveryPoint>HZG / GITZ</ows:DeliveryPoint>
+                    <ows:City>Geesthacht</ows:City>
+                    <ows:AdministrativeArea>Herzogtum Lauenburg</ows:AdministrativeArea>
+                    <ows:PostalCode>21502</ows:PostalCode>
+                    <ows:Country>Germany</ows:Country>
+                    <ows:ElectronicMailAddress>norman.fomferra@brockmann-consult.de</ows:ElectronicMailAddress>
+                </ows:Address>
+            </ows:ContactInfo>
+        </ows:ServiceContact>
+    </ows:ServiceProvider>
+
+    <ows:OperationsMetadata>
+        <ows:Operation name="GetCapabilities">
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Get xlink:href="http://localhost:8080/xcts-wmts/1.0.0/kvp?">
+                        <ows:Constraint name="GetEncoding">
+                            <ows:AllowedValues>
+                                <ows:Value>KVP</ows:Value>
+                            </ows:AllowedValues>
+                        </ows:Constraint>
+                    </ows:Get>
+                </ows:HTTP>
+            </ows:DCP>
+        </ows:Operation>
+        <ows:Operation name="GetTile">
+            <ows:DCP>
+                <ows:HTTP>
+                    <ows:Get xlink:href="http://localhost:8080/xcts-wmts/1.0.0/kvp?">
+                        <ows:Constraint name="GetEncoding">
+                            <ows:AllowedValues>
+                                <ows:Value>KVP</ows:Value>
+                            </ows:AllowedValues>
+                        </ows:Constraint>
+                    </ows:Get>
+                </ows:HTTP>
+            </ows:DCP>
+        </ows:Operation>
+    </ows:OperationsMetadata>
+
+    <Contents>
+        <TileMatrixSet>
+            <ows:Identifier>TileGrid_2000_1000</ows:Identifier>
+            <ows:SupportedCRS>EPSG:4326</ows:SupportedCRS>
+            <TileMatrix>
+                <ows:Identifier>0</ows:Identifier>
+                <ScaleDenominator>0.01</ScaleDenominator>
+                <TopLeftCorner>2.168404344971009e-19 52.5</TopLeftCorner>
+                <TileWidth>250</TileWidth>
+                <TileHeight>250</TileHeight>
+                <MatrixWidth>2</MatrixWidth>
+                <MatrixHeight>1</MatrixHeight>
+            </TileMatrix>
+            <TileMatrix>
+                <ows:Identifier>1</ows:Identifier>
+                <ScaleDenominator>0.005</ScaleDenominator>
+                <TopLeftCorner>2.168404344971009e-19 52.5</TopLeftCorner>
+                <TileWidth>250</TileWidth>
+                <TileHeight>250</TileHeight>
+                <MatrixWidth>4</MatrixWidth>
+                <MatrixHeight>2</MatrixHeight>
+            </TileMatrix>
+            <TileMatrix>
+                <ows:Identifier>2</ows:Identifier>
+                <ScaleDenominator>0.0025</ScaleDenominator>
+                <TopLeftCorner>2.168404344971009e-19 52.5</TopLeftCorner>
+                <TileWidth>250</TileWidth>
+                <TileHeight>250</TileHeight>
+                <MatrixWidth>8</MatrixWidth>
+                <MatrixHeight>4</MatrixHeight>
+            </TileMatrix>
+        </TileMatrixSet>
+        <Layer>
+            <ows:Identifier>demo.quality_flags</ows:Identifier>
+            <ows:Title>Classification and quality flags</ows:Title>
+            <ows:Abstract>quality_flags</ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/quality_flags/{TileMatrix}/{TileCol}/{TileRow}.png"
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo.kd489</ows:Identifier>
+            <ows:Title>Irradiance attenuation coefficient at 489 nm</ows:Title>
+            <ows:Abstract>kd489</ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/kd489/{TileMatrix}/{TileCol}/{TileRow}.png"
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo.conc_tsm</ows:Identifier>
+            <ows:Title>Total suspended matter dry weight concentration</ows:Title>
+            <ows:Abstract>conc_tsm</ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/conc_tsm/{TileMatrix}/{TileCol}/{TileRow}.png"
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo.conc_chl</ows:Identifier>
+            <ows:Title>Chlorophylll concentration</ows:Title>
+            <ows:Abstract>conc_chl</ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/conc_chl/{TileMatrix}/{TileCol}/{TileRow}.png"
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo.c2rcc_flags</ows:Identifier>
+            <ows:Title>C2RCC quality flags</ows:Title>
+            <ows:Abstract>c2rcc_flags</ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/c2rcc_flags/{TileMatrix}/{TileCol}/{TileRow}.png"
+        </Layer>
+    </Contents>
+    <ServiceMetadataURL xlink:href="http://localhost:8080/xcts-wmts/1.0.0/WMTSCapabilities.xml"/>
+</Capabilities>

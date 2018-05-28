@@ -87,14 +87,8 @@ class ServiceContext:
         self._config = config
 
     def get_capabilities(self, format_name: str):
-        return """<?xml version="1.0" encoding="UTF-8"?>
-<Capabilities xmlns="http://www.opengis.net/wmts/1.0"
-              xmlns:ows="http://www.opengis.net/ows/1.1"
-              xmlns:xlink="http://www.w3.org/1999/xlink"
-              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-              xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0.0/wmtsGetCapabilities_response.xsd"
-              version="1.0.0">
-    <ows:ServiceIdentification>
+
+        service_identification_xml = f"""<ows:ServiceIdentification>
         <ows:Title>xcube WMTS</ows:Title>
         <ows:Abstract>Web Map Tile Service (WMTS) for xcube-conformant data cubes</ows:Abstract>
         <ows:Keywords>
@@ -107,36 +101,46 @@ class ServiceContext:
         <ows:Fees>none</ows:Fees>
         <ows:AccessConstraints>none</ows:AccessConstraints>
     </ows:ServiceIdentification>
-    <ows:ServiceProvider>
-        <ows:ProviderName>MiraMon</ows:ProviderName>
-        <ows:ProviderSite xlink:href="http://www.creaf.uab.cat/miramon"/>
+"""
+
+        service_provider = self.config['ServiceProvider']
+        service_contact = service_provider['ServiceContact']
+        contact_info = service_contact['ContactInfo']
+        phone = contact_info['Phone']
+        address = contact_info['Address']
+
+        service_provider_xml = \
+            f"""<ows:ServiceProvider>
+        <ows:ProviderName>{service_provider['ProviderName']}</ows:ProviderName>
+        <ows:ProviderSite xlink:href="{service_provider['ProviderSite']}"/>
         <ows:ServiceContact>
-            <ows:IndividualName>Joan Maso Pau</ows:IndividualName>
-            <ows:PositionName>Senior Software Engineer</ows:PositionName>
+            <ows:IndividualName>{service_contact['IndividualName']}</ows:IndividualName>
+            <ows:PositionName>{service_contact['PositionName']}</ows:PositionName>
             <ows:ContactInfo>
                 <ows:Phone>
-                    <ows:Voice>+34 93 581 1312</ows:Voice>
-                    <ows:Facsimile>+34 93 581 4151</ows:Facsimile>
+                    <ows:Voice>{phone['Voice']}</ows:Voice>
+                    <ows:Facsimile>{phone['Facsimile']}</ows:Facsimile>
                 </ows:Phone>
                 <ows:Address>
-                    <ows:DeliveryPoint>Fac Ciencies UAB</ows:DeliveryPoint>
-                    <ows:City>Bellaterra</ows:City>
-                    <ows:AdministrativeArea>Barcelona
-                    </ows:AdministrativeArea>
-                    <ows:PostalCode>08193</ows:PostalCode>
-                    <ows:Country>Spain</ows:Country>
-                    <ows:ElectronicMailAddress>joan.maso@uab.cat
-                    </ows:ElectronicMailAddress>
+                    <ows:DeliveryPoint>{address['DeliveryPoint']}</ows:DeliveryPoint>
+                    <ows:City>{address['City']}</ows:City>
+                    <ows:AdministrativeArea>{address['AdministrativeArea']}</ows:AdministrativeArea>
+                    <ows:PostalCode>{address['PostalCode']}</ows:PostalCode>
+                    <ows:Country>{address['Country']}</ows:Country>
+                    <ows:ElectronicMailAddress>{address['ElectronicMailAddress']}</ows:ElectronicMailAddress>
                 </ows:Address>
             </ows:ContactInfo>
         </ows:ServiceContact>
     </ows:ServiceProvider>
-    <ows:OperationsMetadata>
+"""
+
+        wmts_kvp_url = 'http://localhost:8080/xcts-wmts/1.0.0/kvp?'
+
+        operations_metadata_xml = f"""<ows:OperationsMetadata>
         <ows:Operation name="GetCapabilities">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Get xlink:href=
-                                     "http://www.maps.bob/cgi-bin/MiraMon5_0.cgi?">
+                    <ows:Get xlink:href="{wmts_kvp_url}">
                         <ows:Constraint name="GetEncoding">
                             <ows:AllowedValues>
                                 <ows:Value>KVP</ows:Value>
@@ -149,8 +153,7 @@ class ServiceContext:
         <ows:Operation name="GetTile">
             <ows:DCP>
                 <ows:HTTP>
-                    <ows:Get xlink:href=
-                                     "http://www.maps.bob/cgi-bin/MiraMon5_0.cgi?">
+                    <ows:Get xlink:href="{wmts_kvp_url}">
                         <ows:Constraint name="GetEncoding">
                             <ows:AllowedValues>
                                 <ows:Value>KVP</ows:Value>
@@ -161,89 +164,103 @@ class ServiceContext:
             </ows:DCP>
         </ows:Operation>
     </ows:OperationsMetadata>
-    <Contents>
-        <Layer>
-            <ows:Title>Blue Marble Next Generation</ows:Title>
-            <ows:Abstract>Blue Marble Next Generation NASA Product
-            </ows:Abstract>
-            <ows:WGS84BoundingBox>
-                <ows:LowerCorner>-180 -90</ows:LowerCorner>
-                <ows:UpperCorner>180 90</ows:UpperCorner>
-            </ows:WGS84BoundingBox>
-            <ows:Identifier>BlueMarbleNextGeneration</ows:Identifier>
-            <Style isDefault="true">
-                <ows:Identifier>Default</ows:Identifier>
-            </Style>
-            <Format>image/jpeg</Format>
-            <TileMatrixSetLink>
-                <TileMatrixSet>BigWorldPixel</TileMatrixSet>
-            </TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile"
-                         template="http://www.maps.bob/wmts/BlueMarbleNextGeneration/default/BigWorldPixel/{TileMatrix}/{TileRow}/{TileCol}.png"/>
-        </Layer>
-        <TileMatrixSet>
-            <ows:Identifier>BigWorldPixel</ows:Identifier>
-            <ows:SupportedCRS>urn:ogc:def:crs:OGC:1.3:CRS84
-            </ows:SupportedCRS>
-            <WellKnownScaleSet>urn:ogc:def:wkss:OGC:1.0:GlobalCRS84Pixel
-            </WellKnownScaleSet>
-            <TileMatrix>
-                <ows:Identifier>10000m</ows:Identifier>
-                <ScaleDenominator>33130800.83133142</ScaleDenominator>
-                <TopLeftCorner>-180 90</TopLeftCorner>
-                <TileWidth>640</TileWidth>
-                <TileHeight>480</TileHeight>
-                <MatrixWidth>7</MatrixWidth>
-                <MatrixHeight>5</MatrixHeight>
-            </TileMatrix>
-            <TileMatrix>
-                <ows:Identifier>20000m</ows:Identifier>
-                <ScaleDenominator>66261601.66266284</ScaleDenominator>
-                <TopLeftCorner>-180 90</TopLeftCorner>
-                <TileWidth>640</TileWidth>
-                <TileHeight>480</TileHeight>
-                <MatrixWidth>4</MatrixWidth>
-                <MatrixHeight>3</MatrixHeight>
-            </TileMatrix>
-            <TileMatrix>
-                <ows:Identifier>40000m</ows:Identifier>
-                <ScaleDenominator>132523203.3253257</ScaleDenominator>
-                <TopLeftCorner>-180 90</TopLeftCorner>
-                <TileWidth>640</TileWidth>
-                <TileHeight>480</TileHeight>
-                <MatrixWidth>2</MatrixWidth>
-                <MatrixHeight>2</MatrixHeight>
-            </TileMatrix>
-            <TileMatrix>
-                <ows:Identifier>60000m</ows:Identifier>
-                <ScaleDenominator>198784804.9879885</ScaleDenominator>
-                <TopLeftCorner>-180 90</TopLeftCorner>
-                <TileWidth>640</TileWidth>
-                <TileHeight>480</TileHeight>
-                <MatrixWidth>1</MatrixWidth>
-                <MatrixHeight>1</MatrixHeight>
-            </TileMatrix>
-            <TileMatrix>
-                <ows:Identifier>120000m</ows:Identifier>
-                <ScaleDenominator>397569609.9759771</ScaleDenominator>
-                <TopLeftCorner>-180 90</TopLeftCorner>
-                <TileWidth>640</TileWidth>
-                <TileHeight>480</TileHeight>
-                <MatrixWidth>1</MatrixWidth>
-                <MatrixHeight>1</MatrixHeight>
-            </TileMatrix>
-            <TileMatrix>
-                <ows:Identifier>240000m</ows:Identifier>
-                <ScaleDenominator>795139219.9519541</ScaleDenominator>
-                <TopLeftCorner>-180 90</TopLeftCorner>
-                <TileWidth>640</TileWidth>
-                <TileHeight>480</TileHeight>
-                <MatrixWidth>1</MatrixWidth>
-                <MatrixHeight>1</MatrixHeight>
-            </TileMatrix>
-        </TileMatrixSet>
-    </Contents>
-    <ServiceMetadataURL xlink:href="http://www.maps.bob/wmts/1.0.0/WMTSCapabilities.xml"/>
+"""
+
+        dataset_descriptors = self.get_dataset_descriptors()
+        tile_grids = dict()
+        indent = '    '
+
+        layer_base_url = 'http://localhost:8080/xcts-wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
+
+        contents_xml_lines = []
+        contents_xml_lines.append((0, '<Contents>'))
+        for ds_name in dataset_descriptors.keys():
+            ds = self.get_dataset(ds_name)
+            for var_name in ds.data_vars:
+                var = ds[var_name]
+                if len(var.shape) <= 2 or var.dims[-1] != 'lon' or var.dims[-2] != 'lat':
+                    continue
+
+                tile_grid_id = 'TileGrid_%s_%s' % (var.shape[-1], var.shape[-2])
+                write_tile_matrix_set = False
+                if tile_grid_id in tile_grids:
+                    tile_grid = tile_grids[tile_grid_id]
+                else:
+                    tile_grid = compute_tile_grid(var)
+                    if tile_grid is not None:
+                        tile_grids[tile_grid_id] = tile_grid
+                        write_tile_matrix_set = True
+
+                if tile_grid is not None:
+                    if write_tile_matrix_set:
+                        contents_xml_lines.append((2, '<TileMatrixSet>'))
+                        contents_xml_lines.append((3, f'<ows:Identifier>{tile_grid_id}</ows:Identifier>'))
+                        contents_xml_lines.append((3, f'<ows:SupportedCRS>EPSG:4326</ows:SupportedCRS>'))
+
+                        tile_size_x = tile_grid.tile_size[0]
+                        tile_size_y = tile_grid.tile_size[1]
+                        lon1 = tile_grid.geo_extent.west
+                        lat1 = tile_grid.geo_extent.south
+                        lon2 = tile_grid.geo_extent.east
+                        lat2 = tile_grid.geo_extent.north
+                        res0 = (lat2 - lat1) / (tile_size_y * tile_grid.num_level_zero_tiles_y)
+                        for level in range(tile_grid.num_levels):
+                            factor = 2 ** level
+                            num_tiles_x = tile_grid.num_level_zero_tiles_x * factor
+                            num_tiles_y = tile_grid.num_level_zero_tiles_y * factor
+                            res = res0 / factor
+                            contents_xml_lines.append((3, '<TileMatrix>'))
+                            contents_xml_lines.append((4, f'<ows:Identifier>{level}</ows:Identifier>'))
+                            contents_xml_lines.append((4, f'<ScaleDenominator>{res}</ScaleDenominator>'))
+                            contents_xml_lines.append((4, f'<TopLeftCorner>{lon1} {lat2}</TopLeftCorner>'))
+                            contents_xml_lines.append((4, f'<TileWidth>{tile_size_x}</TileWidth>'))
+                            contents_xml_lines.append((4, f'<TileHeight>{tile_size_y}</TileHeight>'))
+                            contents_xml_lines.append((4, f'<MatrixWidth>{num_tiles_x}</MatrixWidth>'))
+                            contents_xml_lines.append((4, f'<MatrixHeight>{num_tiles_y}</MatrixHeight>'))
+                            contents_xml_lines.append((3, '</TileMatrix>'))
+
+                        contents_xml_lines.append((2, '</TileMatrixSet>'))
+
+                    var_title = var.attrs.get('long_name') or var_name
+                    var_abstract = var.attrs.get('abstract') or var.attrs.get('standard_name') or var_name
+
+                    layer_tile_url = layer_base_url % (ds_name, var_name)
+                    contents_xml_lines.append((2, '<Layer>'))
+                    contents_xml_lines.append((3, f'<ows:Identifier>{ds_name}.{var_name}</ows:Identifier>'))
+                    contents_xml_lines.append((3, f'<ows:Title>{var_title}</ows:Title>'))
+                    contents_xml_lines.append((3, f'<ows:Abstract>{var_abstract}</ows:Abstract>'))
+                    contents_xml_lines.append((3, '<ows:WGS84BoundingBox>'))
+                    contents_xml_lines.append((4, f'<ows:LowerCorner>{lon1} {lat1}</ows:LowerCorner>'))
+                    contents_xml_lines.append((4, f'<ows:UpperCorner>{lon2} {lat2}</ows:UpperCorner>'))
+                    contents_xml_lines.append((3, '</ows:WGS84BoundingBox>'))
+                    contents_xml_lines.append((3, '<Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>'))
+                    contents_xml_lines.append((3, '<Format>image/png</Format>'))
+                    contents_xml_lines.append((3, f'<TileMatrixSetLink><TileMatrixSet>{tile_grid_id}</TileMatrixSet></TileMatrixSetLink>'))
+                    contents_xml_lines.append((3, f'<ResourceURL format="image/png" resourceType="tile" template="{layer_tile_url}"'))
+                    contents_xml_lines.append((2, '</Layer>'))
+        contents_xml_lines.append((1, '</Contents>'))
+
+        contents_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in contents_xml_lines])
+
+        print()
+        print(contents_xml)
+        print()
+
+        get_capablities_rest_url = 'http://localhost:8080/xcts-wmts/1.0.0/WMTSCapabilities.xml'
+        service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
+
+        return f"""<?xml version="1.0" encoding="UTF-8"?>
+<Capabilities xmlns="http://www.opengis.net/wmts/1.0"
+              xmlns:ows="http://www.opengis.net/ows/1.1"
+              xmlns:xlink="http://www.w3.org/1999/xlink"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0.0/wmtsGetCapabilities_response.xsd"
+              version="1.0.0">
+    {service_identification_xml}
+    {service_provider_xml}
+    {operations_metadata_xml}
+    {contents_xml}
+    {service_metadata_url_xml}
 </Capabilities>
 """
 
@@ -359,7 +376,7 @@ class ServiceContext:
         tile_grid = self.get_tile_grid(ds_name, var_name, variable)
         if format_name == 'ol4.json':
             return _tile_grid_to_ol4_xyz_source_options(
-                base_url + f'/xcts/{ds_name}/{var_name}/tile' + '/{z}/{x}/{y}.png', tile_grid)
+                base_url + f'/xcts/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
         else:
             raise ServiceRequestError(status_code=404, reason=f'Unknown tile schema format {format_name!r}')
 
@@ -376,18 +393,24 @@ class ServiceContext:
     # noinspection PyMethodMayBeStatic
     def get_ne2_tile_grid(self, format_name: str, base_url: str):
         if format_name == 'ol4.json':
-            return _tile_grid_to_ol4_xyz_source_options(base_url + '/xcts/ne2/tile/{z}/{x}/{y}.jpg',
+            return _tile_grid_to_ol4_xyz_source_options(base_url + '/xcts/tile/ne2/{z}/{x}/{y}.jpg',
                                                         NaturalEarth2Image.get_pyramid().tile_grid)
         else:
             raise ServiceRequestError(status_code=404, reason=f'Unknown tile schema format {format_name!r}')
 
-    def get_dataset_descriptor(self, ds_name: str):
-        datasets = self.config.get('datasets')
-        if not datasets:
+    def get_dataset_descriptors(self):
+        dataset_descriptors = self.config.get('datasets')
+        if not dataset_descriptors:
             raise ServiceConfigError(reason=f"No datasets configured")
-        if ds_name not in datasets:
+        return dataset_descriptors
+
+    def get_dataset_descriptor(self, ds_name: str):
+        dataset_descriptors = self.get_dataset_descriptors()
+        if not dataset_descriptors:
+            raise ServiceConfigError(reason=f"No datasets configured")
+        if ds_name not in dataset_descriptors:
             raise ServiceRequestError(status_code=404, reason=f"Dataset {ds_name!r} not found")
-        return datasets[ds_name]
+        return dataset_descriptors[ds_name]
 
     def get_color_mapping(self, ds_name: str, var_name: str):
         dataset_descriptor = self.get_dataset_descriptor(ds_name)

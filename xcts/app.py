@@ -38,11 +38,12 @@ def new_application():
     application = Application([
         ('/res/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
         (url_pattern('/'), InfoHandler),
-        (url_pattern('/xcts-wmts/0.1.0/WMTSCapabilities.xml'), WMTSCapabilitiesXmlHandler),
-        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tile/{{z}}/{{x}}/{{y}}.png'), DatasetTileHandler),
-        (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tilegrid/{{format_name}}'), DatasetTileGridHandler),
-        (url_pattern('/xcts/ne2/tile/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),
-        (url_pattern('/xcts/ne2/tilegrid/{{format_name}}'), NE2TileGridHandler),
+        (url_pattern('/xcts-wmts/1.0.0/WMTSCapabilities.xml'), WMTSCapabilitiesXmlHandler),
+        (url_pattern('/xcts-wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), DatasetTileHandler),
+        (url_pattern('/xcts/tile/{{ds_name}}/{{var_name}}/{{z}}/{{x}}/{{y}}.png'), DatasetTileHandler),
+        (url_pattern('/xcts/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), DatasetTileGridHandler),
+        (url_pattern('/xcts/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),
+        (url_pattern('/xcts/tilegrid/ne2/{{format_name}}'), NE2TileGridHandler),
     ])
     return application
 

@@ -46,6 +46,7 @@ class DatasetTileHandler(ServiceRequestHandler):
     @gen.coroutine
     def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
         x, y, z = int(x), int(y), int(z)
+        # TODO: to conform to WMTS, use dimension names rather than "index"
         var_index = self.get_query_argument_int_tuple('index', ())
         cmap_name = self.get_query_argument('cmap', default=None)
         cmap_min = self.get_query_argument_float('vmin', default=None)

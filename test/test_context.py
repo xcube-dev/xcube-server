@@ -3,7 +3,7 @@ import unittest
 
 import xarray as xr
 
-from test.helpers import new_demo_service_context
+from test.helpers import get_res_test_dir, new_test_service_context
 from xcts.context import ServiceContext
 from xcts.errors import ServiceRequestError
 
@@ -12,24 +12,24 @@ class ServiceContextTest(unittest.TestCase):
 
     def test_get_capabilities(self):
         self.maxDiff = None
-        with open(os.path.join(os.path.dirname(__file__), 'res', 'demo', 'WMTSCapabilities.xml')) as fp:
+        with open(os.path.join(get_res_test_dir(), 'WMTSCapabilities.xml')) as fp:
             expected_capabilities = fp.read()
-        ctx = new_demo_service_context()
+        ctx = new_test_service_context()
         capabilities = ctx.get_capabilities('text/xml')
         self.assertEqual(expected_capabilities, capabilities)
 
     def test_get_dataset_tile(self):
-        ctx = new_demo_service_context()
+        ctx = new_test_service_context()
         tile = ctx.get_dataset_tile('demo', 'conc_tsm', 0, 0, 0)
         self.assertIsInstance(tile, bytes)
 
     def test_get_ne2_tile(self):
-        ctx = new_demo_service_context()
+        ctx = new_test_service_context()
         tile = ctx.get_ne2_tile(0, 0, 0)
         self.assertIsInstance(tile, bytes)
 
     def test_get_dataset_and_variable(self):
-        ctx = new_demo_service_context()
+        ctx = new_test_service_context()
         ds, var = ctx.get_dataset_and_variable('demo', 'conc_tsm')
         self.assertIsInstance(ds, xr.Dataset)
         self.assertIsInstance(var, xr.DataArray)
@@ -45,7 +45,7 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual("Variable 'conc_ys' not found in dataset 'demo'", cm.exception.reason)
 
     def test_get_color_mapping(self):
-        ctx = new_demo_service_context()
+        ctx = new_test_service_context()
         cm = ctx.get_color_mapping('demo', 'conc_chl')
         self.assertEqual(('plasma', 0., 24.), cm)
         cm = ctx.get_color_mapping('demo', 'conc_tsm')
@@ -56,10 +56,10 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual(('jet', 0., 1.), cm)
 
     def test_get_dataset_tile_grid(self):
-        ctx = new_demo_service_context()
+        ctx = new_test_service_context()
         tile_grid = ctx.get_dataset_tile_grid('demo', 'conc_chl', 'ol4.json', 'http://bibo')
         self.assertEqual({
-            'url': 'http://bibo/xcts/demo/conc_chl/tile/{z}/{x}/{y}.png',
+            'url': 'http://bibo/xcts/tile/demo/conc_chl/{z}/{x}/{y}.png',
             'projection': 'EPSG:4326',
             'minZoom': 0,
             'maxZoom': 2,
@@ -78,7 +78,7 @@ class ServiceContextTest(unittest.TestCase):
         ctx = ServiceContext()
         tile_grid = ctx.get_ne2_tile_grid('ol4.json', 'http://bibo')
         self.assertEqual({
-            'url': 'http://bibo/xcts/ne2/tile/{z}/{x}/{y}.jpg',
+            'url': 'http://bibo/xcts/tile/ne2/{z}/{x}/{y}.jpg',
             'projection': 'EPSG:4326',
             'minZoom': 0,
             'maxZoom': 2,
