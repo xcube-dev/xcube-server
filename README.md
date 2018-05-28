@@ -60,8 +60,8 @@ To run the server on default port 8080:
 
 After starting the server, try the following clients:
 
-* [OpenLayers 4 Demo](http://localhost:8080/res/demo/ol4.html) 
-* [Cesium Demo](http://localhost:8080/res/demo/cesium.html)
+* [OpenLayers 4 Demo](http://localhost:8080/res/demo/index-ol4.html) 
+* [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html)
 
 Here is how to use configure an OpenLayers tile layer from WMTS capabilities: 
 
