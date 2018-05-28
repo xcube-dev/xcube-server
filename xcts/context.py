@@ -172,6 +172,8 @@ class ServiceContext:
 
         layer_base_url = 'http://localhost:8080/xcts-wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
 
+        dimensions_xml_cache = dict()
+
         contents_xml_lines = []
         contents_xml_lines.append((0, '<Contents>'))
         for ds_name in dataset_descriptors.keys():
@@ -239,8 +241,52 @@ class ServiceContext:
                     contents_xml_lines.append(
                         (3, f'<TileMatrixSetLink><TileMatrixSet>{tile_grid_id}</TileMatrixSet></TileMatrixSetLink>'))
                     contents_xml_lines.append(
-                        (3, f'<ResourceURL format="image/png" resourceType="tile" template="{layer_tile_url}"'))
+                        (3, f'<ResourceURL format="image/png" resourceType="tile" template="{layer_tile_url}"/>'))
+
+                    non_spatial_dims = var.dims[0:-2]
+                    for dim_name in non_spatial_dims:
+                        if dim_name not in ds.coords:
+                            continue
+                        if dim_name in dimensions_xml_cache:
+                            dimensions_xml_lines = dimensions_xml_cache[dim_name]
+                        else:
+                            coord_var = ds.coords[dim_name]
+                            if len(coord_var.shape) != 1:
+                                # strange case
+                                continue
+                            coord_bnds_var_name = coord_var.attrs.get('bounds', dim_name + '_bnds')
+                            coord_bnds_var = ds.coords[coord_bnds_var_name] if coord_bnds_var_name in ds else None
+                            if coord_bnds_var is not None:
+                                if len(coord_bnds_var.shape) != 2 \
+                                        or coord_bnds_var.shape[0] != coord_bnds_var.shape[0] \
+                                        or coord_bnds_var.shape[1] != 2:
+                                    # strange case
+                                    coord_bnds_var = None
+                            title = coord_var.attrs.get('long_name', dim_name)
+                            units = 'ISO8601' if dim_name == 'time' else coord_var.attrs.get('units', '')
+                            default = 'current' if dim_name == 'time' else '0'
+                            current = 'true' if dim_name == 'time' else 'false'
+                            dimensions_xml_lines = [(3, '<Dimension>'),
+                                                    (4, f'<ows:Identifier>{dim_name}</ows:Identifier>'),
+                                                    (4, f'<ows:Title>{title}</ows:Title>'),
+                                                    (4, f'<ows:UOM>{units}</ows:UOM>'),
+                                                    (4, f'<Default>{default}</Default>'),
+                                                    (4, f'<Current>{current}</Current>')]
+                            if coord_bnds_var is not None:
+                                for i in range(len(coord_var)):
+                                    value1 = coord_bnds_var.values[i, 0]
+                                    value2 = coord_bnds_var.values[i, 1]
+                                    dimensions_xml_lines.append((4, f'<Value>{value1}/{value2}</Value>'))
+                            else:
+                                for i in range(len(coord_var)):
+                                    value = coord_var.values[i]
+                                    dimensions_xml_lines.append((4, f'<Value>{value}</Value>'))
+                            dimensions_xml_lines.append((3, '</Dimension>'))
+                            dimensions_xml_cache[dim_name] = dimensions_xml_lines
+
+                        contents_xml_lines.extend(dimensions_xml_lines)
                     contents_xml_lines.append((2, '</Layer>'))
+
         contents_xml_lines.append((1, '</Contents>'))
 
         contents_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in contents_xml_lines])

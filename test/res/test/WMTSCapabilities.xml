@@ -114,7 +114,19 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/quality_flags/{TileMatrix}/{TileCol}/{TileRow}.png"
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/quality_flags/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+                <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+                <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+                <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+                <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+            </Dimension>
         </Layer>
         <Layer>
             <ows:Identifier>demo.kd489</ows:Identifier>
@@ -127,7 +139,19 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/kd489/{TileMatrix}/{TileCol}/{TileRow}.png"
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/kd489/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+                <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+                <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+                <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+                <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+            </Dimension>
         </Layer>
         <Layer>
             <ows:Identifier>demo.conc_tsm</ows:Identifier>
@@ -140,7 +164,19 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/conc_tsm/{TileMatrix}/{TileCol}/{TileRow}.png"
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/conc_tsm/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+                <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+                <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+                <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+                <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+            </Dimension>
         </Layer>
         <Layer>
             <ows:Identifier>demo.conc_chl</ows:Identifier>
@@ -153,7 +189,19 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/conc_chl/{TileMatrix}/{TileCol}/{TileRow}.png"
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/conc_chl/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+                <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+                <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+                <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+                <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+            </Dimension>
         </Layer>
         <Layer>
             <ows:Identifier>demo.c2rcc_flags</ows:Identifier>
@@ -166,7 +214,19 @@
             <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
             <Format>image/png</Format>
             <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
-            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/c2rcc_flags/{TileMatrix}/{TileCol}/{TileRow}.png"
+            <ResourceURL format="image/png" resourceType="tile" template="http://localhost:8080/xcts-wmts/1.0.0/tile/demo/c2rcc_flags/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-16T10:09:05.396602624/2017-01-16T10:09:38.271909120</Value>
+                <Value>2017-01-25T09:35:32.619965696/2017-01-25T09:36:09.500161024</Value>
+                <Value>2017-01-26T10:50:13.978930176/2017-01-26T10:50:19.393455616</Value>
+                <Value>2017-01-28T09:57:52.162121984/2017-01-28T09:58:30.538650112</Value>
+                <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
+            </Dimension>
         </Layer>
     </Contents>
     <ServiceMetadataURL xlink:href="http://localhost:8080/xcts-wmts/1.0.0/WMTSCapabilities.xml"/>
