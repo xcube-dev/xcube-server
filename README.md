@@ -24,9 +24,13 @@ Install
 
 To run the server on default port 8080:
 
-    $ xcts -v -c demo.yml
+    $ xcts -v -c xcts/res/demo.yml
 
 
 ### Client
 
-Run a local web server to serve `./demo.html`. Current working directory must be `.`.
+Open [demo.html](http://localhost:8080/res/demo.html) in a browser. 
+
+## Related
+
+* https://openlayers.org/en/latest/examples/wmts-layer-from-capabilities.html

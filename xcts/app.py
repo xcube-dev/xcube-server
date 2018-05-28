@@ -36,8 +36,9 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 def new_application():
     application = Application([
-        ('/_static/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'resources')}),
+        ('/res/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
         (url_pattern('/'), InfoHandler),
+        # (url_pattern('/xcts-wmts/0.1.0/WMTSCapabilities.xml'), DatasetTileHandler),
         (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tile/{{z}}/{{x}}/{{y}}.png'), DatasetTileHandler),
         (url_pattern('/xcts/{{ds_name}}/{{var_name}}/tilegrid/{{format_name}}'), DatasetTileGridHandler),
         (url_pattern('/xcts/ne2/tile/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),

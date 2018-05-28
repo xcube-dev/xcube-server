@@ -1,6 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
     <style>
 
@@ -60,17 +63,15 @@
         })
     });
 
-/*
     getXCubeLayer('http://localhost:8080/xcts/ne2/tilegrid/ol4.json')
     .then(layer => {
         map.addLayer(layer);
         return getXCubeLayer('http://localhost:8080/xcts/demo/conc_chl/tilegrid/ol4.json')
     })
     .then(layer => map.addLayer(layer));
-*/
 
-    getXCubeLayer('http://localhost:8080/xcts/demo/conc_chl/tilegrid/ol4.json')
-    .then(layer => map.addLayer(layer));
+    //getXCubeLayer('http://localhost:8080/xcts/demo/conc_chl/tilegrid/ol4.json')
+    //.then(layer => map.addLayer(layer));
 
 </script>
 </body>

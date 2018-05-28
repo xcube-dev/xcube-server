@@ -21,9 +21,9 @@
 
 import os
 
-from ..geoextent import GeoExtent
-from ..image import AbstractTiledImage, ImagePyramid
-from ..tilegrid import TileGrid
+from xcts.im.geoextent import GeoExtent
+from xcts.im.image import AbstractTiledImage, ImagePyramid
+from xcts.im.tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -50,7 +50,7 @@ class NaturalEarth2Image(AbstractTiledImage):
         * tile size: 256 pixels
         * 2 x 1 tiles on level zero
         """
-        dir_path = os.path.join(os.path.dirname(__file__), 'tilemap')
+        dir_path = os.path.join(os.path.dirname(__file__), 'res', 'ne2')
         return ImagePyramid(TileGrid(NaturalEarth2Image.NUM_LEVELS,
                                      NaturalEarth2Image.NUM_LEVEL_0_TILES_X,
                                      NaturalEarth2Image.NUM_LEVEL_0_TILES_Y,

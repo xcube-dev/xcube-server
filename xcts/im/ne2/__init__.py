@@ -21,5 +21,3 @@
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
-from .im import NaturalEarth2Image
-

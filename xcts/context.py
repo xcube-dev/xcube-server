@@ -37,7 +37,7 @@ from .defaults import DEFAULT_MAX_THREAD_COUNT, DEFAULT_CMAP_CBAR, DEFAULT_CMAP_
     FILE_TILE_CACHE_ENABLED
 from .errors import ServiceConfigError, ServiceError, ServiceRequestError
 from .im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
-from .im.ne2 import NaturalEarth2Image
+from .ne2 import NaturalEarth2Image
 from .tile import compute_tile_grid
 
 _LOG = logging.getLogger('xcts')

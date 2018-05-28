@@ -54,7 +54,7 @@ setup(
     author='xcube Development Team',
     packages=packages,
     package_data={
-        'xcts.util.im.ne2.tilemap': ['*/*/*.jpg'],
+        'xcts.res': ['**/*'],
     },
     entry_points={
         'console_scripts': [
