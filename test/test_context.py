@@ -1,3 +1,4 @@
+import os
 import unittest
 
 import xarray as xr
@@ -8,6 +9,14 @@ from xcts.errors import ServiceRequestError
 
 
 class ServiceContextTest(unittest.TestCase):
+
+    def test_get_capabilities(self):
+        self.maxDiff = None
+        with open(os.path.join(os.path.dirname(__file__), 'res', 'demo', 'WMTSCapabilities.xml')) as fp:
+            expected_capabilities = fp.read()
+        ctx = new_demo_service_context()
+        capabilities = ctx.get_capabilities('text/xml')
+        self.assertEqual(expected_capabilities, capabilities)
 
     def test_get_dataset_tile(self):
         ctx = new_demo_service_context()
@@ -83,5 +92,3 @@ class ServiceContextTest(unittest.TestCase):
             ctx.get_ne2_tile_grid('cesium', 'http://bibo')
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual("Unknown tile schema format 'cesium'", cm.exception.reason)
-
-

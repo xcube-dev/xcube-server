@@ -27,9 +27,12 @@ To run the server on default port 8080:
     $ xcts -v -c xcts/res/demo.yml
 
 
-### Client
+### Clients
 
-Open [demo.html](http://localhost:8080/res/demo.html) in a browser. 
+After starting the server, try the following clients:
+
+* [OpenLayers 4 Demo](http://localhost:8080/res/demo/index-ol4.html) 
+* [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html)
 
 ## Related
 

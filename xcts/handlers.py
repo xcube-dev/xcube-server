@@ -30,13 +30,21 @@ from .service import ServiceRequestHandler
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
+class WMTSCapabilitiesXmlHandler(ServiceRequestHandler):
+    @gen.coroutine
+    def get(self):
+        capabilities = yield IOLoop.current().run_in_executor(None,
+                                                              self.service_context.get_capabilities,
+                                                              'xml')
+        self.set_header('Content-Type', 'text/xml')
+        self.write(capabilities)
+
+
 # noinspection PyAbstractClass,PyBroadException
 class DatasetTileHandler(ServiceRequestHandler):
 
     @gen.coroutine
     def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
-        # GLOBAL_LOCK.acquire()
-
         x, y, z = int(x), int(y), int(z)
         var_index = self.get_query_argument_int_tuple('index', ())
         cmap_name = self.get_query_argument('cmap', default=None)
@@ -52,8 +60,6 @@ class DatasetTileHandler(ServiceRequestHandler):
 
         self.set_header('Content-Type', 'image/png')
         self.write(tile)
-
-        # GLOBAL_LOCK.release()
 
 
 # noinspection PyAbstractClass
