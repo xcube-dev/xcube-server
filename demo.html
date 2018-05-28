@@ -22,7 +22,7 @@
 <div id="map" class="map"></div>
 <script type="text/javascript">
 
-    function getXYZ(url) {
+    function getXCubeLayerSource(url) {
         return fetch(url)
                 .then(response => response.json())
                 .then(options => {
@@ -36,28 +36,41 @@
                 });
     }
 
-    var ne2Source = null;
-    var demoSource = null;
+    function getXCubeLayer(url) {
+        return getXCubeLayerSource(url).then(source => new ol.layer.Tile({source: source}));
+    }
 
-    getXYZ('http://localhost:8080/xcts/ne2/tilegrid/ol4.json')
-    .then(source => {
-        ne2Source = source;
-        return getXYZ('http://localhost:8080/xcts/demo/conc_chl/tilegrid/ol4.json')
-    })
-    .then(source => {
-        demoSource = source;
-        var map = new ol.Map({
-            target: 'map',
-            layers: [
-                new ol.layer.Tile({source: ne2Source}),
-                new ol.layer.Tile({source: demoSource}),
-            ],
-            view: new ol.View({
-                center: ol.proj.fromLonLat([0, 0]),
-                zoom: 0
-            })
-        });
+    var map = new ol.Map({
+        target: 'map',
+        layers: [
+            /*
+            new ol.layer.Tile({
+                source: new ol.source.BingMaps({
+                    key: 'AnCcpOxnAAgq-KyFcczSZYZ_iFvCOmWl0Mx-6QzQ_rzMtpgxZrPZZNxa8_9ZNXci',
+                    imagerySet: "Aerial",
+                    reprojectionErrorThreshold: 2.5,
+                }),
+            }),
+            */
+            new ol.layer.Tile({source: new ol.source.OSM()}),
+        ],
+        view: new ol.View({
+            center: ol.proj.fromLonLat([0, 0]),
+            zoom: 0
+        })
     });
+
+/*
+    getXCubeLayer('http://localhost:8080/xcts/ne2/tilegrid/ol4.json')
+    .then(layer => {
+        map.addLayer(layer);
+        return getXCubeLayer('http://localhost:8080/xcts/demo/conc_chl/tilegrid/ol4.json')
+    })
+    .then(layer => map.addLayer(layer));
+*/
+
+    getXCubeLayer('http://localhost:8080/xcts/demo/conc_chl/tilegrid/ol4.json')
+    .then(layer => map.addLayer(layer));
 
 </script>
 </body>
