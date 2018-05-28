@@ -28,8 +28,12 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch('/xcts/tile/demo/conc_chl/0/0/0.png')
         self.assertEqual(200, response.code)
 
-    def test_fetch_dataset_tile_grid(self):
+    def test_fetch_dataset_tile_grid_ol4_json(self):
         response = self.fetch('/xcts/tilegrid/demo/conc_chl/ol4.json')
+        self.assertEqual(200, response.code)
+
+    def test_fetch_dataset_tile_grid_cesium_json(self):
+        response = self.fetch('/xcts/tilegrid/demo/conc_chl/cesium.json')
         self.assertEqual(200, response.code)
 
     def test_fetch_ne2_tile(self):

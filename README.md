@@ -53,16 +53,26 @@ Install
 
 To run the server on default port 8080:
 
-    $ xcts -v -c xcts/res/demo.yml
+    $ xcts -v -c xcts/res/demo/config.yml
 
 
 ### Clients
 
-After starting the server, try the following clients:
 
-* [OpenLayers 4 Demo](http://localhost:8080/res/demo/index-ol4.html) 
-* [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html)
+#### OpenLayers
+
+After starting the server, the [OpenLayers 4 Demo](http://localhost:8080/res/demo/index-ol4.html)
+should run without further actions.
 
 Here is how to use configure an OpenLayers tile layer from WMTS capabilities: 
 
 * https://openlayers.org/en/latest/examples/wmts-layer-from-capabilities.html
+
+#### Cesium
+
+To run the [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html) first
+[download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
+into the `xcube-tileserver` source directory so that there exists an 
+`./Cesium-<version>` sub-directory. You may adapt the Cesoim version number 
+in the [demo's HTML file](xcts/res/demo/index-cesium.html).  
+

@@ -1,3 +1,6 @@
+# Exclude Cesium sources copied here to run xcts/res/dem/index-cesium.html
+Cesium-*/
+
 # Exclude log files
 *.log
 

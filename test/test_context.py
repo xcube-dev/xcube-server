@@ -56,6 +56,8 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual(('jet', 0., 1.), cm)
 
     def test_get_dataset_tile_grid(self):
+        self.maxDiff = None
+
         ctx = new_test_service_context()
         tile_grid = ctx.get_dataset_tile_grid('demo', 'conc_chl', 'ol4.json', 'http://bibo')
         self.assertEqual({
@@ -67,6 +69,19 @@ class ServiceContextTest(unittest.TestCase):
                          'origin': [2.168404344971009e-19, 52.5],
                          'resolutions': [0.01, 0.005, 0.0025],
                          'tileSize': [250, 250]},
+        }, tile_grid)
+
+        tile_grid = ctx.get_dataset_tile_grid('demo', 'conc_chl', 'cesium.json', 'http://bibo')
+        self.assertEqual({
+            'url': 'http://bibo/xcts/tile/demo/conc_chl/{z}/{x}/{y}.png',
+            'rectangle': dict(west=2.168404344971009e-19, south=50.0, east=5.0, north=52.5),
+            'minimumLevel': 0,
+            'maximumLevel': 2,
+            'tileWidth': 250,
+            'tileHeight': 250,
+            'tilingScheme': {'rectangle': dict(west=2.168404344971009e-19, south=50.0, east=5.0, north=52.5),
+                             'numberOfLevelZeroTilesX': 2,
+                             'numberOfLevelZeroTilesY': 1},
         }, tile_grid)
 
         with self.assertRaises(ServiceRequestError) as cm:

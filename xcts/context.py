@@ -233,10 +233,13 @@ class ServiceContext:
                     contents_xml_lines.append((4, f'<ows:LowerCorner>{lon1} {lat1}</ows:LowerCorner>'))
                     contents_xml_lines.append((4, f'<ows:UpperCorner>{lon2} {lat2}</ows:UpperCorner>'))
                     contents_xml_lines.append((3, '</ows:WGS84BoundingBox>'))
-                    contents_xml_lines.append((3, '<Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>'))
+                    contents_xml_lines.append(
+                        (3, '<Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>'))
                     contents_xml_lines.append((3, '<Format>image/png</Format>'))
-                    contents_xml_lines.append((3, f'<TileMatrixSetLink><TileMatrixSet>{tile_grid_id}</TileMatrixSet></TileMatrixSetLink>'))
-                    contents_xml_lines.append((3, f'<ResourceURL format="image/png" resourceType="tile" template="{layer_tile_url}"'))
+                    contents_xml_lines.append(
+                        (3, f'<TileMatrixSetLink><TileMatrixSet>{tile_grid_id}</TileMatrixSet></TileMatrixSetLink>'))
+                    contents_xml_lines.append(
+                        (3, f'<ResourceURL format="image/png" resourceType="tile" template="{layer_tile_url}"'))
                     contents_xml_lines.append((2, '</Layer>'))
         contents_xml_lines.append((1, '</Contents>'))
 
@@ -377,6 +380,9 @@ class ServiceContext:
         if format_name == 'ol4.json':
             return _tile_grid_to_ol4_xyz_source_options(
                 base_url + f'/xcts/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
+        elif format_name == 'cesium.json':
+            return _tile_grid_to_cesium_source_options(
+                base_url + f'/xcts/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
         else:
             raise ServiceRequestError(status_code=404, reason=f'Unknown tile schema format {format_name!r}')
 
@@ -501,3 +507,28 @@ def _tile_grid_to_ol4_xyz_source_options(url: str, tile_grid: TileGrid):
                               origin=[ge.west, ge.south if ge.inv_y else ge.north],
                               tileSize=[tile_grid.tile_size[0], tile_grid.tile_size[1]],
                               resolutions=[res0 / (2 ** i) for i in range(tile_grid.num_levels)]))
+
+
+def _tile_grid_to_cesium_source_options(url: str, tile_grid: TileGrid):
+    """
+    Convert TileGrid into options to be used with Cesium.UrlTemplateImageryProvider(options) of Cesium 1.45+.
+
+    See
+
+    * https://cesiumjs.org/Cesium/Build/Documentation/UrlTemplateImageryProvider.html?classFilter=UrlTemplateImageryProvider
+
+    :param tile_grid: tile grid
+    :param url: source url
+    :return:
+    """
+    ge = tile_grid.geo_extent
+    rectangle = dict(west=ge.west, south=ge.south, east=ge.east, north=ge.north)
+    return dict(url=url,
+                rectangle=rectangle,
+                minimumLevel=0,
+                maximumLevel=tile_grid.num_levels - 1,
+                tileWidth=tile_grid.tile_size[0],
+                tileHeight=tile_grid.tile_size[1],
+                tilingScheme=dict(rectangle=rectangle,
+                                  numberOfLevelZeroTilesX=tile_grid.num_level_zero_tiles_x,
+                                  numberOfLevelZeroTilesY=tile_grid.num_level_zero_tiles_y))
