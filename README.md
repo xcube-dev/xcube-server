@@ -16,7 +16,7 @@ xcube datasets are any datasets that
 Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
 object storage (OBS).
 
-As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-wmts/blob/master/xcts/res/demo/config.yml).
+As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/demo/config.yml).
 
 ## OGC WMTS compatibility
 
@@ -73,6 +73,6 @@ Here is how to use configure an OpenLayers tile layer from WMTS capabilities:
 To run the [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-tileserver` source directory so that there exists an 
-`./Cesium-<version>` sub-directory. You may adapt the Cesoim version number 
-in the [demo's HTML file](xcts/res/demo/index-cesium.html).  
+`./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
+in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/demo/index-cesium.html).  
 
