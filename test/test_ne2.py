@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from xcts.im import ne2
+from xcts import ne2
 
 
 class NaturalEarth2Test(TestCase):

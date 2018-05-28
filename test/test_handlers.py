@@ -16,9 +16,9 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch('/')
         self.assertEqual(200, response.code)
 
-    def test_fetch_get_capabilities(self):
-        response = self.fetch('/xcts-wmts/0.1.0/WMTSCapabilities.xml')
-        self.assertEqual(200, response.code)
+    #def test_fetch_get_capabilities(self):
+    #    response = self.fetch('/xcts-wmts/0.1.0/WMTSCapabilities.xml')
+    #    self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile(self):
         response = self.fetch('/xcts/demo/conc_chl/tile/0/0/0.png')

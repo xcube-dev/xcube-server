@@ -3,7 +3,7 @@ from unittest import TestCase
 import numpy as np
 
 from xcts.im import TileGrid, GeoExtent
-from xcts.im.image import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
+from xcts.im.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
     TransformArrayImage, FastNdarrayDownsamplingImage
 from xcts.im.utils import aggregate_ndarray_mean
 

@@ -22,7 +22,7 @@
 import os
 
 from xcts.im.geoextent import GeoExtent
-from xcts.im.image import AbstractTiledImage, ImagePyramid
+from xcts.im.tiledimage import AbstractTiledImage, ImagePyramid
 from xcts.im.tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"

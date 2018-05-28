@@ -63,7 +63,8 @@ def new_service(args=None) -> Service:
                              f'Defaults to {DEFAULT_PORT}.')
     parser.add_argument('--update', '-u', dest='update_period', metavar='UPDATE_PERIOD', type=float,
                         default=DEFAULT_UPDATE_PERIOD,
-                        help='Service will update after given seconds of inactivity. '
+                        help='Service will update after given seconds of inactivity. Zero or a negative value will '
+                             'disable update checks. '
                              f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
     parser.add_argument('--config', '-c', dest='config_file', metavar='CONFIG_FILE',
                         default=DEFAULT_CONFIG_FILE,

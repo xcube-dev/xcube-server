@@ -22,7 +22,7 @@
 
 from .cmaps import get_cmaps
 from .geoextent import GeoExtent
-from .image import *
+from .tiledimage import *
 from .tilegrid import TileGrid
 from .utils import *
 
