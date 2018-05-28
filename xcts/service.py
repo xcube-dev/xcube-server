@@ -148,7 +148,7 @@ class Service:
         IOLoop.current().add_callback_from_signal(self._on_shut_down)
 
     def _maybe_install_update_check(self):
-        if self.update_period is None:
+        if self.update_period is None or self.update_period <= 0:
             return
         IOLoop.current().call_later(self.update_period, self._maybe_check_for_updates)
 
