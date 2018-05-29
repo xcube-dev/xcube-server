@@ -84,6 +84,15 @@ class NE2TileGridHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
+class ColorBarsJsonHandler(ServiceRequestHandler):
+
+    def get(self):
+        response = self.service_context.get_color_bars('json')
+        self.set_header('Content-Type', 'text/json')
+        self.write(response)
+
+
+# noinspection PyAbstractClass
 class InfoHandler(ServiceRequestHandler):
 
     def get(self):

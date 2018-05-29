@@ -78,8 +78,8 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 
 ## TODO
 
-* Add a service that allows retrieving the possible color bars.
-* Add a service that allows retrieving the actual coordinates given a varible and dimension KVP. 
+* Add a service that allows retrieving the possible color bars as html page
+* Add a service that allows retrieving the actual coordinates given a variable and dimension KVP. 
   This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual, effectively selected coordinates. 
 * Internally cache TileGrid instances, so we don't need to recompute them
 * Build on Travis & AppVeyor

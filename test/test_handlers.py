@@ -51,3 +51,7 @@ class HandlersTest(AsyncHTTPTestCase):
     def test_fetch_ne2_tile_grid(self):
         response = self.fetch('/xcts/tilegrid/ne2/ol4.json')
         self.assertEqual(200, response.code)
+
+    def test_fetch_color_bars(self):
+        response = self.fetch('/xcts/colorbars.json')
+        self.assertEqual(200, response.code)

@@ -28,7 +28,7 @@ from tornado.web import Application, StaticFileHandler
 
 from xcts import __version__, __description__
 from xcts.handlers import NE2TileHandler, DatasetTileHandler, InfoHandler, NE2TileGridHandler, \
-    DatasetTileGridHandler, WMTSCapabilitiesXmlHandler
+    DatasetTileGridHandler, WMTSCapabilitiesXmlHandler, ColorBarsJsonHandler
 from xcts.service import url_pattern, Service, DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, DEFAULT_CONFIG_FILE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -44,6 +44,7 @@ def new_application():
         (url_pattern('/xcts/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), DatasetTileGridHandler),
         (url_pattern('/xcts/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),
         (url_pattern('/xcts/tilegrid/ne2/{{format_name}}'), NE2TileGridHandler),
+        (url_pattern('/xcts/colorbars.json'), ColorBarsJsonHandler),
     ])
     return application
 

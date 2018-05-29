@@ -577,6 +577,13 @@ class ServiceContext:
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
+    def get_color_bars(self, format_name):
+        from .im.cmaps import get_cmaps
+        import json
+        if format_name == 'json':
+            return json.dumps(get_cmaps(), indent=2)
+        raise ServiceBadRequestError(f'Format {format_name!r} not supported for color bars')
+
     def get_dataset_descriptors(self):
         dataset_descriptors = self.config.get('Datasets')
         if not dataset_descriptors:

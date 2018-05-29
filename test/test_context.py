@@ -137,3 +137,15 @@ class ServiceContextTest(unittest.TestCase):
             ctx.get_ne2_tile_grid('cesium', 'http://bibo')
         self.assertEqual(400, cm.exception.status_code)
         self.assertEqual("Unknown tile schema format 'cesium'", cm.exception.reason)
+
+    def test_get_colorbars(self):
+        ctx = ServiceContext()
+        json_response = ctx.get_color_bars('json')
+        self.assertIsInstance(json_response, str)
+        self.assertTrue(len(json_response) > 20)
+        self.assertEqual('[\n  [\n    "Perceptua', json_response[0:20])
+
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            ctx.get_color_bars('html')
+        self.assertEqual(400, cm.exception.status_code)
+        self.assertEqual("Format 'html' not supported for color bars", cm.exception.reason)
