@@ -49,7 +49,7 @@ Install
 
     $ source activate xcts-dev
     $ python setup.py develop
-    $ pytest -v --cov=xcts test
+    $ pytest --cov=xcts
 
 To run the server on default port 8080:
 
