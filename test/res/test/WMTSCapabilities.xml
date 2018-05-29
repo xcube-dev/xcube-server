@@ -106,7 +106,7 @@
         <Layer>
             <ows:Identifier>demo.quality_flags</ows:Identifier>
             <ows:Title>Classification and quality flags</ows:Title>
-            <ows:Abstract>quality_flags</ows:Abstract>
+            <ows:Abstract></ows:Abstract>
             <ows:WGS84BoundingBox>
                 <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
                 <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
@@ -131,7 +131,7 @@
         <Layer>
             <ows:Identifier>demo.kd489</ows:Identifier>
             <ows:Title>Irradiance attenuation coefficient at 489 nm</ows:Title>
-            <ows:Abstract>kd489</ows:Abstract>
+            <ows:Abstract></ows:Abstract>
             <ows:WGS84BoundingBox>
                 <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
                 <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
@@ -156,7 +156,7 @@
         <Layer>
             <ows:Identifier>demo.conc_tsm</ows:Identifier>
             <ows:Title>Total suspended matter dry weight concentration</ows:Title>
-            <ows:Abstract>conc_tsm</ows:Abstract>
+            <ows:Abstract></ows:Abstract>
             <ows:WGS84BoundingBox>
                 <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
                 <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
@@ -181,7 +181,7 @@
         <Layer>
             <ows:Identifier>demo.conc_chl</ows:Identifier>
             <ows:Title>Chlorophylll concentration</ows:Title>
-            <ows:Abstract>conc_chl</ows:Abstract>
+            <ows:Abstract></ows:Abstract>
             <ows:WGS84BoundingBox>
                 <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
                 <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
@@ -206,7 +206,7 @@
         <Layer>
             <ows:Identifier>demo.c2rcc_flags</ows:Identifier>
             <ows:Title>C2RCC quality flags</ows:Title>
-            <ows:Abstract>c2rcc_flags</ows:Abstract>
+            <ows:Abstract></ows:Abstract>
             <ows:WGS84BoundingBox>
                 <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
                 <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
@@ -229,5 +229,37 @@
             </Dimension>
         </Layer>
     </Contents>
+    <Themes>
+        <Theme>
+            <ows:Title>demo xcube dataset</ows:Title>
+            <ows:Abstract></ows:Abstract>
+            <ows:Identifier>demo</ows:Identifier>
+            <Theme>
+                <ows:Title>Classification and quality flags</ows:Title>
+                <ows:Identifier>demo.quality_flags</ows:Identifier>
+                <LayerRef>demo.quality_flags</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>Irradiance attenuation coefficient at 489 nm</ows:Title>
+                <ows:Identifier>demo.kd489</ows:Identifier>
+                <LayerRef>demo.kd489</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>Total suspended matter dry weight concentration</ows:Title>
+                <ows:Identifier>demo.conc_tsm</ows:Identifier>
+                <LayerRef>demo.conc_tsm</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>Chlorophylll concentration</ows:Title>
+                <ows:Identifier>demo.conc_chl</ows:Identifier>
+                <LayerRef>demo.conc_chl</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>C2RCC quality flags</ows:Title>
+                <ows:Identifier>demo.c2rcc_flags</ows:Identifier>
+                <LayerRef>demo.c2rcc_flags</LayerRef>
+            </Theme>
+        </Theme>
+    </Themes>
     <ServiceMetadataURL xlink:href="http://bibo/xcts-wmts/1.0.0/WMTSCapabilities.xml"/>
 </Capabilities>

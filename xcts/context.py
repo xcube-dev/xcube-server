@@ -319,8 +319,8 @@ class ServiceContext:
 
                         contents_xml_lines.append((2, '</TileMatrixSet>'))
 
-                    var_title = var.attrs.get('long_name') or var_name
-                    var_abstract = var.attrs.get('abstract') or var.attrs.get('standard_name') or var_name
+                    var_title = var.attrs.get('title', var.attrs.get('long_name', var_name))
+                    var_abstract = var.attrs.get('abstract', '')
 
                     layer_tile_url = layer_base_url % (ds_name, var_name)
                     contents_xml_lines.append((2, '<Layer>'))
@@ -358,13 +358,13 @@ class ServiceContext:
                                         or coord_bnds_var.shape[1] != 2:
                                     # strange case
                                     coord_bnds_var = None
-                            title = coord_var.attrs.get('long_name', dim_name)
+                            var_title = coord_var.attrs.get('long_name', dim_name)
                             units = 'ISO8601' if dim_name == 'time' else coord_var.attrs.get('units', '')
                             default = 'current' if dim_name == 'time' else '0'
                             current = 'true' if dim_name == 'time' else 'false'
                             dimensions_xml_lines = [(3, '<Dimension>'),
                                                     (4, f'<ows:Identifier>{dim_name}</ows:Identifier>'),
-                                                    (4, f'<ows:Title>{title}</ows:Title>'),
+                                                    (4, f'<ows:Title>{var_title}</ows:Title>'),
                                                     (4, f'<ows:UOM>{units}</ows:UOM>'),
                                                     (4, f'<Default>{default}</Default>'),
                                                     (4, f'<Current>{current}</Current>')]
@@ -387,6 +387,28 @@ class ServiceContext:
 
         contents_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in contents_xml_lines])
 
+        themes_xml_lines = []
+        themes_xml_lines.append((0, '<Themes>'))
+        for ds_name in dataset_descriptors.keys():
+            ds = self.get_dataset(ds_name)
+            ds_title = ds.attrs.get('title', f'{ds_name} xcube dataset')
+            ds_abstract = ds.attrs.get('abstract', '')
+            themes_xml_lines.append((2, '<Theme>'))
+            themes_xml_lines.append((3, f'<ows:Title>{ds_title}</ows:Title>'))
+            themes_xml_lines.append((3, f'<ows:Abstract>{ds_abstract}</ows:Abstract>'))
+            themes_xml_lines.append((3, f'<ows:Identifier>{ds_name}</ows:Identifier>'))
+            for var_name in ds.data_vars:
+                var = ds[var_name]
+                var_title = var.attrs.get('title', var.attrs.get('long_name', var_name))
+                themes_xml_lines.append((3, '<Theme>'))
+                themes_xml_lines.append((4, f'<ows:Title>{var_title}</ows:Title>'))
+                themes_xml_lines.append((4, f'<ows:Identifier>{ds_name}.{var_name}</ows:Identifier>'))
+                themes_xml_lines.append((4, f'<LayerRef>{ds_name}.{var_name}</LayerRef>'))
+                themes_xml_lines.append((3, '</Theme>'))
+            themes_xml_lines.append((2, '</Theme>'))
+        themes_xml_lines.append((1, '</Themes>'))
+        themes_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in themes_xml_lines])
+
         # print(80 * '=')
         # print(contents_xml)
         # print(80 * '=')
@@ -405,6 +427,7 @@ class ServiceContext:
     {service_provider_xml}
     {operations_metadata_xml}
     {contents_xml}
+    {themes_xml}
     {service_metadata_url_xml}
 </Capabilities>
 """
