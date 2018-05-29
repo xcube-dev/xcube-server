@@ -6,7 +6,7 @@ import xarray as xr
 
 from test.helpers import get_res_test_dir, new_test_service_context
 from xcts.context import ServiceContext
-from xcts.errors import ServiceRequestError
+from xcts.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 from xcts.service import RequestParams
 
 
@@ -46,6 +46,13 @@ class ServiceContextTest(unittest.TestCase):
         tile = ctx.get_dataset_tile('demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='2017-01-26'))
         self.assertIsInstance(tile, bytes)
 
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            ctx.get_dataset_tile('demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='Gnaaark!'))
+        self.assertEqual(400, cm.exception.status_code)
+        self.assertEqual("'Gnaaark!' is not a valid value for "
+                         "dimension 'time' of variable 'conc_tsm' of dataset 'demo'",
+                         cm.exception.reason)
+
     def test_get_ne2_tile(self):
         ctx = new_test_service_context()
         tile = ctx.get_ne2_tile('0', '0', '0', RequestParamsMock())
@@ -57,12 +64,12 @@ class ServiceContextTest(unittest.TestCase):
         self.assertIsInstance(ds, xr.Dataset)
         self.assertIsInstance(var, xr.DataArray)
 
-        with self.assertRaises(ServiceRequestError) as cm:
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_dataset_and_variable('demox', 'conc_ys')
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual("Dataset 'demox' not found", cm.exception.reason)
 
-        with self.assertRaises(ServiceRequestError) as cm:
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_dataset_and_variable('demo', 'conc_ys')
         self.assertEqual(404, cm.exception.status_code)
         self.assertEqual("Variable 'conc_ys' not found in dataset 'demo'", cm.exception.reason)
@@ -107,9 +114,9 @@ class ServiceContextTest(unittest.TestCase):
                              'numberOfLevelZeroTilesY': 1},
         }, tile_grid)
 
-        with self.assertRaises(ServiceRequestError) as cm:
+        with self.assertRaises(ServiceBadRequestError) as cm:
             ctx.get_dataset_tile_grid('demo', 'conc_chl', 'ol2.json', 'http://bibo')
-        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual(400, cm.exception.status_code)
         self.assertEqual("Unknown tile schema format 'ol2.json'", cm.exception.reason)
 
     def test_get_ne2_tile_grid(self):
@@ -126,7 +133,7 @@ class ServiceContextTest(unittest.TestCase):
                          'tileSize': [256, 256]},
         }, tile_grid)
 
-        with self.assertRaises(ServiceRequestError) as cm:
+        with self.assertRaises(ServiceBadRequestError) as cm:
             ctx.get_ne2_tile_grid('cesium', 'http://bibo')
-        self.assertEqual(404, cm.exception.status_code)
+        self.assertEqual(400, cm.exception.status_code)
         self.assertEqual("Unknown tile schema format 'cesium'", cm.exception.reason)

@@ -238,7 +238,7 @@ class ServiceRequestParams(RequestParams):
         :param name: Query argument name
         :param default: Default value.
         :return: the value or none
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
         return self.handler.get_query_argument(name, default=default)
 

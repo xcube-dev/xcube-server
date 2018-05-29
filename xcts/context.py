@@ -23,10 +23,11 @@ import concurrent.futures
 import logging
 import os
 import time
-from abc import abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from abc import abstractmethod, ABCMeta
+from typing import Any, Dict, Optional, Tuple, List
 
 import numpy as np
+import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
@@ -36,7 +37,7 @@ from .cache import MemoryCacheStore, Cache, FileCacheStore
 from .defaults import DEFAULT_MAX_THREAD_COUNT, DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, TRACE_PERF, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
     FILE_TILE_CACHE_ENABLED
-from .errors import ServiceConfigError, ServiceError, ServiceRequestError
+from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from .ne2 import NaturalEarth2Image
 from .tile import compute_tile_grid
@@ -46,7 +47,7 @@ _LOG = logging.getLogger('xcts')
 Config = Dict[str, Any]
 
 
-class RequestParams:
+class RequestParams(metaclass=ABCMeta):
 
     @classmethod
     def to_int(cls, name: str, value: str) -> int:
@@ -55,14 +56,14 @@ class RequestParams:
         :param name: Name of the value
         :param value: The string value
         :return: The int value
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
         if value is None:
-            raise ServiceRequestError(reason=f'{name!r} must be an integer, but none was given')
+            raise ServiceBadRequestError(f'{name!r} must be an integer, but none was given')
         try:
             return int(value)
         except ValueError as e:
-            raise ServiceRequestError(reason=f'{name!r} must be an integer, but was {value!r}') from e
+            raise ServiceBadRequestError(f'{name!r} must be an integer, but was {value!r}') from e
 
     @classmethod
     def to_int_tuple(cls, name: str, value: str) -> Tuple[int, ...]:
@@ -71,14 +72,14 @@ class RequestParams:
         :param name: Name of the value
         :param value: The string value
         :return: The int value
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
         if value is None:
-            raise ServiceRequestError(reason=f'{name!r} must be a list of integers, but none was given')
+            raise ServiceBadRequestError(f'{name!r} must be a list of integers, but none was given')
         try:
             return tuple(map(int, value.split(','))) if value else ()
         except ValueError as e:
-            raise ServiceRequestError(reason=f'{name!r} must be a list of integers, but was {value!r}') from e
+            raise ServiceBadRequestError(f'{name!r} must be a list of integers, but was {value!r}') from e
 
     @classmethod
     def to_float(cls, name: str, value: str) -> float:
@@ -87,14 +88,14 @@ class RequestParams:
         :param name: Name of the value
         :param value: The string value
         :return: The float value
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
         if value is None:
-            raise ServiceRequestError(reason=f'{name!r} must be a number, but none was given')
+            raise ServiceBadRequestError(f'{name!r} must be a number, but none was given')
         try:
             return float(value)
         except ValueError as e:
-            raise ServiceRequestError(reason=f'{name!r} must be a number, but was {value!r}') from e
+            raise ServiceBadRequestError(f'{name!r} must be a number, but was {value!r}') from e
 
     @abstractmethod
     def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
@@ -103,7 +104,7 @@ class RequestParams:
         :param name: Query argument name
         :param default: Default value.
         :return: the value or none
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
 
     def get_query_argument_int(self, name: str, default: Optional[int]) -> Optional[int]:
@@ -112,7 +113,7 @@ class RequestParams:
         :param name: Query argument name
         :param default: Default value.
         :return: int value
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
         value = self.get_query_argument(name, default=None)
         return self.to_int(name, value) if value is not None else default
@@ -123,7 +124,7 @@ class RequestParams:
         :param name: Query argument name
         :param default: Default value.
         :return: int list value
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
         value = self.get_query_argument(name, default=None)
         return self.to_int_tuple(name, value) if value is not None else default
@@ -134,7 +135,7 @@ class RequestParams:
         :param name: Query argument name
         :param default: Default value.
         :return: float value
-        :raise: ServiceRequestError
+        :raise: ServiceBadRequestError
         """
         value = self.get_query_argument(name, default=None)
         return self.to_float(name, value) if value is not None else default
@@ -418,33 +419,16 @@ class ServiceContext:
         y = params.to_int('y', y)
         z = params.to_int('z', z)
 
-        dataset, variable = self.get_dataset_and_variable(ds_name, var_name)
+        dataset, var = self.get_dataset_and_variable(ds_name, var_name)
 
-        dim_names = list(variable.dims)
+        dim_names = list(var.dims)
         if 'lon' not in dim_names or 'lat' not in dim_names:
-            raise ServiceRequestError(reason=f'variable {var_name!r} of dataset {ds_name!r} is not geo-spatial')
+            raise ServiceBadRequestError(f'variable {var_name!r} of dataset {ds_name!r} is not geo-spatial')
 
         dim_names.remove('lon')
         dim_names.remove('lat')
 
-        var_indexers = dict()
-        for dim_name in dim_names:
-            if dim_name not in variable.coords:
-                raise ServiceRequestError(
-                    reason=f'dimension {dim_name!r} of variable {var_name!r} of dataset {ds_name!r} has no coordinates')
-            coord_var = variable.coords[dim_name]
-            dim_value = params.get_query_argument(dim_name, None)
-            if dim_value is None:
-                var_indexers[dim_name] = coord_var.values[0]
-            elif dim_value == 'current':
-                var_indexers[dim_name] = coord_var.values[-1]
-            else:
-                try:
-                    var_indexers[dim_name] = coord_var.dtype(dim_value)
-                except ValueError as e:
-                    raise ServiceRequestError(
-                        reason=f'{dim_value!r} is not a valid value for dimension {dim_name!r} '
-                               f'of variable {var_name!r} of dataset {ds_name!r}') from e
+        var_indexers = _get_var_indexers(ds_name, var_name, var, dim_names, params)
 
         cmap_cbar = params.get_query_argument('cbar', default=None)
         cmap_vmin = params.get_query_argument_float('vmin', default=None)
@@ -457,39 +441,32 @@ class ServiceContext:
 
         # TODO: use MD5 hashes as IDs instead
 
-        var_index_id = ''
-        for dim_name in dim_names:
-            dim_value = var_indexers.get(dim_name)
-            if dim_value is not None:
-                var_index_id += f'-{dim_name}={dim_value}'
-
-        array_id = '%s-%s%s' % (ds_name, var_name, var_index_id)
+        var_index_id = '-'.join(f'-{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items())
+        array_id = '%s-%s-%s' % (ds_name, var_name, var_index_id)
         image_id = '%s-%s-%s-%s' % (array_id, cmap_cbar, cmap_vmin, cmap_vmax)
 
-        pyramid_id = 'pyramid-%s' % image_id
-
-        if pyramid_id in self.pyramid_cache:
-            pyramid = self.pyramid_cache[pyramid_id]
+        if image_id in self.pyramid_cache:
+            pyramid = self.pyramid_cache[image_id]
         else:
-            no_data_value = variable.attrs.get('_FillValue')
-            valid_range = variable.attrs.get('valid_range')
+            no_data_value = var.attrs.get('_FillValue')
+            valid_range = var.attrs.get('valid_range')
             if valid_range is None:
-                valid_min = variable.attrs.get('valid_min')
-                valid_max = variable.attrs.get('valid_max')
+                valid_min = var.attrs.get('valid_min')
+                valid_max = var.attrs.get('valid_max')
                 if valid_min is not None and valid_max is not None:
                     valid_range = [valid_min, valid_max]
 
             # Make sure we work with 2D image arrays only
-            if variable.ndim == 2:
+            if var.ndim == 2:
                 assert len(var_indexers) == 0
-                array = variable
-            elif variable.ndim > 2:
-                assert len(var_indexers) == variable.ndim - 2
-                array = variable.sel(method='nearest', **var_indexers)
+                array = var
+            elif var.ndim > 2:
+                assert len(var_indexers) == var.ndim - 2
+                array = var.sel(method='nearest', **var_indexers)
             else:
-                raise ServiceRequestError(reason=f'Variable {var_name!r} of dataset {var_name!r} '
-                                                 'must be an N-D Dataset with N >= 2, '
-                                                 f'but {var_name!r} is only {variable.ndim}-D')
+                raise ServiceBadRequestError(f'Variable {var_name!r} of dataset {var_name!r} '
+                                             'must be an N-D Dataset with N >= 2, '
+                                             f'but {var_name!r} is only {var.ndim}-D')
 
             cmap_vmin = np.nanmin(array.values) if np.isnan(cmap_vmin) else cmap_vmin
             cmap_vmax = np.nanmax(array.values) if np.isnan(cmap_vmax) else cmap_vmax
@@ -497,7 +474,7 @@ class ServiceContext:
             def array_image_id_factory(level):
                 return 'arr-%s/%s' % (array_id, level)
 
-            tile_grid = self.get_tile_grid(ds_name, var_name, variable)
+            tile_grid = self.get_tile_grid(ds_name, var_name, var)
 
             pyramid = ImagePyramid.create_from_array(array, tile_grid,
                                                      level_image_id_factory=array_image_id_factory)
@@ -540,7 +517,7 @@ class ServiceContext:
         dataset = self.get_dataset(ds_name)
         if var_name in dataset:
             return dataset, dataset[var_name]
-        raise ServiceRequestError(status_code=404, reason=f'Variable {var_name!r} not found in dataset {ds_name!r}')
+        raise ServiceResourceNotFoundError(f'Variable {var_name!r} not found in dataset {ds_name!r}')
 
     def get_dataset_tile_grid(self, ds_name: str, var_name: str, format_name: str, base_url: str) -> Dict[str, Any]:
         dataset, variable = self.get_dataset_and_variable(ds_name, var_name)
@@ -552,13 +529,13 @@ class ServiceContext:
             return _tile_grid_to_cesium_source_options(
                 base_url + f'/xcts/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
         else:
-            raise ServiceRequestError(status_code=404, reason=f'Unknown tile schema format {format_name!r}')
+            raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
     # noinspection PyMethodMayBeStatic
     def get_tile_grid(self, ds_name: str, var_name: str, var: xr.DataArray):
         tile_grid = compute_tile_grid(var)
         if tile_grid is None:
-            raise ServiceError(reason=f'Failed computing tile grid for variable {var_name!r} of dataset {ds_name!r}')
+            raise ServiceError(f'Failed computing tile grid for variable {var_name!r} of dataset {ds_name!r}')
         return tile_grid
 
     def get_ne2_tile(self, x: str, y: str, z: str, params: RequestParams):
@@ -573,20 +550,20 @@ class ServiceContext:
             return _tile_grid_to_ol4_xyz_source_options(base_url + '/xcts/tile/ne2/{z}/{x}/{y}.jpg',
                                                         NaturalEarth2Image.get_pyramid().tile_grid)
         else:
-            raise ServiceRequestError(status_code=404, reason=f'Unknown tile schema format {format_name!r}')
+            raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
     def get_dataset_descriptors(self):
         dataset_descriptors = self.config.get('datasets')
         if not dataset_descriptors:
-            raise ServiceConfigError(reason=f"No datasets configured")
+            raise ServiceConfigError(f"No datasets configured")
         return dataset_descriptors
 
     def get_dataset_descriptor(self, ds_name: str):
         dataset_descriptors = self.get_dataset_descriptors()
         if not dataset_descriptors:
-            raise ServiceConfigError(reason=f"No datasets configured")
+            raise ServiceConfigError(f"No datasets configured")
         if ds_name not in dataset_descriptors:
-            raise ServiceRequestError(status_code=404, reason=f"Dataset {ds_name!r} not found")
+            raise ServiceResourceNotFoundError(f"Dataset {ds_name!r} not found")
         return dataset_descriptors[ds_name]
 
     def get_color_mapping(self, ds_name: str, var_name: str):
@@ -612,7 +589,7 @@ class ServiceContext:
 
             path = dataset_descriptor.get('path')
             if not path:
-                raise ServiceConfigError(reason=f"missing 'path' entry in dataset descriptor {ds_name}")
+                raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_name}")
 
             t1 = time.clock()
 
@@ -620,7 +597,7 @@ class ServiceContext:
             if fs_type == 'obs':
                 data_format = dataset_descriptor.get('format', 'zarr')
                 if data_format != 'zarr':
-                    raise ServiceConfigError(reason=f"invalid format={data_format!r} in dataset descriptor {ds_name!r}")
+                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
                 client_kwargs = {}
                 if 'endpoint' in dataset_descriptor:
                     client_kwargs['endpoint_url'] = dataset_descriptor['endpoint']
@@ -639,9 +616,9 @@ class ServiceContext:
                 elif data_format == 'zarr':
                     ds = xr.open_zarr(path)
                 else:
-                    raise ServiceConfigError(reason=f"invalid format={data_format!r} in dataset descriptor {ds_name!r}")
+                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
             else:
-                raise ServiceConfigError(reason=f"invalid fs={fs_type!r} in dataset descriptor {ds_name!r}")
+                raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_name!r}")
 
             self.dataset_cache[ds_name] = ds, dataset_descriptor
 
@@ -651,6 +628,38 @@ class ServiceContext:
                 print(f'PERF: opening {ds_name!r} took {t2-t1} seconds')
 
         return ds
+
+
+def _get_var_indexers(ds_name: str,
+                      var_name: str,
+                      var: xr.DataArray,
+                      dim_names: List[str],
+                      params: RequestParams) -> Dict[str, Any]:
+    var_indexers = dict()
+    for dim_name in dim_names:
+        if dim_name not in var.coords:
+            raise ServiceBadRequestError(
+                f'dimension {dim_name!r} of variable {var_name!r} of dataset {ds_name!r} has no coordinates')
+        coord_var = var.coords[dim_name]
+        dim_value_str = params.get_query_argument(dim_name, None)
+        try:
+            if dim_value_str is None:
+                var_indexers[dim_name] = coord_var.values[0]
+            elif dim_value_str == 'current':
+                var_indexers[dim_name] = coord_var.values[-1]
+            elif np.issubdtype(coord_var.dtype, np.floating):
+                var_indexers[dim_name] = float(dim_value_str)
+            elif np.issubdtype(coord_var.dtype, np.integer):
+                var_indexers[dim_name] = int(dim_value_str)
+            elif np.issubdtype(coord_var.dtype, np.datetime64):
+                var_indexers[dim_name] = pd.to_datetime(dim_value_str)
+            else:
+                raise ValueError(f'unable to dimension value {dim_value_str!r} to {coord_var.dtype!r}')
+        except ValueError as e:
+            raise ServiceBadRequestError(
+                f'{dim_value_str!r} is not a valid value for dimension {dim_name!r} '
+                f'of variable {var_name!r} of dataset {ds_name!r}') from e
+    return var_indexers
 
 
 def _tile_grid_to_ol4_xyz_source_options(url: str, tile_grid: TileGrid):

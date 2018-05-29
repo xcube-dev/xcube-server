@@ -27,14 +27,32 @@ class ServiceError(HTTPError):
     Exception raised by tile service request handlers.
     """
 
+    def __init__(self, reason: str, status_code: int = 500, log_message: str = None):
+        super().__init__(status_code=status_code, log_message=log_message, reason=reason)
+
 
 class ServiceConfigError(ServiceError):
     """
     Exception raised by tile service request handlers.
     """
 
+    def __init__(self, reason: str, log_message: str = None):
+        super().__init__(reason, log_message=log_message)
 
-class ServiceRequestError(ServiceError):
+
+class ServiceBadRequestError(ServiceError):
     """
     Exception raised by tile service request handlers.
     """
+
+    def __init__(self, reason: str, log_message: str = None):
+        super().__init__(reason, status_code=400, log_message=log_message)
+
+
+class ServiceResourceNotFoundError(ServiceError):
+    """
+    Exception raised by tile service request handlers.
+    """
+
+    def __init__(self, reason: str, log_message: str = None):
+        super().__init__(reason, status_code=404, log_message=log_message)
