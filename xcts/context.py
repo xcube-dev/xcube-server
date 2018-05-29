@@ -321,7 +321,7 @@ class ServiceContext:
                         contents_xml_lines.append((2, '</TileMatrixSet>'))
 
                     var_title = var.attrs.get('title', var.attrs.get('long_name', var_name))
-                    var_abstract = var.attrs.get('abstract', '')
+                    var_abstract = var.attrs.get('comment', '')
 
                     layer_tile_url = layer_base_url % (ds_name, var_name)
                     contents_xml_lines.append((2, '<Layer>'))
@@ -394,7 +394,7 @@ class ServiceContext:
             ds_name = dataset_descriptor.get('Identifier')
             ds = self.get_dataset(ds_name)
             ds_title = dataset_descriptor.get('Title', ds.attrs.get('title', f'{ds_name} xcube dataset'))
-            ds_abstract = ds.attrs.get('abstract', '')
+            ds_abstract = ds.attrs.get('comment', '')
             themes_xml_lines.append((2, '<Theme>'))
             themes_xml_lines.append((3, f'<ows:Title>{ds_title}</ows:Title>'))
             themes_xml_lines.append((3, f'<ows:Abstract>{ds_abstract}</ows:Abstract>'))
