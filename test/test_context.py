@@ -27,7 +27,7 @@ class ServiceContextTest(unittest.TestCase):
         with open(os.path.join(get_res_test_dir(), 'WMTSCapabilities.xml')) as fp:
             expected_capabilities = fp.read()
         ctx = new_test_service_context()
-        capabilities = ctx.get_capabilities('text/xml')
+        capabilities = ctx.get_wmts_capabilities('text/xml', 'http://bibo')
         self.assertEqual(expected_capabilities, capabilities)
 
     def test_get_dataset_tile(self):

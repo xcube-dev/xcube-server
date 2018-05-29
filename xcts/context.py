@@ -181,7 +181,7 @@ class ServiceContext:
                         del self.dataset_cache[ds_name]
         self._config = config
 
-    def get_capabilities(self, format_name: str):
+    def get_wmts_capabilities(self, format_name: str, base_url: str):
 
         service_identification_xml = f"""<ows:ServiceIdentification>
         <ows:Title>xcube WMTS</ows:Title>
@@ -229,7 +229,7 @@ class ServiceContext:
     </ows:ServiceProvider>
 """
 
-        wmts_kvp_url = 'http://localhost:8080/xcts-wmts/1.0.0/kvp?'
+        wmts_kvp_url = base_url + '/xcts-wmts/1.0.0/kvp?'
 
         operations_metadata_xml = f"""<ows:OperationsMetadata>
         <ows:Operation name="GetCapabilities">
@@ -265,7 +265,7 @@ class ServiceContext:
         tile_grids = dict()
         indent = '    '
 
-        layer_base_url = 'http://localhost:8080/xcts-wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
+        layer_base_url = base_url + '/xcts-wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
 
         dimensions_xml_cache = dict()
 
@@ -386,11 +386,11 @@ class ServiceContext:
 
         contents_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in contents_xml_lines])
 
-        print()
-        print(contents_xml)
-        print()
+        # print(80 * '=')
+        # print(contents_xml)
+        # print(80 * '=')
 
-        get_capablities_rest_url = 'http://localhost:8080/xcts-wmts/1.0.0/WMTSCapabilities.xml'
+        get_capablities_rest_url = base_url + '/xcts-wmts/1.0.0/WMTSCapabilities.xml'
         service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
 
         return f"""<?xml version="1.0" encoding="UTF-8"?>

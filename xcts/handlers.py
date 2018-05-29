@@ -34,8 +34,9 @@ class WMTSCapabilitiesXmlHandler(ServiceRequestHandler):
     @gen.coroutine
     def get(self):
         capabilities = yield IOLoop.current().run_in_executor(None,
-                                                              self.service_context.get_capabilities,
-                                                              'xml')
+                                                              self.service_context.get_wmts_capabilities,
+                                                              'text/xml',
+                                                              self.base_url)
         self.set_header('Content-Type', 'text/xml')
         self.write(capabilities)
 
