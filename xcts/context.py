@@ -272,7 +272,8 @@ class ServiceContext:
 
         contents_xml_lines = []
         contents_xml_lines.append((0, '<Contents>'))
-        for ds_name in dataset_descriptors.keys():
+        for dataset_descriptor in dataset_descriptors:
+            ds_name = dataset_descriptor['Identifier']
             ds = self.get_dataset(ds_name)
             for var_name in ds.data_vars:
                 var = ds[var_name]
@@ -389,9 +390,10 @@ class ServiceContext:
 
         themes_xml_lines = []
         themes_xml_lines.append((0, '<Themes>'))
-        for ds_name in dataset_descriptors.keys():
+        for dataset_descriptor in dataset_descriptors:
+            ds_name = dataset_descriptor.get('Identifier')
             ds = self.get_dataset(ds_name)
-            ds_title = ds.attrs.get('title', f'{ds_name} xcube dataset')
+            ds_title = dataset_descriptor.get('Title', ds.attrs.get('title', f'{ds_name} xcube dataset'))
             ds_abstract = ds.attrs.get('abstract', '')
             themes_xml_lines.append((2, '<Theme>'))
             themes_xml_lines.append((3, f'<ows:Title>{ds_title}</ows:Title>'))
@@ -576,31 +578,40 @@ class ServiceContext:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
     def get_dataset_descriptors(self):
-        dataset_descriptors = self.config.get('datasets')
+        dataset_descriptors = self.config.get('Datasets')
         if not dataset_descriptors:
             raise ServiceConfigError(f"No datasets configured")
         return dataset_descriptors
 
-    def get_dataset_descriptor(self, ds_name: str):
+    def get_dataset_descriptor(self, ds_name: str) -> Dict[str, str]:
         dataset_descriptors = self.get_dataset_descriptors()
         if not dataset_descriptors:
             raise ServiceConfigError(f"No datasets configured")
-        if ds_name not in dataset_descriptors:
-            raise ServiceResourceNotFoundError(f"Dataset {ds_name!r} not found")
-        return dataset_descriptors[ds_name]
+        # TODO: optimize by dict/key lookup
+        for dataset_descriptor in dataset_descriptors:
+            if dataset_descriptor['Identifier'] == ds_name:
+                return dataset_descriptor
+        raise ServiceResourceNotFoundError(f"Dataset {ds_name!r} not found")
 
     def get_color_mapping(self, ds_name: str, var_name: str):
         dataset_descriptor = self.get_dataset_descriptor(ds_name)
-        color_profile_name = dataset_descriptor.get('color_profile', 'default')
-        color_profiles = self.config.get('color_profiles')
-        if color_profiles:
-            color_profile = color_profiles.get(color_profile_name)
-            if color_profile:
-                color_mapping = color_profile.get(var_name)
-                if color_mapping:
-                    cmap_cbar = color_mapping.get('cbar', DEFAULT_CMAP_CBAR)
-                    cmap_vmin, cmap_vmax = color_mapping.get('vrange', (DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX))
-                    return cmap_cbar, cmap_vmin, cmap_vmax
+        style_name = dataset_descriptor.get('Style', 'default')
+        styles = self.config.get('Styles')
+        if styles:
+            style = None
+            for s in styles:
+                if style_name == s['Identifier']:
+                    style = s
+            # TODO: check color_mappings is not None
+            if style:
+                color_mappings = style.get('ColorMappings')
+                if color_mappings:
+                    # TODO: check color_mappings is not None
+                    color_mapping = color_mappings.get(var_name)
+                    if color_mapping:
+                        cmap_cbar = color_mapping.get('ColorBar', DEFAULT_CMAP_CBAR)
+                        cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX))
+                        return cmap_cbar, cmap_vmin, cmap_vmax
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_name!r} undefined: using defaults')
         return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
 
@@ -610,22 +621,22 @@ class ServiceContext:
         else:
             dataset_descriptor = self.get_dataset_descriptor(ds_name)
 
-            path = dataset_descriptor.get('path')
+            path = dataset_descriptor.get('Path')
             if not path:
                 raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_name}")
 
             t1 = time.clock()
 
-            fs_type = dataset_descriptor.get('fs', 'local')
+            fs_type = dataset_descriptor.get('FileSystem', 'local')
             if fs_type == 'obs':
-                data_format = dataset_descriptor.get('format', 'zarr')
+                data_format = dataset_descriptor.get('Format', 'zarr')
                 if data_format != 'zarr':
                     raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
                 client_kwargs = {}
-                if 'endpoint' in dataset_descriptor:
-                    client_kwargs['endpoint_url'] = dataset_descriptor['endpoint']
-                if 'region' in dataset_descriptor:
-                    client_kwargs['region_name'] = dataset_descriptor['region']
+                if 'Endpoint' in dataset_descriptor:
+                    client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
+                if 'Region' in dataset_descriptor:
+                    client_kwargs['region_name'] = dataset_descriptor['Region']
                 s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
                 store = s3fs.S3Map(root=path, s3=s3, check=False)
                 cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
@@ -633,7 +644,7 @@ class ServiceContext:
             elif fs_type == 'local':
                 if not os.path.isabs(path):
                     path = os.path.join(self.base_dir, path)
-                data_format = dataset_descriptor.get('format', 'nc')
+                data_format = dataset_descriptor.get('Format', 'nc')
                 if data_format == 'nc':
                     ds = xr.open_dataset(path)
                 elif data_format == 'zarr':

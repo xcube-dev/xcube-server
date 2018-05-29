@@ -1,3 +1,32 @@
+Datasets:
+  - Identifier: demo
+    Title: "Local NetCDF Demonstration Dataset for xcts"
+    Path: "cube.nc"
+    Style: default
+
+  - Identifier: highroc-cube
+    Title: "Remote NetCDF Demonstration Dataset for xcts"
+    Endpoint: "http://obs.eu-de.otc.t-systems.com"
+    Path: "dcs4cop-obs-01/highroc-cube.zarr"
+    FileSystem: "OBS"
+    Region: "eu-de"
+    Style: default
+
+
+Styles:
+  - Identifier: default
+    ColorMappings:
+      conc_chl:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      conc_tsm:
+        ColorBar: "PuBuGn"
+        ValueRange: [0., 100.]
+      kd489:
+        ColorBar: "jet"
+        ValueRange: [0., 6.]
+
+
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
   ProviderSite: "https://www.brockmann-consult.de"
@@ -16,24 +45,3 @@ ServiceProvider:
         Country: "Germany"
         ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
 
-datasets:
-  demo:
-    path: cube.nc
-
-  highroc-cube:
-    path: dcs4cop-obs-01/highroc-cube.zarr
-    endpoint: http://obs.eu-de.otc.t-systems.com
-    fs: obs
-    region: eu-de
-
-color_profiles:
-  default:
-    conc_chl:
-      cbar: plasma
-      vrange: [0., 24.]
-    conc_tsm:
-      cbar: PuBuGn
-      vrange: [0., 100.]
-    kd489:
-      cbar: jet
-      vrange: [0., 6.]

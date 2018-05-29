@@ -1,3 +1,22 @@
+Datasets:
+  - Identifier: demo
+    Title: "xcube-tileserver Demonstration Dataset"
+    Path: "../../../xcts/res/demo/cube.nc"
+    Style: default
+
+Styles:
+  - Identifier: default
+    ColorMappings:
+      conc_chl:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      conc_tsm:
+        ColorBar: "PuBuGn"
+        ValueRange: [0., 100.]
+      kd489:
+        ColorBar: "jet"
+        ValueRange: [0., 6.]
+
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
   ProviderSite: "https://www.brockmann-consult.de"
@@ -16,18 +35,3 @@ ServiceProvider:
         Country: "Germany"
         ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
 
-datasets:
-  demo:
-    path: "../../../xcts/res/demo/cube.nc"
-
-color_profiles:
-  default:
-    conc_chl:
-      cbar: "plasma"
-      vrange: [0., 24.]
-    conc_tsm:
-      cbar: "PuBuGn"
-      vrange: [0., 100.]
-    kd489:
-      cbar: "jet"
-      vrange: [0., 6.]
