@@ -79,7 +79,9 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 ## TODO
 
 * Use error classes with fixed HTTP status code, e.g. 400, 404, 500
-* Harmonize naming in config (e.g. all CamelCase), make "Identifier" a orierty of dataset and variable entries
+* Harmonize naming in config (e.g. all CamelCase), make "Identifier" an attribute of dataset and variable entries
+* Add a service that allows retrieving the actual coordinates given a varible and dimension KVP. 
+  This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual, effectively selected coordinates. 
 * Add "ServiceIdentification" to config  
 * Add WMTS "Theme" to /xcts-wmts/1.0.0/WMTSCapabilities.xml response  
 * Internally cache TileGrid instances, so we don't need to recompute them
