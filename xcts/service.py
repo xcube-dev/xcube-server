@@ -28,7 +28,7 @@ import sys
 import time
 import traceback
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Optional
 
 import tornado.options
 import yaml
@@ -36,9 +36,8 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
-from .context import ServiceContext, Config
+from .context import ServiceContext, Config, RequestParams
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX
-from .errors import ServiceRequestError
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -180,6 +179,7 @@ class ServiceRequestHandler(RequestHandler):
 
     def __init__(self, application, request, **kwargs):
         super(ServiceRequestHandler, self).__init__(application, request, **kwargs)
+        self._params = ServiceRequestParams(self)
 
     @property
     def service_context(self) -> ServiceContext:
@@ -189,91 +189,14 @@ class ServiceRequestHandler(RequestHandler):
     def base_url(self):
         return self.request.protocol + '://' + self.request.host
 
-    @classmethod
-    def to_int(cls, name: str, value: str) -> int:
-        """
-        Convert str value to int.
-        :param name: Name of the value
-        :param value: The string value
-        :return: The int value
-        :raise: ServiceRequestError
-        """
-        if value is None:
-            raise ServiceRequestError(reason='%s must be an integer, but was None' % name)
-        try:
-            return int(value)
-        except ValueError as e:
-            raise ServiceRequestError(reason='%s must be an integer, but was "%s"' % (name, value)) from e
-
-    @classmethod
-    def to_int_tuple(cls, name: str, value: str) -> Tuple[int, ...]:
-        """
-        Convert str value to int.
-        :param name: Name of the value
-        :param value: The string value
-        :return: The int value
-        :raise: ServiceRequestError
-        """
-        if value is None:
-            raise ServiceRequestError(reason='%s must be a list of integers, but was None' % name)
-        try:
-            return tuple(map(int, value.split(','))) if value else ()
-        except ValueError as e:
-            raise ServiceRequestError(reason='%s must be a list of integers, but was "%s"' % (name, value)) from e
-
-    @classmethod
-    def to_float(cls, name: str, value: str) -> float:
-        """
-        Convert str value to float.
-        :param name: Name of the value
-        :param value: The string value
-        :return: The float value
-        :raise: ServiceRequestError
-        """
-        if value is None:
-            raise ServiceRequestError(reason='%s must be a number, but was None' % name)
-        try:
-            return float(value)
-        except ValueError as e:
-            raise ServiceRequestError(reason='%s must be a number, but was "%s"' % (name, value)) from e
+    @property
+    def params(self) -> 'ServiceRequestParams':
+        return self._params
 
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
         self.set_header('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS')
-
-    def get_query_argument_int(self, name: str, default: Optional[int]) -> Optional[int]:
-        """
-        Get query argument of type int.
-        :param name: Query argument name
-        :param default: Default value.
-        :return: int value
-        :raise: ServiceRequestError
-        """
-        value = self.get_query_argument(name, default=None)
-        return self.to_int(name, value) if value is not None else default
-
-    def get_query_argument_int_tuple(self, name: str, default: Optional[Tuple[int, ...]]) -> Optional[Tuple[int, ...]]:
-        """
-        Get query argument of type int list.
-        :param name: Query argument name
-        :param default: Default value.
-        :return: int list value
-        :raise: ServiceRequestError
-        """
-        value = self.get_query_argument(name, default=None)
-        return self.to_int_tuple(name, value) if value is not None else default
-
-    def get_query_argument_float(self, name: str, default: Optional[float]) -> Optional[float]:
-        """
-        Get query argument of type float.
-        :param name: Query argument name
-        :param default: Default value.
-        :return: float value
-        :raise: ServiceRequestError
-        """
-        value = self.get_query_argument(name, default=None)
-        return self.to_float(name, value) if value is not None else default
 
     def on_finish(self):
         """
@@ -303,6 +226,21 @@ class ServiceRequestHandler(RequestHandler):
                     'message': self._reason,
                 }
             }, indent=2))
+
+
+class ServiceRequestParams(RequestParams):
+    def __init__(self, handler: RequestHandler):
+        self.handler = handler
+
+    def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
+        """
+        Get query argument.
+        :param name: Query argument name
+        :param default: Default value.
+        :return: the value or none
+        :raise: ServiceRequestError
+        """
+        return self.handler.get_query_argument(name, default=default)
 
 
 class _GlobalEventLoopPolicy(asyncio.DefaultEventLoopPolicy):

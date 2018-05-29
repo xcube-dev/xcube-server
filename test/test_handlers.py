@@ -24,8 +24,16 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch('/xcts-wmts/1.0.0/tile/demo/conc_chl/0/0/0.png')
         self.assertEqual(200, response.code)
 
+    def test_fetch_wmts_tile_with_params(self):
+        response = self.fetch('/xcts-wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
+        self.assertEqual(200, response.code)
+
     def test_fetch_dataset_tile(self):
         response = self.fetch('/xcts/tile/demo/conc_chl/0/0/0.png')
+        self.assertEqual(200, response.code)
+
+    def test_fetch_dataset_tile_with_params(self):
+        response = self.fetch('/xcts/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile_grid_ol4_json(self):

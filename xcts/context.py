@@ -23,7 +23,8 @@ import concurrent.futures
 import logging
 import os
 import time
-from typing import Any, Dict, Sequence, Optional
+from abc import abstractmethod
+from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 import s3fs
@@ -43,6 +44,100 @@ from .tile import compute_tile_grid
 _LOG = logging.getLogger('xcts')
 
 Config = Dict[str, Any]
+
+
+class RequestParams:
+
+    @classmethod
+    def to_int(cls, name: str, value: str) -> int:
+        """
+        Convert str value to int.
+        :param name: Name of the value
+        :param value: The string value
+        :return: The int value
+        :raise: ServiceRequestError
+        """
+        if value is None:
+            raise ServiceRequestError(reason=f'{name!r} must be an integer, but none was given')
+        try:
+            return int(value)
+        except ValueError as e:
+            raise ServiceRequestError(reason=f'{name!r} must be an integer, but was {value!r}') from e
+
+    @classmethod
+    def to_int_tuple(cls, name: str, value: str) -> Tuple[int, ...]:
+        """
+        Convert str value to int.
+        :param name: Name of the value
+        :param value: The string value
+        :return: The int value
+        :raise: ServiceRequestError
+        """
+        if value is None:
+            raise ServiceRequestError(reason=f'{name!r} must be a list of integers, but none was given')
+        try:
+            return tuple(map(int, value.split(','))) if value else ()
+        except ValueError as e:
+            raise ServiceRequestError(reason=f'{name!r} must be a list of integers, but was {value!r}') from e
+
+    @classmethod
+    def to_float(cls, name: str, value: str) -> float:
+        """
+        Convert str value to float.
+        :param name: Name of the value
+        :param value: The string value
+        :return: The float value
+        :raise: ServiceRequestError
+        """
+        if value is None:
+            raise ServiceRequestError(reason=f'{name!r} must be a number, but none was given')
+        try:
+            return float(value)
+        except ValueError as e:
+            raise ServiceRequestError(reason=f'{name!r} must be a number, but was {value!r}') from e
+
+    @abstractmethod
+    def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
+        """
+        Get query argument.
+        :param name: Query argument name
+        :param default: Default value.
+        :return: the value or none
+        :raise: ServiceRequestError
+        """
+
+    def get_query_argument_int(self, name: str, default: Optional[int]) -> Optional[int]:
+        """
+        Get query argument of type int.
+        :param name: Query argument name
+        :param default: Default value.
+        :return: int value
+        :raise: ServiceRequestError
+        """
+        value = self.get_query_argument(name, default=None)
+        return self.to_int(name, value) if value is not None else default
+
+    def get_query_argument_int_tuple(self, name: str, default: Optional[Tuple[int, ...]]) -> Optional[Tuple[int, ...]]:
+        """
+        Get query argument of type int list.
+        :param name: Query argument name
+        :param default: Default value.
+        :return: int list value
+        :raise: ServiceRequestError
+        """
+        value = self.get_query_argument(name, default=None)
+        return self.to_int_tuple(name, value) if value is not None else default
+
+    def get_query_argument_float(self, name: str, default: Optional[float]) -> Optional[float]:
+        """
+        Get query argument of type float.
+        :param name: Query argument name
+        :param default: Default value.
+        :return: float value
+        :raise: ServiceRequestError
+        """
+        value = self.get_query_argument(name, default=None)
+        return self.to_float(name, value) if value is not None else default
 
 
 class ServiceContext:
@@ -316,22 +411,57 @@ class ServiceContext:
     def get_dataset_tile(self,
                          ds_name: str,
                          var_name: str,
-                         x: int, y: int, z: int,
-                         var_index: Optional[Sequence[int]] = None,
-                         cmap_cbar: Optional[str] = None,
-                         cmap_vmin: Optional[float] = None,
-                         cmap_vmax: Optional[float] = None):
+                         x: str, y: str, z: str,
+                         params: RequestParams):
 
+        x = params.to_int('x', x)
+        y = params.to_int('y', y)
+        z = params.to_int('z', z)
+
+        dataset, variable = self.get_dataset_and_variable(ds_name, var_name)
+
+        dim_names = list(variable.dims)
+        if 'lon' not in dim_names or 'lat' not in dim_names:
+            raise ServiceRequestError(reason=f'variable {var_name!r} of dataset {ds_name!r} is not geo-spatial')
+
+        dim_names.remove('lon')
+        dim_names.remove('lat')
+
+        var_indexers = dict()
+        var_index_id = ''
+        for dim_name in dim_names:
+            if dim_name not in variable.coords:
+                raise ServiceRequestError(
+                    reason=f'dimension {dim_name!r} of variable {var_name!r} of dataset {ds_name!r} has no coordinates')
+
+            coord_var = variable.coords[dim_name]
+            dim_value = params.get_query_argument(dim_name, None)
+            if dim_value is None:
+                var_indexers[dim_name] = coord_var.values[0]
+            elif dim_value == 'current':
+                var_indexers[dim_name] = coord_var.values[-1]
+            else:
+                try:
+                    var_indexers[dim_name] = coord_var.dtype(dim_value)
+                except ValueError as e:
+                    raise ServiceRequestError(
+                        reason=f'{dim_value!r} is not a valid value for dimension {dim_name!r} '
+                               f'of variable {var_name!r} of dataset {ds_name!r}') from e
+
+            var_index_id += f'-{dim_name}={var_indexers[dim_name]}'
+
+        cmap_cbar = params.get_query_argument('cbar', default=None)
+        cmap_vmin = params.get_query_argument_float('vmin', default=None)
+        cmap_vmax = params.get_query_argument_float('vmax', default=None)
         if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None:
             default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = self.get_color_mapping(ds_name, var_name)
             cmap_cbar = cmap_cbar or default_cmap_cbar
             cmap_vmin = cmap_vmin or default_cmap_vmin
             cmap_vmax = cmap_vmax or default_cmap_vmax
 
-        array_id = '%s-%s' % (ds_name, var_name)
-        if var_index and len(var_index) > 0:
-            array_id += '-%s' % ','.join(map(str, var_index))
+        # TODO: use MD5 hashes as IDs instead
 
+        array_id = '%s-%s%s' % (ds_name, var_name, var_index_id)
         image_id = '%s-%s-%s-%s' % (array_id, cmap_cbar, cmap_vmin, cmap_vmax)
 
         pyramid_id = 'pyramid-%s' % image_id
@@ -339,8 +469,6 @@ class ServiceContext:
         if pyramid_id in self.pyramid_cache:
             pyramid = self.pyramid_cache[pyramid_id]
         else:
-            dataset, variable = self.get_dataset_and_variable(ds_name, var_name)
-
             no_data_value = variable.attrs.get('_FillValue')
             valid_range = variable.attrs.get('valid_range')
             if valid_range is None:
@@ -351,26 +479,18 @@ class ServiceContext:
 
             # Make sure we work with 2D image arrays only
             if variable.ndim == 2:
+                assert len(var_indexers) == 0
                 array = variable
             elif variable.ndim > 2:
-                if not var_index or len(var_index) != variable.ndim - 2:
-                    var_index = (0,) * (variable.ndim - 2)
-
-                # noinspection PyTypeChecker
-                var_index += (slice(None), slice(None),)
-
-                # print('var_index =', var_index)
-                array = variable[var_index]
+                assert len(var_indexers) == variable.ndim - 2
+                array = variable.isel(var_indexers)
             else:
-                raise ServiceError(reason=f'Variable {var_name!r} of dataset {var_name!r} '
-                                          'must be an N-D Dataset with N >= 2, '
-                                          f'but {var_name!r} is only {variable.ndim}-D')
+                raise ServiceRequestError(reason=f'Variable {var_name!r} of dataset {var_name!r} '
+                                                 'must be an N-D Dataset with N >= 2, '
+                                                 f'but {var_name!r} is only {variable.ndim}-D')
 
             cmap_vmin = np.nanmin(array.values) if np.isnan(cmap_vmin) else cmap_vmin
             cmap_vmax = np.nanmax(array.values) if np.isnan(cmap_vmax) else cmap_vmax
-
-            # print('cmap_vmin =', cmap_vmin)
-            # print('cmap_vmax =', cmap_vmax)
 
             def array_image_id_factory(level):
                 return 'arr-%s/%s' % (array_id, level)
@@ -439,7 +559,10 @@ class ServiceContext:
             raise ServiceError(reason=f'Failed computing tile grid for variable {var_name!r} of dataset {ds_name!r}')
         return tile_grid
 
-    def get_ne2_tile(self, x: int, y: int, z: int):
+    def get_ne2_tile(self, x: str, y: str, z: str, params: RequestParams):
+        x = params.to_int('x', x)
+        y = params.to_int('y', y)
+        z = params.to_int('z', z)
         return NaturalEarth2Image.get_pyramid().get_tile(x, y, z)
 
     # noinspection PyMethodMayBeStatic

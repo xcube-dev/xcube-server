@@ -45,20 +45,11 @@ class DatasetTileHandler(ServiceRequestHandler):
 
     @gen.coroutine
     def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
-        x, y, z = int(x), int(y), int(z)
-        # TODO: to conform to WMTS, use dimension names rather than "index"
-        var_index = self.get_query_argument_int_tuple('index', ())
-        cmap_name = self.get_query_argument('cmap', default=None)
-        cmap_min = self.get_query_argument_float('vmin', default=None)
-        cmap_max = self.get_query_argument_float('vmax', default=None)
-
         tile = yield IOLoop.current().run_in_executor(None,
                                                       self.service_context.get_dataset_tile,
                                                       ds_name, var_name,
                                                       x, y, z,
-                                                      var_index,
-                                                      cmap_name, cmap_min, cmap_max)
-
+                                                      self.params)
         self.set_header('Content-Type', 'image/png')
         self.write(tile)
 
@@ -77,8 +68,7 @@ class NE2TileHandler(ServiceRequestHandler):
 
     @gen.coroutine
     def get(self, z: str, x: str, y: str):
-        x, y, z = int(x), int(y), int(z)
-        tile = yield IOLoop.current().run_in_executor(None, self.service_context.get_ne2_tile, x, y, z)
+        tile = yield IOLoop.current().run_in_executor(None, self.service_context.get_ne2_tile, x, y, z, self.params)
         self.set_header('Content-Type', 'image/jpg')
         self.write(tile)
 

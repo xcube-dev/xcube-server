@@ -1,14 +1,26 @@
 import os
 import unittest
+from typing import Dict, Optional
 
 import xarray as xr
 
 from test.helpers import get_res_test_dir, new_test_service_context
 from xcts.context import ServiceContext
 from xcts.errors import ServiceRequestError
+from xcts.service import RequestParams
+
+
+class RequestParamsMock(RequestParams):
+    def __init__(self, **kvp):
+        self.kvp = kvp
+
+    def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
+        return self.kvp.get(name, default)
 
 
 class ServiceContextTest(unittest.TestCase):
+
+    # TODO: test error cases!
 
     def test_get_capabilities(self):
         self.maxDiff = None
@@ -20,12 +32,18 @@ class ServiceContextTest(unittest.TestCase):
 
     def test_get_dataset_tile(self):
         ctx = new_test_service_context()
-        tile = ctx.get_dataset_tile('demo', 'conc_tsm', 0, 0, 0)
+        tile = ctx.get_dataset_tile('demo', 'conc_tsm', '0', '0', '0', RequestParamsMock())
+        self.assertIsInstance(tile, bytes)
+
+    def test_get_dataset_tile_with_params(self):
+        ctx = new_test_service_context()
+        tile = ctx.get_dataset_tile('demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='current', cbar='plasma',
+                                                                                         vmin='0.1', vmax='0.3'))
         self.assertIsInstance(tile, bytes)
 
     def test_get_ne2_tile(self):
         ctx = new_test_service_context()
-        tile = ctx.get_ne2_tile(0, 0, 0)
+        tile = ctx.get_ne2_tile('0', '0', '0', RequestParamsMock())
         self.assertIsInstance(tile, bytes)
 
     def test_get_dataset_and_variable(self):
