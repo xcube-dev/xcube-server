@@ -428,12 +428,10 @@ class ServiceContext:
         dim_names.remove('lat')
 
         var_indexers = dict()
-        var_index_id = ''
         for dim_name in dim_names:
             if dim_name not in variable.coords:
                 raise ServiceRequestError(
                     reason=f'dimension {dim_name!r} of variable {var_name!r} of dataset {ds_name!r} has no coordinates')
-
             coord_var = variable.coords[dim_name]
             dim_value = params.get_query_argument(dim_name, None)
             if dim_value is None:
@@ -448,8 +446,6 @@ class ServiceContext:
                         reason=f'{dim_value!r} is not a valid value for dimension {dim_name!r} '
                                f'of variable {var_name!r} of dataset {ds_name!r}') from e
 
-            var_index_id += f'-{dim_name}={var_indexers[dim_name]}'
-
         cmap_cbar = params.get_query_argument('cbar', default=None)
         cmap_vmin = params.get_query_argument_float('vmin', default=None)
         cmap_vmax = params.get_query_argument_float('vmax', default=None)
@@ -460,6 +456,12 @@ class ServiceContext:
             cmap_vmax = cmap_vmax or default_cmap_vmax
 
         # TODO: use MD5 hashes as IDs instead
+
+        var_index_id = ''
+        for dim_name in dim_names:
+            dim_value = var_indexers.get(dim_name)
+            if dim_value is not None:
+                var_index_id += f'-{dim_name}={dim_value}'
 
         array_id = '%s-%s%s' % (ds_name, var_name, var_index_id)
         image_id = '%s-%s-%s-%s' % (array_id, cmap_cbar, cmap_vmin, cmap_vmax)
@@ -483,7 +485,7 @@ class ServiceContext:
                 array = variable
             elif variable.ndim > 2:
                 assert len(var_indexers) == variable.ndim - 2
-                array = variable.isel(var_indexers)
+                array = variable.sel(method='nearest', **var_indexers)
             else:
                 raise ServiceRequestError(reason=f'Variable {var_name!r} of dataset {var_name!r} '
                                                  'must be an N-D Dataset with N >= 2, '

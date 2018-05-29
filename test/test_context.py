@@ -35,10 +35,15 @@ class ServiceContextTest(unittest.TestCase):
         tile = ctx.get_dataset_tile('demo', 'conc_tsm', '0', '0', '0', RequestParamsMock())
         self.assertIsInstance(tile, bytes)
 
-    def test_get_dataset_tile_with_params(self):
+    def test_get_dataset_tile_with_all_params(self):
         ctx = new_test_service_context()
         tile = ctx.get_dataset_tile('demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='current', cbar='plasma',
                                                                                          vmin='0.1', vmax='0.3'))
+        self.assertIsInstance(tile, bytes)
+
+    def test_get_dataset_tile_with_time_dim(self):
+        ctx = new_test_service_context()
+        tile = ctx.get_dataset_tile('demo', 'conc_tsm', '0', '0', '0', RequestParamsMock(time='2017-01-26'))
         self.assertIsInstance(tile, bytes)
 
     def test_get_ne2_tile(self):
