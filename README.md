@@ -83,5 +83,7 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 * Add "ServiceIdentification" to config  
 * Add WMTS "Theme" to /xcts-wmts/1.0.0/WMTSCapabilities.xml response  
 * Internally cache TileGrid instances, so we don't need to recompute them
-* Put on Travis/AppVeyor
+* Build on Travis & AppVeyor
+* Configure Flake8
+* Configure Coverage
 
