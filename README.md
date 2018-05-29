@@ -76,3 +76,11 @@ into the `xcube-tileserver` source directory so that there exists an
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
 in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/demo/index-cesium.html).  
 
+## TODO
+
+* Use error classes with fixed HTTP status code, e.g. 400, 404, 500
+* Harmonize naming in config (e.g. all CamelCase), make "Identifier" a orierty of dataset and variable entries
+* Add "ServiceIdentification" to config  
+* Add WMTS "Theme" to /xcts-wmts/1.0.0/WMTSCapabilities.xml response  
+* Internally cache TileGrid instances, so we don't need to recompute them
+
