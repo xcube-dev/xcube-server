@@ -4,18 +4,9 @@ from typing import Dict, Optional
 
 import xarray as xr
 
-from test.helpers import get_res_test_dir, new_test_service_context
+from test.helpers import get_res_test_dir, new_test_service_context, RequestParamsMock
 from xcts.context import ServiceContext
 from xcts.errors import ServiceBadRequestError, ServiceResourceNotFoundError
-from xcts.service import RequestParams
-
-
-class RequestParamsMock(RequestParams):
-    def __init__(self, **kvp):
-        self.kvp = kvp
-
-    def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
-        return self.kvp.get(name, default)
 
 
 class ServiceContextTest(unittest.TestCase):

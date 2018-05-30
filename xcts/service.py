@@ -36,8 +36,9 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
-from .context import ServiceContext, Config, RequestParams
+from .context import ServiceContext, Config
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX
+from .reqparams import RequestParams
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

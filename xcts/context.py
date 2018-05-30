@@ -23,8 +23,7 @@ import concurrent.futures
 import logging
 import os
 import time
-from abc import abstractmethod, ABCMeta
-from typing import Any, Dict, Optional, Tuple, List
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
@@ -40,105 +39,12 @@ from .defaults import DEFAULT_MAX_THREAD_COUNT, DEFAULT_CMAP_CBAR, DEFAULT_CMAP_
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from .ne2 import NaturalEarth2Image
+from .reqparams import RequestParams
 from .tile import compute_tile_grid
 
 _LOG = logging.getLogger('xcts')
 
 Config = Dict[str, Any]
-
-
-class RequestParams(metaclass=ABCMeta):
-
-    @classmethod
-    def to_int(cls, name: str, value: str) -> int:
-        """
-        Convert str value to int.
-        :param name: Name of the value
-        :param value: The string value
-        :return: The int value
-        :raise: ServiceBadRequestError
-        """
-        if value is None:
-            raise ServiceBadRequestError(f'{name!r} must be an integer, but none was given')
-        try:
-            return int(value)
-        except ValueError as e:
-            raise ServiceBadRequestError(f'{name!r} must be an integer, but was {value!r}') from e
-
-    @classmethod
-    def to_int_tuple(cls, name: str, value: str) -> Tuple[int, ...]:
-        """
-        Convert str value to int.
-        :param name: Name of the value
-        :param value: The string value
-        :return: The int value
-        :raise: ServiceBadRequestError
-        """
-        if value is None:
-            raise ServiceBadRequestError(f'{name!r} must be a list of integers, but none was given')
-        try:
-            return tuple(map(int, value.split(','))) if value else ()
-        except ValueError as e:
-            raise ServiceBadRequestError(f'{name!r} must be a list of integers, but was {value!r}') from e
-
-    @classmethod
-    def to_float(cls, name: str, value: str) -> float:
-        """
-        Convert str value to float.
-        :param name: Name of the value
-        :param value: The string value
-        :return: The float value
-        :raise: ServiceBadRequestError
-        """
-        if value is None:
-            raise ServiceBadRequestError(f'{name!r} must be a number, but none was given')
-        try:
-            return float(value)
-        except ValueError as e:
-            raise ServiceBadRequestError(f'{name!r} must be a number, but was {value!r}') from e
-
-    @abstractmethod
-    def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
-        """
-        Get query argument.
-        :param name: Query argument name
-        :param default: Default value.
-        :return: the value or none
-        :raise: ServiceBadRequestError
-        """
-
-    def get_query_argument_int(self, name: str, default: Optional[int]) -> Optional[int]:
-        """
-        Get query argument of type int.
-        :param name: Query argument name
-        :param default: Default value.
-        :return: int value
-        :raise: ServiceBadRequestError
-        """
-        value = self.get_query_argument(name, default=None)
-        return self.to_int(name, value) if value is not None else default
-
-    def get_query_argument_int_tuple(self, name: str, default: Optional[Tuple[int, ...]]) -> Optional[Tuple[int, ...]]:
-        """
-        Get query argument of type int list.
-        :param name: Query argument name
-        :param default: Default value.
-        :return: int list value
-        :raise: ServiceBadRequestError
-        """
-        value = self.get_query_argument(name, default=None)
-        return self.to_int_tuple(name, value) if value is not None else default
-
-    def get_query_argument_float(self, name: str, default: Optional[float]) -> Optional[float]:
-        """
-        Get query argument of type float.
-        :param name: Query argument name
-        :param default: Default value.
-        :return: float value
-        :raise: ServiceBadRequestError
-        """
-        value = self.get_query_argument(name, default=None)
-        return self.to_float(name, value) if value is not None else default
 
 
 class ServiceContext:
@@ -270,8 +176,7 @@ class ServiceContext:
 
         dimensions_xml_cache = dict()
 
-        contents_xml_lines = []
-        contents_xml_lines.append((0, '<Contents>'))
+        contents_xml_lines = [(0, '<Contents>')]
         for dataset_descriptor in dataset_descriptors:
             ds_name = dataset_descriptor['Identifier']
             ds = self.get_dataset(ds_name)
@@ -388,8 +293,7 @@ class ServiceContext:
 
         contents_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in contents_xml_lines])
 
-        themes_xml_lines = []
-        themes_xml_lines.append((0, '<Themes>'))
+        themes_xml_lines = [(0, '<Themes>')]
         for dataset_descriptor in dataset_descriptors:
             ds_name = dataset_descriptor.get('Identifier')
             ds = self.get_dataset(ds_name)
@@ -569,7 +473,6 @@ class ServiceContext:
         z = params.to_int('z', z)
         return NaturalEarth2Image.get_pyramid().get_tile(x, y, z)
 
-    # noinspection PyMethodMayBeStatic
     def get_ne2_tile_grid(self, format_name: str, base_url: str):
         if format_name == 'ol4.json':
             return _tile_grid_to_ol4_xyz_source_options(base_url + '/xcts/tile/ne2/{z}/{x}/{y}.jpg',
