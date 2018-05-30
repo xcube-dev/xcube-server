@@ -44,7 +44,8 @@ def new_application():
         (url_pattern('/xcts/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), DatasetTileGridHandler),
         (url_pattern('/xcts/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),
         (url_pattern('/xcts/tilegrid/ne2/{{format_name}}'), NE2TileGridHandler),
-        (url_pattern('/xcts/colorbars.json'), ColorBarsJsonHandler),
+        (url_pattern('/xcts/colorbars.json'), ColorBarsJsonHandler, dict(format_name='text/json')),
+        (url_pattern('/xcts/colorbars.html'), ColorBarsJsonHandler, dict(format_name='text/html')),
     ])
     return application
 

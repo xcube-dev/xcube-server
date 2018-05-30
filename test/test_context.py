@@ -140,12 +140,18 @@ class ServiceContextTest(unittest.TestCase):
 
     def test_get_colorbars(self):
         ctx = ServiceContext()
-        json_response = ctx.get_color_bars('json')
-        self.assertIsInstance(json_response, str)
-        self.assertTrue(len(json_response) > 20)
-        self.assertEqual('[\n  [\n    "Perceptua', json_response[0:20])
+
+        response = ctx.get_color_bars('text/json')
+        self.assertIsInstance(response, str)
+        self.assertTrue(len(response) > 40)
+        self.assertEqual('[\n  [\n    "Perceptually Uniform Sequenti', response[0:40])
+
+        response = ctx.get_color_bars('text/html')
+        self.assertIsInstance(response, str)
+        self.assertTrue(len(response) > 40)
+        self.assertEqual('<!DOCTYPE html>\n<html lang="en">\n<head><', response[0:40])
 
         with self.assertRaises(ServiceBadRequestError) as cm:
-            ctx.get_color_bars('html')
+            ctx.get_color_bars('text/xml')
         self.assertEqual(400, cm.exception.status_code)
-        self.assertEqual("Format 'html' not supported for color bars", cm.exception.reason)
+        self.assertEqual("Format 'text/xml' not supported for color bars", cm.exception.reason)

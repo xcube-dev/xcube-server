@@ -580,8 +580,30 @@ class ServiceContext:
     def get_color_bars(self, format_name):
         from .im.cmaps import get_cmaps
         import json
-        if format_name == 'json':
-            return json.dumps(get_cmaps(), indent=2)
+        cmaps = get_cmaps()
+        if format_name == 'text/json':
+            return json.dumps(cmaps, indent=2)
+        elif format_name == 'text/html':
+            html_head = '<!DOCTYPE html>\n' + \
+                        '<html lang="en">\n' + \
+                        '<head>' + \
+                        '<meta charset="UTF-8">' + \
+                        '<title>xcube server color maps</title>' + \
+                        '</head>\n' + \
+                        '<body style="padding: 0.2em">\n'
+            html_body = ''
+            html_foot = '</body>\n' \
+                        '</html>\n'
+            for cmap_cat, cmap_desc, cmap_bars in cmaps:
+                html_body += '    <h2>%s</h2>\n' % cmap_cat
+                html_body += '    <p><i>%s</i></p>\n' % cmap_desc
+                html_body += '    <table style=border: 0">\n'
+                for cmap_bar in cmap_bars:
+                    cmap_name, cmap_data = cmap_bar
+                    cmap_image = f'<img src="data:image/png;base64,{cmap_data}" width="100%%" height="32"/>'
+                    html_body += f'        <tr><td style="width: 5em">{cmap_name}:</td><td style="width: 40em">{cmap_image}</td></tr>\n'
+                html_body += '    </table>\n'
+            return html_head + html_body + html_foot
         raise ServiceBadRequestError(f'Format {format_name!r} not supported for color bars')
 
     def get_dataset_descriptors(self):
