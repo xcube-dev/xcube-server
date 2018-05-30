@@ -16,7 +16,7 @@ xcube datasets are any datasets that
 Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
 object storage (OBS).
 
-As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/demo/config.yml).
+As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/local/config.yml).
 
 ## OGC WMTS compatibility
 
@@ -57,7 +57,25 @@ Install
 
 To run the server on default port 8080:
 
-    $ xcts -v -c xcts/res/demo/config.yml
+    $ xcts -v -c xcts/res/local/config.yml
+
+Test it:
+
+* WMTS:
+  * [/xcts-wmts/1.0.0/WMTSCapabilities.xml](http://localhost:8080/xcts-wmts/1.0.0/WMTSCapabilities.xml)
+  * [/xcts-wmts/1.0.0/tile/local/conc_chl/0/0/1.png](http://localhost:8080/xcts-wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+  * [/xcts-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png](http://localhost:8080/xcts-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+* Tiles
+  * [/xcts/tile/local/conc_chl/0/1/0.png](http://localhost:8080/xcts/tile/local/conc_chl/0/1/0.png)
+  * [/xcts/tile/remote/conc_chl/0/1/0.png](http://localhost:8080/xcts/tile/remote/conc_chl/0/1/0.png)
+* Tile grids
+  * [/xcts/tilegrid/local/conc_chl/ol4.json](http://localhost:8080/xcts/tilegrid/local/conc_chl/ol4.json)
+  * [/xcts/tilegrid/local/conc_chl/cesium.json](http://localhost:8080/xcts/tilegrid/local/conc_chl/cesium.json)
+  * [/xcts/tilegrid/remote/conc_chl/ol4.json](http://localhost:8080/xcts/tilegrid/remote/conc_chl/ol4.json)
+  * [/xcts/tilegrid/remote/conc_chl/cesium.json](http://localhost:8080/xcts/tilegrid/remote/conc_chl/cesium.json)
+* Color bars service:
+  * [/xcts/colorbars.json](http://localhost:8080/xcts/colorbars.json)
+  * [/xcts/colorbars.html](http://localhost:8080/xcts/colorbars.html)
 
 
 ### Clients
@@ -78,15 +96,19 @@ To run the [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-tileserver` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
-in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/demo/index-cesium.html).  
+in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/demo/index-cesium.html).
 
 ## TODO
 
+* Bug/Performance: /xcts-wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
+  169466.91ms - investigate and e.g. cache.
 * Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
   There may be different identifiers that have the same path!
+* Performance: After some period check if datasets haven't been used for a long time - close them and remove from cache.
 * Performance: Internally cache TileGrid instances, so we don't need to recompute them.
   TileGrid cache keys must be based on dataset path, array shape, and chunk shape.
-* Need: Add a service that allows retrieving the actual cubes indexers and coordinates given a variable and dimension KVP.
+* Need: Add a service that allows retrieving the actual cubes indexers and coordinates given a
+  variable and dimension KVP.
   This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual,
   effectively selected coordinates.
 

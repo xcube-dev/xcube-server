@@ -1,11 +1,11 @@
 Datasets:
-  - Identifier: demo
+  - Identifier: local
     Title: "Local NetCDF Demonstration Dataset for xcts"
     Path: "cube.nc"
     Style: default
 
-  - Identifier: dcs4cop-olci-sns-raw-cube
-    Title: "DCS4COP OLCI RAW CUBE, Region SNS"
+  - Identifier: remote
+    Title: "Remote DCS4COP OLCI RAW CUBE for region SNS"
     Endpoint: "http://obs.eu-de.otc.t-systems.com"
     Path: "dcs4cop-obs-01/OLCI-SNS-RAW-CUBE-2.zarr"
     FileSystem: "obs"
