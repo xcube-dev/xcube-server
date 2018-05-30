@@ -40,6 +40,10 @@ Initially
     $ cd xcube-tileserver
     $ conda env create
 
+If the last command fails because `xcube-dev` environment already exists, then just update it
+
+    $ conda env update
+
 Once in a while
 
     $ cd xcube-tileserver
@@ -47,7 +51,7 @@ Once in a while
 
 Install
 
-    $ source activate xcts-dev
+    $ source activate xcube-dev
     $ python setup.py develop
     $ pytest --cov=xcts
 
