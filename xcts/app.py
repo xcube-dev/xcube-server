@@ -69,8 +69,7 @@ def new_service(args=None) -> Service:
                         help='Service will update after given seconds of inactivity. Zero or a negative value will '
                              'disable update checks. '
                              f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
-    parser.add_argument('--config', '-c', dest='config_file', metavar='CONFIG_FILE',
-                        default=DEFAULT_CONFIG_FILE,
+    parser.add_argument('--config', '-c', dest='config_file', metavar='CONFIG_FILE', default=None,
                         help='Configuration file. '
                              f'Defaults to {DEFAULT_CONFIG_FILE!r}.')
     parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',

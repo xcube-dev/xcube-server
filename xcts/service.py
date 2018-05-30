@@ -54,7 +54,7 @@ class Service:
                  application: Application,
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
-                 config_file: Optional[str] = DEFAULT_CONFIG_FILE,
+                 config_file: Optional[str] = None,
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
                  log_file_prefix: str = DEFAULT_LOG_PREFIX,
                  log_to_stderr: bool = False,
@@ -91,6 +91,7 @@ class Service:
         self.config_mtime = None
         self.update_period = update_period
         self.update_timer = None
+        self.config_error = None
         self.service_info = dict(port=port,
                                  address=address,
                                  started=datetime.now().isoformat(sep=' '),
@@ -115,6 +116,8 @@ class Service:
         address = self.service_info['address']
         port = self.service_info['port']
         _LOG.info(f'service running, listening on {address}:{port} (press CTRL+C to stop service)')
+        if len(self.context.config.get('Datasets', {})) == 0:
+            _LOG.warning('no datasets configured')
         IOLoop.current().start()
 
     def stop(self, kill=False):
@@ -157,21 +160,27 @@ class Service:
         self._maybe_install_update_check()
 
     def _maybe_load_config(self):
-        if self.config_file is None:
-            return
+        config_file = self.config_file
+        if config_file is None:
+            config_file = DEFAULT_CONFIG_FILE
         try:
-            stat = os.stat(self.config_file)
+            stat = os.stat(config_file)
         except OSError as e:
-            _LOG.error(f'configuration file {self.config_file!r}: {e}')
+            if self.config_error is None:
+                _LOG.error(f'configuration file {config_file!r}: {e}')
+                self.config_error = e
             return
         if self.config_mtime != stat.st_mtime:
             self.config_mtime = stat.st_mtime
             try:
-                with open(self.config_file) as stream:
+                with open(config_file) as stream:
                     self.context.config = yaml.load(stream)
-                _LOG.info(f'configuration file {self.config_file!r} successfully loaded')
+                self.config_error = None
+                _LOG.info(f'configuration file {config_file!r} successfully loaded')
             except (yaml.YAMLError, OSError) as e:
-                _LOG.error(f'configuration file {self.config_file!r}: {e}')
+                if self.config_error is None:
+                    _LOG.error(f'configuration file {config_file!r}: {e}')
+                    self.config_error = e
                 return
 
 
