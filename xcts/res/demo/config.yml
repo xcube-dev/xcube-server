@@ -4,10 +4,10 @@ Datasets:
     Path: "cube.nc"
     Style: default
 
-  - Identifier: highroc-cube
-    Title: "Remote NetCDF Demonstration Dataset for xcts"
+  - Identifier: dcs4cop-olci-sns-raw-cube
+    Title: "DCS4COP OLCI RAW CUBE, Region SNS"
     Endpoint: "http://obs.eu-de.otc.t-systems.com"
-    Path: "dcs4cop-obs-01/highroc-cube.zarr"
+    Path: "dcs4cop-obs-01/OLCI-SNS-RAW-CUBE-2.zarr"
     FileSystem: "obs"
     Region: "eu-de"
     Style: default
