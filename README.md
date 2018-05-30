@@ -82,8 +82,9 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 
 ## TODO
 
-* Bug: coordinate values are cached wrongly in context.py!
-* Add a service that allows retrieving the actual coordinates given a variable and dimension KVP.
+* Bug/Perf: open datasets must be cached based on their paths, not the config identifier names.
+  There may be different identifiers that have the same path!
+* Add a service that allows retrieving the actual cubes indexers and coordinates given a variable and dimension KVP.
   This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual, effectively selected coordinates. 
 * Internally cache TileGrid instances, so we don't need to recompute them
 * Build on Travis & AppVeyor

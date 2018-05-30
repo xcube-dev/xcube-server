@@ -249,8 +249,9 @@ class ServiceContext:
                     for dim_name in non_spatial_dims:
                         if dim_name not in ds.coords:
                             continue
-                        if dim_name in dimensions_xml_cache:
-                            dimensions_xml_lines = dimensions_xml_cache[dim_name]
+                        dimension_xml_key = f'{ds_name}.{dim_name}'
+                        if dimension_xml_key in dimensions_xml_cache:
+                            dimensions_xml_lines = dimensions_xml_cache[dimension_xml_key]
                         else:
                             coord_var = ds.coords[dim_name]
                             if len(coord_var.shape) != 1:
@@ -284,7 +285,7 @@ class ServiceContext:
                                     value = coord_var.values[i]
                                     dimensions_xml_lines.append((4, f'<Value>{value}</Value>'))
                             dimensions_xml_lines.append((3, '</Dimension>'))
-                            dimensions_xml_cache[dim_name] = dimensions_xml_lines
+                            dimensions_xml_cache[dimension_xml_key] = dimensions_xml_lines
 
                         contents_xml_lines.extend(dimensions_xml_lines)
                     contents_xml_lines.append((2, '</Layer>'))
