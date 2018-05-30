@@ -82,11 +82,14 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 
 ## TODO
 
-* Bug/Perf: open datasets must be cached based on their paths, not the config identifier names.
+* Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
   There may be different identifiers that have the same path!
-* Add a service that allows retrieving the actual cubes indexers and coordinates given a variable and dimension KVP.
-  This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual, effectively selected coordinates. 
-* Internally cache TileGrid instances, so we don't need to recompute them
+* Performance: Internally cache TileGrid instances, so we don't need to recompute them.
+  TileGrid cache keys must be based on dataset path, array shape, and chunk shape.
+* Need: Add a service that allows retrieving the actual cubes indexers and coordinates given a variable and dimension KVP.
+  This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual,
+  effectively selected coordinates.
+
 * Build on Travis & AppVeyor
 * Configure Flake8
 * Configure Coverage
