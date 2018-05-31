@@ -57,7 +57,7 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_json(self):
-        response = self.fetch('/xcube/dataset/demo.json')
+        response = self.fetch('/xcube/variables/demo.json')
         self.assertEqual(200, response.code)
 
     def test_fetch_coords_json(self):

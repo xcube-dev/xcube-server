@@ -52,7 +52,7 @@ class ServiceContext:
     def __init__(self, base_dir=None, config: Config = None):
         self.base_dir = os.path.abspath(base_dir or '')
         self._config = config or dict()
-        self.dataset_cache = dict()
+        self.dataset_cache = dict() # contains tuples of form (ds, ds_descriptor, tile_grid_cache)
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_MAX_THREAD_COUNT,
                                                                  thread_name_prefix='xcube_server')
         self.pyramid_cache = dict()
@@ -77,7 +77,7 @@ class ServiceContext:
             old_dataset_descriptors = self._config.get('datasets')
             new_dataset_descriptors = config.get('datasets')
             if not new_dataset_descriptors:
-                for ds, _ in self.dataset_cache.values():
+                for ds, _, _ in self.dataset_cache.values():
                     ds.close()
                 self.dataset_cache.clear()
             if new_dataset_descriptors and old_dataset_descriptors:
@@ -190,7 +190,7 @@ class ServiceContext:
                 if tile_grid_id in tile_grids:
                     tile_grid = tile_grids[tile_grid_id]
                 else:
-                    tile_grid = compute_tile_grid(var)
+                    tile_grid = self.get_or_compute_tile_grid(ds_name, var)
                     if tile_grid is not None:
                         tile_grids[tile_grid_id] = tile_grid
                         write_tile_matrix_set = True
@@ -454,16 +454,20 @@ class ServiceContext:
         tile_grid = self.get_tile_grid(ds_name, var_name, variable)
         if format_name == 'ol4.json':
             return _tile_grid_to_ol4_xyz_source_options(
-                base_url + f'/xcube/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
+                self.get_dataset_tile_url(ds_name, var_name, base_url), tile_grid)
         elif format_name == 'cesium.json':
             return _tile_grid_to_cesium_source_options(
-                base_url + f'/xcube/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
+                self.get_dataset_tile_url(ds_name, var_name, base_url), tile_grid)
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
     # noinspection PyMethodMayBeStatic
+    def get_dataset_tile_url(self, ds_name: str, var_name: str, base_url: str):
+        return base_url + f'/xcube/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png'
+
+    # noinspection PyMethodMayBeStatic
     def get_tile_grid(self, ds_name: str, var_name: str, var: xr.DataArray):
-        tile_grid = compute_tile_grid(var)
+        tile_grid = self.get_or_compute_tile_grid(ds_name, var)
         if tile_grid is None:
             raise ServiceError(f'Failed computing tile grid for variable {var_name!r} of dataset {ds_name!r}')
         return tile_grid
@@ -550,7 +554,7 @@ class ServiceContext:
 
     def get_dataset(self, ds_name: str) -> xr.Dataset:
         if ds_name in self.dataset_cache:
-            ds, _ = self.dataset_cache[ds_name]
+            ds, _, _ = self.dataset_cache[ds_name]
         else:
             dataset_descriptor = self.get_dataset_descriptor(ds_name)
 
@@ -587,7 +591,8 @@ class ServiceContext:
             else:
                 raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_name!r}")
 
-            self.dataset_cache[ds_name] = ds, dataset_descriptor
+            tile_grid_cache = dict()
+            self.dataset_cache[ds_name] = ds, dataset_descriptor, tile_grid_cache
 
             t2 = time.clock()
 
@@ -602,6 +607,17 @@ class ServiceContext:
             raise ServiceResourceNotFoundError(f'Dimension {dim_name!r} has no coordinates in dataset {ds_name!r}')
         return ds, ds.coords[dim_name]
 
+    def get_or_compute_tile_grid(self, ds_name: str, var: xr.DataArray):
+        self.get_dataset(ds_name) # make sure ds_name provides a cached entry
+        _, _, tile_grid_cache = self.dataset_cache[ds_name]
+        shape = var.shape
+        tile_grid_key = f'tg_{shape[-1]}_{shape[-2]}'
+        if tile_grid_key in tile_grid_cache:
+            tile_grid = tile_grid_cache[tile_grid_key]
+        else:
+            tile_grid = compute_tile_grid(var)
+            tile_grid_cache[tile_grid_key] = tile_grid
+        return tile_grid
 
 def _get_var_indexers(ds_name: str,
                       var_name: str,

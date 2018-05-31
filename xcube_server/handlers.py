@@ -24,6 +24,7 @@ import json
 from tornado import gen
 from tornado.ioloop import IOLoop
 
+from xcube_server.context import _tile_grid_to_ol4_xyz_source_options
 from . import __version__, __description__
 from .service import ServiceRequestHandler
 
@@ -63,13 +64,19 @@ class GetVariablesJsonHandler(ServiceRequestHandler):
             if 'time' not in var.dims or 'lat' not in var.dims or 'lon' not in var.dims:
                 continue
             attrs = var.attrs
+            tile_grid = self.service_context.get_or_compute_tile_grid(ds_name, var)
+            # TODO: add parameter to switch between clients for tileSourceOptions
+            ol_tile_xyz_source_options = _tile_grid_to_ol4_xyz_source_options(
+                self.service_context.get_dataset_tile_url(ds_name, var_name, self.base_url),
+                tile_grid)
             variables.append(dict(id=f'{ds_name}{var_name}',
                                   name=var_name,
                                   dims=list(var.dims),
                                   shape=list(var.shape),
                                   dtype=str(var.dtype),
                                   units=attrs.get('units', ''),
-                                  title=attrs.get('title', attrs.get('long_name', var_name))))
+                                  title=attrs.get('title', attrs.get('long_name', var_name)),
+                                  tileSourceOptions=ol_tile_xyz_source_options))
         attrs = ds.attrs
         response = dict(name=ds_name,
                         title=attrs.get('title', ''),
