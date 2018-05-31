@@ -38,7 +38,7 @@ from xcube_server.cache import Cache, MemoryCacheStore
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _DEFAULT_TILE_CACHE = None
-_DEBUG_OP_IMAGE = True
+_DEBUG_OP_IMAGE = False
 
 X = int
 Y = int
