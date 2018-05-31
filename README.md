@@ -57,7 +57,7 @@ Install
 
 To run the server on default port 8080:
 
-    $ xcts -v -c xcts/res/local/config.yml
+    $ xcts -v -c xcts/res/demo/config.yml
 
 Test it:
 
