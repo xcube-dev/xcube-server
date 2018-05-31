@@ -2,7 +2,11 @@
 
 ## Objective
 
-`xcube-server` is a tile server used to publish imagery of xcube datasets. 
+`xcube-server` is a light-weight web server that provides various services based on 
+xcube datasets:
+
+* Tile map service, with some OGC WMTS 1.0 compatibility 
+* Data server (TODO) to extract subsets like time-series and profiles for e.g. JS clients 
 
 xcube datasets are any datasets that 
 
@@ -69,10 +73,10 @@ Test it:
   * [/xcube-wmts/1.0.0/WMTSCapabilities.xml](http://localhost:8080/xcube-wmts/1.0.0/WMTSCapabilities.xml)
   * [/xcube-wmts/1.0.0/tile/local/conc_chl/0/0/1.png](http://localhost:8080/xcube-wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
   * [/xcube-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png](http://localhost:8080/xcube-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
-* Tiles
+* Tile service
   * [/xcube/tile/local/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/local/conc_chl/0/1/0.png)
   * [/xcube/tile/remote/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/remote/conc_chl/0/1/0.png)
-* Tile grids
+* Tile grid service
   * [/xcube/tilegrid/local/conc_chl/ol4.json](http://localhost:8080/xcube/tilegrid/local/conc_chl/ol4.json)
   * [/xcube/tilegrid/local/conc_chl/cesium.json](http://localhost:8080/xcube/tilegrid/local/conc_chl/cesium.json)
   * [/xcube/tilegrid/remote/conc_chl/ol4.json](http://localhost:8080/xcube/tilegrid/remote/conc_chl/ol4.json)
@@ -104,14 +108,14 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-server/blob/master/xcub
 
 ## TODO
 
-### Project
+At project level:
 
 * Move to public GitHub organisation
 * Build on Travis & AppVeyor
 * Configure Flake8
 * Configure Coverage
 
-### Code
+In code:
 
 * Feature: WMTS GetFeatureInfo
 * Feature: Add layer selector and time slider to OL demo client
