@@ -100,8 +100,19 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 
 ## TODO
 
+### Project
+
 * Make this xcube-server
-* WMTS GetFeatureInfo
+* Move to public GitHub organisation
+* Build on Travis & AppVeyor
+* Configure Flake8
+* Configure Coverage
+
+### Code
+
+* Feature: WMTS GetFeatureInfo
+* Feature: Add layer selector and time slider to OL demo client
+* Feature: Let users specify TileGrid in configuration
 * Bug/Performance: /xcts-wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
   169466.91ms - investigate and e.g. cache.
 * Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
@@ -109,12 +120,10 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 * Performance: After some period check if datasets haven't been used for a long time - close them and remove from cache.
 * Performance: Internally cache TileGrid instances, so we don't need to recompute them.
   TileGrid cache keys must be based on dataset path, array shape, and chunk shape.
-* Need: Add a service that allows retrieving the actual cubes indexers and coordinates given a
+* Feature: Add a service that allows retrieving the actual cubes indexers and coordinates given a
   variable and dimension KVP.
   This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual,
   effectively selected coordinates.
-
-* Build on Travis & AppVeyor
-* Configure Flake8
-* Configure Coverage
+* Feature/Performance: use multi-resolution levels embedded in future cube datasets
+* Feature/Performance: consider external chunking when computing TileGrid
 
