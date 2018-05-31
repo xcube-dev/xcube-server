@@ -52,6 +52,18 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch('/xcube/tilegrid/ne2/ol4.json')
         self.assertEqual(200, response.code)
 
+    def test_fetch_datasets_json(self):
+        response = self.fetch('/xcube/datasets.json')
+        self.assertEqual(200, response.code)
+
+    def test_fetch_dataset_json(self):
+        response = self.fetch('/xcube/dataset/demo.json')
+        self.assertEqual(200, response.code)
+
+    def test_fetch_coords_json(self):
+        response = self.fetch('/xcube/coords/demo/time.json')
+        self.assertEqual(200, response.code)
+
     def test_fetch_color_bars_json(self):
         response = self.fetch('/xcube/colorbars.json')
         self.assertEqual(200, response.code)

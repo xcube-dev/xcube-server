@@ -548,7 +548,7 @@ class ServiceContext:
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_name!r} undefined: using defaults')
         return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
 
-    def get_dataset(self, ds_name: str):
+    def get_dataset(self, ds_name: str) -> xr.Dataset:
         if ds_name in self.dataset_cache:
             ds, _ = self.dataset_cache[ds_name]
         else:
@@ -595,6 +595,12 @@ class ServiceContext:
                 print(f'PERF: opening {ds_name!r} took {t2-t1} seconds')
 
         return ds
+
+    def get_dataset_and_coord_variable(self, ds_name: str, dim_name: str):
+        ds = self.get_dataset(ds_name)
+        if dim_name not in ds.coords:
+            raise ServiceResourceNotFoundError(f'Dimension {dim_name!r} has no coordinates in dataset {ds_name!r}')
+        return ds, ds.coords[dim_name]
 
 
 def _get_var_indexers(ds_name: str,

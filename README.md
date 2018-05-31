@@ -6,7 +6,8 @@
 xcube datasets:
 
 * Tile map service, with some OGC WMTS 1.0 compatibility 
-* Data server (TODO) to extract subsets like time-series and profiles for e.g. JS clients 
+* Data services (TODO) to extract subsets like time-series and profiles for e.g. JS clients 
+* Catalogue services (TODO) to query for datasets and variables 
 
 xcube datasets are any datasets that 
 
@@ -69,21 +70,22 @@ or shorter
 
 Test it:
 
-* WMTS:
-  * [/xcube/wmts/1.0.0/WMTSCapabilities.xml](http://localhost:8080/xcube/wmts/1.0.0/WMTSCapabilities.xml)
-  * [/xcube/wmts/1.0.0/tile/local/conc_chl/0/0/1.png](http://localhost:8080/xcube/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-  * [/xcube/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png](http://localhost:8080/xcube/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
 * Tile service
-  * [/xcube/tile/local/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/local/conc_chl/0/1/0.png)
-  * [/xcube/tile/remote/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/remote/conc_chl/0/1/0.png)
-* Tile grid service
-  * [/xcube/tilegrid/local/conc_chl/ol4.json](http://localhost:8080/xcube/tilegrid/local/conc_chl/ol4.json)
-  * [/xcube/tilegrid/local/conc_chl/cesium.json](http://localhost:8080/xcube/tilegrid/local/conc_chl/cesium.json)
-  * [/xcube/tilegrid/remote/conc_chl/ol4.json](http://localhost:8080/xcube/tilegrid/remote/conc_chl/ol4.json)
-  * [/xcube/tilegrid/remote/conc_chl/cesium.json](http://localhost:8080/xcube/tilegrid/remote/conc_chl/cesium.json)
-* Color bars service:
-  * [/xcube/colorbars.json](http://localhost:8080/xcube/colorbars.json)
-  * [/xcube/colorbars.html](http://localhost:8080/xcube/colorbars.html)
+  * WMTS:
+    * [Get WMTSCapabilities XML](http://localhost:8080/xcube/wmts/1.0.0/WMTSCapabilities.xml)
+    * [Get local tile PNG](http://localhost:8080/xcube/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+    * [Get remote tile PNG](http://localhost:8080/xcube/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+  * Tile images
+    * [Get tile PNG](http://localhost:8080/xcube/tile/local/conc_chl/0/1/0.png)
+  * Tile grid service
+    * [Get tile grid JSON for OL4](http://localhost:8080/xcube/tilegrid/local/conc_chl/ol4.json)
+    * [Get tile grid JSON for Cesium](http://localhost:8080/xcube/tilegrid/local/conc_chl/cesium.json)
+* List services
+    * [Get datasets JSON](http://localhost:8080/xcube/datasets.json)
+    * [Get dataset variables JSON](http://localhost:8080/xcube/variables/local.json)
+    * [Get dataset coordinates JSON](http://localhost:8080/xcube/coords/local/time.json)
+    * [Get color bars JSON](http://localhost:8080/xcube/colorbars.json), 
+      [Get color bars HTML](http://localhost:8080/xcube/colorbars.html)
 
 
 ### Clients
