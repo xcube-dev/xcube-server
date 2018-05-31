@@ -29,7 +29,7 @@ from tornado.web import Application, StaticFileHandler
 from xcube_server import __version__, __description__
 from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
     GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsHandler, GetDatasetsJsonHandler, \
-    GetDatasetJsonHandler, GetCoordinatesJsonHandler
+    GetVariablesJsonHandler, GetCoordinatesJsonHandler
 from xcube_server.service import url_pattern, Service, DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, DEFAULT_CONFIG_FILE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -46,7 +46,7 @@ def new_application():
         (url_pattern('/xcube/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), GetTileGridDatasetHandler),
         (url_pattern('/xcube/tilegrid/ne2/{{format_name}}'), GetTileGridNE2Handler),
         (url_pattern('/xcube/datasets.json'), GetDatasetsJsonHandler),
-        (url_pattern('/xcube/dataset/{{ds_name}}.json'), GetDatasetJsonHandler),
+        (url_pattern('/xcube/variables/{{ds_name}}.json'), GetVariablesJsonHandler),
         (url_pattern('/xcube/coords/{{ds_name}}/{{dim_name}}.json'), GetCoordinatesJsonHandler),
         (url_pattern('/xcube/colorbars.json'), GetColorBarsHandler, dict(format_name='text/json')),
         (url_pattern('/xcube/colorbars.html'), GetColorBarsHandler, dict(format_name='text/html')),

@@ -53,7 +53,7 @@ class GetDatasetsJsonHandler(ServiceRequestHandler):
         self.write(json.dumps(response))
 
 
-class GetDatasetJsonHandler(ServiceRequestHandler):
+class GetVariablesJsonHandler(ServiceRequestHandler):
     @gen.coroutine
     def get(self, ds_name: str):
         ds = self.service_context.get_dataset(ds_name)
