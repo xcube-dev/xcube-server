@@ -100,6 +100,8 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 
 ## TODO
 
+* Make this xcube-server
+* WMTS GetFeatureInfo
 * Bug/Performance: /xcts-wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
   169466.91ms - investigate and e.g. cache.
 * Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
