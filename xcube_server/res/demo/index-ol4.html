@@ -120,6 +120,11 @@
         layer.setSource(newTileXYZSourceFromJsonOptions(newLayerSourceOptions));
     }
 
+    function setButtonEnabled(id, enabled) {
+        var button = document.getElementById(id);
+        button.disabled = !enabled;
+    }
+
     function initAnimation() {
 
         function stop() {
@@ -127,20 +132,15 @@
                 window.clearInterval(animationId);
                 animationId = null;                
             }
-            setButtonDisabled('play', false);
-            setButtonDisabled('pause', true);
+            setButtonEnabled('play', true);
+            setButtonEnabled('pause', false);
         }
 
         function play() {
             stop();
             animationId = window.setInterval(onNewTime, 1000 / frameRate);
-            setButtonDisabled('play', true);
-            setButtonDisabled('pause', false);
-        }
-
-        function setButtonDisabled(id, disabled) {
-            var button = document.getElementById(id);
-            button.disabled = disabled;
+            setButtonEnabled('play', false);
+            setButtonEnabled('pause', true);
         }
 
         var startButton = document.getElementById('play');
@@ -148,7 +148,7 @@
         startButton.addEventListener('click', play, false);
 
         var stopButton = document.getElementById('pause');
-        stopButton.disabled = false;
+        stopButton.disabled = true;
         stopButton.addEventListener('click', stop, false);
 
         updateTimeInfo();
