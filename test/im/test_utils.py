@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-import xcts.im.utils as utils
+import xcube_server.im.utils as utils
 
 
 class ArrayTest(TestCase):

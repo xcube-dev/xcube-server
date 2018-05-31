@@ -3,8 +3,8 @@ from typing import Optional
 
 import yaml
 
-from xcts.context import ServiceContext
-from xcts.reqparams import RequestParams
+from xcube_server.context import ServiceContext
+from xcube_server.reqparams import RequestParams
 
 
 def new_test_service_context() -> ServiceContext:
@@ -28,7 +28,7 @@ def get_res_test_dir() -> str:
 
 
 def get_res_demo_dir() -> str:
-    return os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'xcts', 'res', 'demo'))
+    return os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'xcube_server', 'res', 'demo'))
 
 
 class RequestParamsMock(RequestParams):

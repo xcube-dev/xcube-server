@@ -1,8 +1,8 @@
 import unittest
 
 
-from xcts.app import new_service
-from xcts.service import Service
+from xcube_server.app import new_service
+from xcube_server.service import Service
 
 
 # from tornado.ioloop import IOLoop

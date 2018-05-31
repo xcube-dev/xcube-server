@@ -42,7 +42,7 @@ from .ne2 import NaturalEarth2Image
 from .reqparams import RequestParams
 from .tile import compute_tile_grid
 
-_LOG = logging.getLogger('xcts')
+_LOG = logging.getLogger('xcube')
 
 Config = Dict[str, Any]
 
@@ -54,7 +54,7 @@ class ServiceContext:
         self._config = config or dict()
         self.dataset_cache = dict()
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_MAX_THREAD_COUNT,
-                                                                 thread_name_prefix='xcts')
+                                                                 thread_name_prefix='xcube_server')
         self.pyramid_cache = dict()
         self.mem_tile_cache = Cache(MemoryCacheStore(),
                                     capacity=MEM_TILE_CACHE_CAPACITY,
@@ -136,7 +136,7 @@ class ServiceContext:
     </ows:ServiceProvider>
 """
 
-        wmts_kvp_url = base_url + '/xcts-wmts/1.0.0/kvp?'
+        wmts_kvp_url = base_url + '/xcube/wmts/1.0.0/kvp?'
 
         operations_metadata_xml = f"""<ows:OperationsMetadata>
         <ows:Operation name="GetCapabilities">
@@ -172,7 +172,7 @@ class ServiceContext:
         tile_grids = dict()
         indent = '    '
 
-        layer_base_url = base_url + '/xcts-wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
+        layer_base_url = base_url + '/xcube/wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
 
         dimensions_xml_cache = dict()
 
@@ -320,7 +320,7 @@ class ServiceContext:
         # print(contents_xml)
         # print(80 * '=')
 
-        get_capablities_rest_url = base_url + '/xcts-wmts/1.0.0/WMTSCapabilities.xml'
+        get_capablities_rest_url = base_url + '/xcube/wmts/1.0.0/WMTSCapabilities.xml'
         service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
 
         return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -454,10 +454,10 @@ class ServiceContext:
         tile_grid = self.get_tile_grid(ds_name, var_name, variable)
         if format_name == 'ol4.json':
             return _tile_grid_to_ol4_xyz_source_options(
-                base_url + f'/xcts/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
+                base_url + f'/xcube/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
         elif format_name == 'cesium.json':
             return _tile_grid_to_cesium_source_options(
-                base_url + f'/xcts/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
+                base_url + f'/xcube/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png', tile_grid)
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
@@ -476,7 +476,7 @@ class ServiceContext:
 
     def get_ne2_tile_grid(self, format_name: str, base_url: str):
         if format_name == 'ol4.json':
-            return _tile_grid_to_ol4_xyz_source_options(base_url + '/xcts/tile/ne2/{z}/{x}/{y}.jpg',
+            return _tile_grid_to_ol4_xyz_source_options(base_url + '/xcube/tile/ne2/{z}/{x}/{y}.jpg',
                                                         NaturalEarth2Image.get_pyramid().tile_grid)
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')

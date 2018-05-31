@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import numpy as np
 
-from xcts.im.geoextent import GeoExtent
+from xcube_server.im.geoextent import GeoExtent
 
 
 # noinspection PyMethodMayBeStatic

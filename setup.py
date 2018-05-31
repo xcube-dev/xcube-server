@@ -43,22 +43,23 @@ packages = find_packages(exclude=["test", "test.*"])
 
 __version__ = None
 __description__ = None
-with open('xcts/__init__.py') as f:
+with open('xcube_server/__init__.py') as f:
     exec(f.read())
 
 setup(
-    name="xcts",
+    name="xcube_server",
     version=__version__,
     description=__description__,
     license='MIT',
     author='xcube Development Team',
     packages=packages,
     package_data={
-        'xcts.res': ['**/*'],
+        'xcube_server.res': ['**/*'],
     },
     entry_points={
         'console_scripts': [
-            'xcts = xcts.app:main',
+            'xcs = xcube_server.app:main',
+            'xcube-server = xcube_server.app:main',
         ],
     },
     install_requires=requirements,

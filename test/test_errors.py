@@ -2,7 +2,7 @@ import unittest
 
 from tornado.web import HTTPError
 
-from xcts.errors import ServiceError, ServiceConfigError, ServiceBadRequestError, ServiceResourceNotFoundError
+from xcube_server.errors import ServiceError, ServiceConfigError, ServiceBadRequestError, ServiceResourceNotFoundError
 
 
 class ErrorsTest(unittest.TestCase):

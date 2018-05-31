@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from xcts import ne2
+from xcube_server import ne2
 
 
 class NaturalEarth2Test(TestCase):

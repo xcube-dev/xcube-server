@@ -2,8 +2,8 @@ import unittest
 import xarray as xr
 import numpy as np
 
-from xcts.im import TileGrid
-from xcts.tile import compute_tile_grid
+from xcube_server.im import TileGrid
+from xcube_server.tile import compute_tile_grid
 
 
 class TileTest(unittest.TestCase):

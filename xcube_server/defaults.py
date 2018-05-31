@@ -23,9 +23,9 @@ import os
 
 DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
-DEFAULT_CONFIG_FILE = os.path.abspath('xcts.yml')
+DEFAULT_CONFIG_FILE = os.path.abspath('xcube_server.yml')
 DEFAULT_UPDATE_PERIOD = 2.
-DEFAULT_LOG_PREFIX = os.path.abspath('xcts.log')
+DEFAULT_LOG_PREFIX = os.path.abspath('xcube_server.log')
 
 DEFAULT_CMAP_CBAR = 'jet'
 DEFAULT_CMAP_VMIN = 0.

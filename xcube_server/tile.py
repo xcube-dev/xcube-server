@@ -3,7 +3,7 @@ from typing import Optional
 
 import xarray as xr
 
-from xcts.im import GeoExtent, TileGrid
+from xcube_server.im import GeoExtent, TileGrid
 
 
 def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:

@@ -1,4 +1,4 @@
-# Exclude Cesium sources copied here to run xcts/res/dem/index-cesium.html
+# Exclude Cesium sources copied here to run xcube_server/res/demo/index-cesium.html
 Cesium-*/
 
 # Exclude log files

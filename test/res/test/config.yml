@@ -1,7 +1,7 @@
 Datasets:
   - Identifier: demo
-    Title: "xcube-tileserver Demonstration Dataset"
-    Path: "../../../xcts/res/demo/cube.nc"
+    Title: "xcube-server Demonstration Dataset"
+    Path: "../../../xcube_server/res/demo/cube.nc"
     Style: default
 
 Styles:

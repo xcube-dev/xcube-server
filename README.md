@@ -1,8 +1,8 @@
-# xcube Tile Server (xcts)
+# xcube Server
 
 ## Objective
 
-`xcts` is a tile server used to publish imagery of xcube datasets. 
+`xcube-server` is a tile server used to publish imagery of xcube datasets. 
 
 xcube datasets are any datasets that 
 
@@ -12,21 +12,21 @@ xcube datasets are any datasets that
 * that have 1D-coordinate variables corresponding to the dimensions;
 * that have their spatial grid defined in the WGS84 (`EPSG:4326`) coordinate reference system.
 
-`xcts` supports local NetCDF files or local or remote [Zarr](https://zarr.readthedocs.io/en/stable/) directories.
+`xcube-server` supports local NetCDF files or local or remote [Zarr](https://zarr.readthedocs.io/en/stable/) directories.
 Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
 object storage (OBS).
 
-As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/local/config.yml).
+As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-server/blob/master/xcube-server/res/local/config.yml).
 
 ## OGC WMTS compatibility
 
-`xcts` currently only conforms to the REST API of version 1.0
+`xcube-server` currently only conforms to the REST API of version 1.0
 of the [OGC WMTS specification](http://www.opengeospatial.org/standards/wmts). 
 
 The following operations are supported:
 
-* **GetCapabilities**: `/xcts-wmts/1.0.0/WMTSCapabilities.xml`
-* **GetTile**: `/xcts-wmts/1.0.0/tile/{DatasetName}/{VarName}/{TileMatrix}/{TileCol}/{TileRow}.png`
+* **GetCapabilities**: `/xcube/wmts/1.0.0/WMTSCapabilities.xml`
+* **GetTile**: `/xcube/wmts/1.0.0/tile/{DatasetName}/{VarName}/{TileMatrix}/{TileCol}/{TileRow}.png`
 * **GetFeatureInfo**: *in progress*
  
 
@@ -36,8 +36,8 @@ The following operations are supported:
 
 Initially
 
-    $ git clone https://github.com/bcdev/xcube-tileserver.git
-    $ cd xcube-tileserver
+    $ git clone https://github.com/bcdev/xcube-server.git
+    $ cd xcube-server
     $ conda env create
 
 If the last command fails because `xcube-dev` environment already exists, then just update it
@@ -46,36 +46,40 @@ If the last command fails because `xcube-dev` environment already exists, then j
 
 Once in a while
 
-    $ cd xcube-tileserver
+    $ cd xcube-server
     $ git pull
 
 Install
 
     $ source activate xcube-dev
     $ python setup.py develop
-    $ pytest --cov=xcts
+    $ pytest --cov=xcube_server
 
 To run the server on default port 8080:
 
-    $ xcts -v -c xcts/res/demo/config.yml
+    $ xcube-server -v -c xcube_server/res/demo/config.yml
+
+or shorter
+
+    $ xcs -v -c xcube_server/res/demo/config.yml
 
 Test it:
 
 * WMTS:
-  * [/xcts-wmts/1.0.0/WMTSCapabilities.xml](http://localhost:8080/xcts-wmts/1.0.0/WMTSCapabilities.xml)
-  * [/xcts-wmts/1.0.0/tile/local/conc_chl/0/0/1.png](http://localhost:8080/xcts-wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-  * [/xcts-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png](http://localhost:8080/xcts-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+  * [/xcube-wmts/1.0.0/WMTSCapabilities.xml](http://localhost:8080/xcube-wmts/1.0.0/WMTSCapabilities.xml)
+  * [/xcube-wmts/1.0.0/tile/local/conc_chl/0/0/1.png](http://localhost:8080/xcube-wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+  * [/xcube-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png](http://localhost:8080/xcube-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
 * Tiles
-  * [/xcts/tile/local/conc_chl/0/1/0.png](http://localhost:8080/xcts/tile/local/conc_chl/0/1/0.png)
-  * [/xcts/tile/remote/conc_chl/0/1/0.png](http://localhost:8080/xcts/tile/remote/conc_chl/0/1/0.png)
+  * [/xcube/tile/local/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/local/conc_chl/0/1/0.png)
+  * [/xcube/tile/remote/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/remote/conc_chl/0/1/0.png)
 * Tile grids
-  * [/xcts/tilegrid/local/conc_chl/ol4.json](http://localhost:8080/xcts/tilegrid/local/conc_chl/ol4.json)
-  * [/xcts/tilegrid/local/conc_chl/cesium.json](http://localhost:8080/xcts/tilegrid/local/conc_chl/cesium.json)
-  * [/xcts/tilegrid/remote/conc_chl/ol4.json](http://localhost:8080/xcts/tilegrid/remote/conc_chl/ol4.json)
-  * [/xcts/tilegrid/remote/conc_chl/cesium.json](http://localhost:8080/xcts/tilegrid/remote/conc_chl/cesium.json)
+  * [/xcube/tilegrid/local/conc_chl/ol4.json](http://localhost:8080/xcube/tilegrid/local/conc_chl/ol4.json)
+  * [/xcube/tilegrid/local/conc_chl/cesium.json](http://localhost:8080/xcube/tilegrid/local/conc_chl/cesium.json)
+  * [/xcube/tilegrid/remote/conc_chl/ol4.json](http://localhost:8080/xcube/tilegrid/remote/conc_chl/ol4.json)
+  * [/xcube/tilegrid/remote/conc_chl/cesium.json](http://localhost:8080/xcube/tilegrid/remote/conc_chl/cesium.json)
 * Color bars service:
-  * [/xcts/colorbars.json](http://localhost:8080/xcts/colorbars.json)
-  * [/xcts/colorbars.html](http://localhost:8080/xcts/colorbars.html)
+  * [/xcube/colorbars.json](http://localhost:8080/xcube/colorbars.json)
+  * [/xcube/colorbars.html](http://localhost:8080/xcube/colorbars.html)
 
 
 ### Clients
@@ -94,15 +98,14 @@ Here is how to use configure an OpenLayers tile layer from WMTS capabilities:
 
 To run the [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
-into the `xcube-tileserver` source directory so that there exists an 
+into the `xcube-server` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
-in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/xcts/res/demo/index-cesium.html).
+in the [demo's HTML file](https://github.com/bcdev/xcube-server/blob/master/xcube_server/res/demo/index-cesium.html).
 
 ## TODO
 
 ### Project
 
-* Make this xcube-server
 * Move to public GitHub organisation
 * Build on Travis & AppVeyor
 * Configure Flake8
@@ -113,7 +116,7 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-tileserver/blob/master/
 * Feature: WMTS GetFeatureInfo
 * Feature: Add layer selector and time slider to OL demo client
 * Feature: Let users specify TileGrid in configuration
-* Bug/Performance: /xcts-wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
+* Bug/Performance: /xcube/wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
   169466.91ms - investigate and e.g. cache.
 * Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
   There may be different identifiers that have the same path!

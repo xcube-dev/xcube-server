@@ -26,10 +26,10 @@ import sys
 
 from tornado.web import Application, StaticFileHandler
 
-from xcts import __version__, __description__
-from xcts.handlers import NE2TileHandler, DatasetTileHandler, InfoHandler, NE2TileGridHandler, \
+from xcube_server import __version__, __description__
+from xcube_server.handlers import NE2TileHandler, DatasetTileHandler, InfoHandler, NE2TileGridHandler, \
     DatasetTileGridHandler, WMTSCapabilitiesXmlHandler, ColorBarsJsonHandler
-from xcts.service import url_pattern, Service, DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, DEFAULT_CONFIG_FILE
+from xcube_server.service import url_pattern, Service, DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, DEFAULT_CONFIG_FILE
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -38,14 +38,14 @@ def new_application():
     application = Application([
         ('/res/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
         (url_pattern('/'), InfoHandler),
-        (url_pattern('/xcts-wmts/1.0.0/WMTSCapabilities.xml'), WMTSCapabilitiesXmlHandler),
-        (url_pattern('/xcts-wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), DatasetTileHandler),
-        (url_pattern('/xcts/tile/{{ds_name}}/{{var_name}}/{{z}}/{{x}}/{{y}}.png'), DatasetTileHandler),
-        (url_pattern('/xcts/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), DatasetTileGridHandler),
-        (url_pattern('/xcts/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),
-        (url_pattern('/xcts/tilegrid/ne2/{{format_name}}'), NE2TileGridHandler),
-        (url_pattern('/xcts/colorbars.json'), ColorBarsJsonHandler, dict(format_name='text/json')),
-        (url_pattern('/xcts/colorbars.html'), ColorBarsJsonHandler, dict(format_name='text/html')),
+        (url_pattern('/xcube/wmts/1.0.0/WMTSCapabilities.xml'), WMTSCapabilitiesXmlHandler),
+        (url_pattern('/xcube/wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), DatasetTileHandler),
+        (url_pattern('/xcube/tile/{{ds_name}}/{{var_name}}/{{z}}/{{x}}/{{y}}.png'), DatasetTileHandler),
+        (url_pattern('/xcube/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), DatasetTileGridHandler),
+        (url_pattern('/xcube/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), NE2TileHandler),
+        (url_pattern('/xcube/tilegrid/ne2/{{format_name}}'), NE2TileGridHandler),
+        (url_pattern('/xcube/colorbars.json'), ColorBarsJsonHandler, dict(format_name='text/json')),
+        (url_pattern('/xcube/colorbars.html'), ColorBarsJsonHandler, dict(format_name='text/html')),
     ])
     return application
 

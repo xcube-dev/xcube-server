@@ -101,4 +101,4 @@ class InfoHandler(ServiceRequestHandler):
 
     def get(self):
         self.set_header('Content-Type', 'text/json')
-        self.write(json.dumps(dict(name='xcts', description=__description__, version=__version__), indent=2))
+        self.write(json.dumps(dict(name='xcube_server', description=__description__, version=__version__), indent=2))

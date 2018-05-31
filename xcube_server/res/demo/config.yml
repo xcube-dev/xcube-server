@@ -1,6 +1,6 @@
 Datasets:
   - Identifier: local
-    Title: "Local NetCDF Demonstration Dataset for xcts"
+    Title: "Local NetCDF Demonstration Dataset for xcube_server"
     Path: "cube.nc"
     Style: default
 

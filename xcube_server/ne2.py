@@ -21,9 +21,9 @@
 
 import os
 
-from xcts.im.geoextent import GeoExtent
-from xcts.im.tiledimage import AbstractTiledImage, ImagePyramid
-from xcts.im.tilegrid import TileGrid
+from xcube_server.im.geoextent import GeoExtent
+from xcube_server.im.tiledimage import AbstractTiledImage, ImagePyramid
+from xcube_server.im.tilegrid import TileGrid
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

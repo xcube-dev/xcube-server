@@ -33,7 +33,7 @@ from .cmaps import ensure_cmaps_loaded
 from .geoextent import GeoExtent
 from .tilegrid import TileGrid
 from .utils import downsample_ndarray, aggregate_ndarray_first
-from xcts.cache import Cache, MemoryCacheStore
+from xcube_server.cache import Cache, MemoryCacheStore
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 

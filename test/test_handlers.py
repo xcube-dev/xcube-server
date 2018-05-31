@@ -1,7 +1,7 @@
 from tornado.testing import AsyncHTTPTestCase
 
 from test.helpers import new_test_service_context
-from xcts.app import new_application
+from xcube_server.app import new_application
 
 
 # For usage of the tornado.testing.AsyncHTTPTestCase see http://www.tornadoweb.org/en/stable/testing.html
@@ -17,45 +17,45 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertEqual(200, response.code)
 
     def test_fetch_wmts_capabilities(self):
-        response = self.fetch('/xcts-wmts/1.0.0/WMTSCapabilities.xml')
+        response = self.fetch('/xcube/wmts/1.0.0/WMTSCapabilities.xml')
         self.assertEqual(200, response.code)
 
     def test_fetch_wmts_tile(self):
-        response = self.fetch('/xcts-wmts/1.0.0/tile/demo/conc_chl/0/0/0.png')
+        response = self.fetch('/xcube/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png')
         self.assertEqual(200, response.code)
 
     def test_fetch_wmts_tile_with_params(self):
-        response = self.fetch('/xcts-wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
+        response = self.fetch('/xcube/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile(self):
-        response = self.fetch('/xcts/tile/demo/conc_chl/0/0/0.png')
+        response = self.fetch('/xcube/tile/demo/conc_chl/0/0/0.png')
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile_with_params(self):
-        response = self.fetch('/xcts/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
+        response = self.fetch('/xcube/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile_grid_ol4_json(self):
-        response = self.fetch('/xcts/tilegrid/demo/conc_chl/ol4.json')
+        response = self.fetch('/xcube/tilegrid/demo/conc_chl/ol4.json')
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile_grid_cesium_json(self):
-        response = self.fetch('/xcts/tilegrid/demo/conc_chl/cesium.json')
+        response = self.fetch('/xcube/tilegrid/demo/conc_chl/cesium.json')
         self.assertEqual(200, response.code)
 
     def test_fetch_ne2_tile(self):
-        response = self.fetch('/xcts/tile/ne2/0/0/0.jpg')
+        response = self.fetch('/xcube/tile/ne2/0/0/0.jpg')
         self.assertEqual(200, response.code)
 
     def test_fetch_ne2_tile_grid(self):
-        response = self.fetch('/xcts/tilegrid/ne2/ol4.json')
+        response = self.fetch('/xcube/tilegrid/ne2/ol4.json')
         self.assertEqual(200, response.code)
 
     def test_fetch_color_bars_json(self):
-        response = self.fetch('/xcts/colorbars.json')
+        response = self.fetch('/xcube/colorbars.json')
         self.assertEqual(200, response.code)
 
     def test_fetch_color_bars_html(self):
-        response = self.fetch('/xcts/colorbars.html')
+        response = self.fetch('/xcube/colorbars.html')
         self.assertEqual(200, response.code)
