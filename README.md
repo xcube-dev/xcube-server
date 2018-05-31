@@ -70,9 +70,9 @@ or shorter
 Test it:
 
 * WMTS:
-  * [/xcube-wmts/1.0.0/WMTSCapabilities.xml](http://localhost:8080/xcube-wmts/1.0.0/WMTSCapabilities.xml)
-  * [/xcube-wmts/1.0.0/tile/local/conc_chl/0/0/1.png](http://localhost:8080/xcube-wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-  * [/xcube-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png](http://localhost:8080/xcube-wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+  * [/xcube/wmts/1.0.0/WMTSCapabilities.xml](http://localhost:8080/xcube/wmts/1.0.0/WMTSCapabilities.xml)
+  * [/xcube/wmts/1.0.0/tile/local/conc_chl/0/0/1.png](http://localhost:8080/xcube/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+  * [/xcube/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png](http://localhost:8080/xcube/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
 * Tile service
   * [/xcube/tile/local/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/local/conc_chl/0/1/0.png)
   * [/xcube/tile/remote/conc_chl/0/1/0.png](http://localhost:8080/xcube/tile/remote/conc_chl/0/1/0.png)
