@@ -346,7 +346,7 @@
     </Contents>
     <Themes>
         <Theme>
-            <ows:Title>xcube-server Demonstration Dataset</ows:Title>
+            <ows:Title>xcube-server Demonstration L2C Cube</ows:Title>
             <ows:Abstract></ows:Abstract>
             <ows:Identifier>demo</ows:Identifier>
             <Theme>
@@ -376,7 +376,7 @@
             </Theme>
         </Theme>
         <Theme>
-            <ows:Title>Local HIGHROC OLCI weekly L3 cube for region SNS</ows:Title>
+            <ows:Title>xcube-server Demonstration L3 Cube</ows:Title>
             <ows:Abstract></ows:Abstract>
             <ows:Identifier>demo-1w</ows:Identifier>
             <Theme>
