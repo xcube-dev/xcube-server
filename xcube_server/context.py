@@ -23,7 +23,7 @@ import concurrent.futures
 import logging
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -52,7 +52,7 @@ class ServiceContext:
     def __init__(self, base_dir=None, config: Config = None):
         self.base_dir = os.path.abspath(base_dir or '')
         self._config = config or dict()
-        self.dataset_cache = dict() # contains tuples of form (ds, ds_descriptor, tile_grid_cache)
+        self.dataset_cache = dict()  # contains tuples of form (ds, ds_descriptor, tile_grid_cache)
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_MAX_THREAD_COUNT,
                                                                  thread_name_prefix='xcube_server')
         self.pyramid_cache = dict()
@@ -74,16 +74,18 @@ class ServiceContext:
     @config.setter
     def config(self, config: Config):
         if self._config:
-            old_dataset_descriptors = self._config.get('datasets')
-            new_dataset_descriptors = config.get('datasets')
+            old_dataset_descriptors = self._config.get('Datasets')
+            new_dataset_descriptors = config.get('Datasets')
             if not new_dataset_descriptors:
                 for ds, _, _ in self.dataset_cache.values():
                     ds.close()
                 self.dataset_cache.clear()
             if new_dataset_descriptors and old_dataset_descriptors:
-                for ds_name in self.dataset_cache.keys():
-                    if ds_name not in new_dataset_descriptors:
-                        ds, _ = old_dataset_descriptors[ds_name]
+                ds_names = list(self.dataset_cache.keys())
+                for ds_name in ds_names:
+                    dataset_descriptor = _find_dataset_descriptor(new_dataset_descriptors, ds_name)
+                    if dataset_descriptor is None:
+                        ds, _, _ = self.dataset_cache[ds_name]
                         ds.close()
                         del self.dataset_cache[ds_name]
         self._config = config
@@ -453,11 +455,13 @@ class ServiceContext:
         dataset, variable = self.get_dataset_and_variable(ds_name, var_name)
         tile_grid = self.get_tile_grid(ds_name, var_name, variable)
         if format_name == 'ol4.json':
-            return _tile_grid_to_ol4_xyz_source_options(
-                self.get_dataset_tile_url(ds_name, var_name, base_url), tile_grid)
+            return get_tile_source_options(tile_grid,
+                                           self.get_dataset_tile_url(ds_name, var_name, base_url),
+                                           client='ol4')
         elif format_name == 'cesium.json':
-            return _tile_grid_to_cesium_source_options(
-                self.get_dataset_tile_url(ds_name, var_name, base_url), tile_grid)
+            return get_tile_source_options(tile_grid,
+                                           self.get_dataset_tile_url(ds_name, var_name, base_url),
+                                           client='cesium')
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
@@ -480,8 +484,9 @@ class ServiceContext:
 
     def get_ne2_tile_grid(self, format_name: str, base_url: str):
         if format_name == 'ol4.json':
-            return _tile_grid_to_ol4_xyz_source_options(base_url + '/xcube/tile/ne2/{z}/{x}/{y}.jpg',
-                                                        NaturalEarth2Image.get_pyramid().tile_grid)
+            return get_tile_source_options(NaturalEarth2Image.get_pyramid().tile_grid,
+                                           base_url + '/xcube/tile/ne2/{z}/{x}/{y}.jpg',
+                                           client='ol4')
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
@@ -524,11 +529,10 @@ class ServiceContext:
         dataset_descriptors = self.get_dataset_descriptors()
         if not dataset_descriptors:
             raise ServiceConfigError(f"No datasets configured")
-        # TODO: optimize by dict/key lookup
-        for dataset_descriptor in dataset_descriptors:
-            if dataset_descriptor['Identifier'] == ds_name:
-                return dataset_descriptor
-        raise ServiceResourceNotFoundError(f"Dataset {ds_name!r} not found")
+        dataset_descriptor = _find_dataset_descriptor(dataset_descriptors, ds_name)
+        if dataset_descriptor is None:
+            raise ServiceResourceNotFoundError(f"Dataset {ds_name!r} not found")
+        return dataset_descriptor
 
     def get_color_mapping(self, ds_name: str, var_name: str):
         dataset_descriptor = self.get_dataset_descriptor(ds_name)
@@ -608,7 +612,7 @@ class ServiceContext:
         return ds, ds.coords[dim_name]
 
     def get_or_compute_tile_grid(self, ds_name: str, var: xr.DataArray):
-        self.get_dataset(ds_name) # make sure ds_name provides a cached entry
+        self.get_dataset(ds_name)  # make sure ds_name provides a cached entry
         _, _, tile_grid_cache = self.dataset_cache[ds_name]
         shape = var.shape
         tile_grid_key = f'tg_{shape[-1]}_{shape[-2]}'
@@ -618,6 +622,12 @@ class ServiceContext:
             tile_grid = compute_tile_grid(var)
             tile_grid_cache[tile_grid_key] = tile_grid
         return tile_grid
+
+
+def _find_dataset_descriptor(dataset_descriptors: List[Dict[str, Any]], ds_name: str) -> Optional[Dict[str, Any]]:
+    # TODO: optimize by dict/key lookup
+    return next((dsd for dsd in dataset_descriptors if dsd['Identifier'] == ds_name), None)
+
 
 def _get_var_indexers(ds_name: str,
                       var_name: str,
@@ -651,7 +661,16 @@ def _get_var_indexers(ds_name: str,
     return var_indexers
 
 
-def _tile_grid_to_ol4_xyz_source_options(url: str, tile_grid: TileGrid):
+def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol4'):
+    if client == 'ol4':
+        # OpenLayers 4.x
+        return _tile_grid_to_ol4x_xyz_source_options(tile_grid, url)
+    else:
+        # Cesium 1.x
+        return _tile_grid_to_cesium1x_source_options(tile_grid, url)
+
+
+def _tile_grid_to_ol4x_xyz_source_options(tile_grid: TileGrid, url: str):
     """
     Convert TileGrid into options to be used with ol.source.XYZ(options) of OpenLayers 4.x.
 
@@ -678,7 +697,7 @@ def _tile_grid_to_ol4_xyz_source_options(url: str, tile_grid: TileGrid):
                               resolutions=[res0 / (2 ** i) for i in range(tile_grid.num_levels)]))
 
 
-def _tile_grid_to_cesium_source_options(url: str, tile_grid: TileGrid):
+def _tile_grid_to_cesium1x_source_options(tile_grid: TileGrid, url: str):
     """
     Convert TileGrid into options to be used with Cesium.UrlTemplateImageryProvider(options) of Cesium 1.45+.
 

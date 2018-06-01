@@ -1,6 +1,5 @@
 import os
 import unittest
-from typing import Dict, Optional
 
 import xarray as xr
 
@@ -12,6 +11,37 @@ from xcube_server.errors import ServiceBadRequestError, ServiceResourceNotFoundE
 class ServiceContextTest(unittest.TestCase):
 
     # TODO: test error cases!
+
+    def test_config_and_dataset_cache(self):
+        ctx = new_test_service_context()
+        self.assertNotIn('demo', ctx.dataset_cache)
+
+        ctx.get_dataset('demo')
+        self.assertIn('demo', ctx.dataset_cache)
+
+        ctx.config = dict(Datasets=[
+            dict(Identifier='demo',
+                 Path="../../../xcube_server/res/demo/cube.nc"),
+            dict(Identifier='demo2',
+                 Path="../../../xcube_server/res/demo/cube.nc"),
+        ])
+        self.assertIn('demo', ctx.dataset_cache)
+        self.assertNotIn('demo2', ctx.dataset_cache)
+
+        ctx.get_dataset('demo2')
+        self.assertIn('demo', ctx.dataset_cache)
+        self.assertIn('demo2', ctx.dataset_cache)
+
+        ctx.config = dict(Datasets=[
+            dict(Identifier='demo2',
+                 Path="../../../xcube_server/res/demo/cube.nc"),
+        ])
+        self.assertNotIn('demo', ctx.dataset_cache)
+        self.assertIn('demo2', ctx.dataset_cache)
+
+        ctx.config = dict()
+        self.assertNotIn('demo', ctx.dataset_cache)
+        self.assertNotIn('demo2', ctx.dataset_cache)
 
     def test_get_capabilities(self):
         self.maxDiff = None

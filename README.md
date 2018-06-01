@@ -119,6 +119,8 @@ At project level:
 
 In code:
 
+* Bug/Performance: ServiceContext.dataset_cache uses dataset names as ID, but actually, caching of *open* datasets 
+  should be based on *same* dataset sources, namely given the local file path or the remote URL
 * Feature: WMTS GetFeatureInfo
 * Feature: Add layer selector and time slider to OL demo client
 * Feature: Let users specify TileGrid in configuration
