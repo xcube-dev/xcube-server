@@ -137,4 +137,5 @@ In code:
   effectively selected coordinates.
 * Feature/Performance: use multi-resolution levels embedded in future cube datasets
 * Feature/Performance: consider external chunking when computing TileGrid
+* Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache.
 

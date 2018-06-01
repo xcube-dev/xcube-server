@@ -42,6 +42,8 @@ from .ne2 import NaturalEarth2Image
 from .reqparams import RequestParams
 from .tile import compute_tile_grid
 
+COMPUTE_DATASET = 'compute_dataset'
+
 _LOG = logging.getLogger('xcube')
 
 Config = Dict[str, Any]
@@ -318,10 +320,6 @@ class ServiceContext:
         themes_xml_lines.append((1, '</Themes>'))
         themes_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in themes_xml_lines])
 
-        # print(80 * '=')
-        # print(contents_xml)
-        # print(80 * '=')
-
         get_capablities_rest_url = base_url + '/xcube/wmts/1.0.0/WMTSCapabilities.xml'
         service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
 
@@ -592,6 +590,52 @@ class ServiceContext:
                     ds = xr.open_zarr(path)
                 else:
                     raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
+            elif fs_type == 'computed':
+                if not os.path.isabs(path):
+                    path = os.path.join(self.base_dir, path)
+                with open(path) as fp:
+                    python_code = fp.read()
+
+                local_env = dict()
+                global_env = None
+                try:
+                    exec(python_code, global_env, local_env)
+                except Exception as e:
+                    raise ServiceError(f"Failed to compute dataset {ds_name!r} from {path!r}: {e}") from e
+
+                callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
+                callable_args = dataset_descriptor.get('Args', [])
+
+                callable_obj = local_env.get(callable_name)
+                if callable_obj is None:
+                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_name!r}: "
+                                             f"no callable named {callable_name!r} found in {path!r}")
+                elif not callable(callable_obj):
+                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_name!r}: "
+                                             f"object {callable_name!r} in {path!r} is not callable")
+
+                args = list()
+                for arg_value in callable_args:
+                    if isinstance(arg_value, str) and len(arg_value) > 2 \
+                            and arg_value.startswith('@') and arg_value.endswith('@'):
+                        ref_ds_name = arg_value[1:-1]
+                        if not self.get_dataset_descriptor(ref_ds_name):
+                            raise ServiceConfigError(f"Invalid dataset descriptor {ds_name!r}: "
+                                                     f"argument {arg_value!r} of callable {callable_name!r} "
+                                                     f"must reference another dataset")
+                        args.append(self.get_dataset(ref_ds_name))
+                    else:
+                        args.append(arg_value)
+
+                try:
+                    ds = callable_obj(*args)
+                except Exception as e:
+                    raise ServiceError(f"Failed to compute dataset {ds_name!r} "
+                                       f"from function {callable_name!r} in {path!r}: {e}") from e
+                if not isinstance(ds, xr.Dataset):
+                    raise ServiceError(f"Failed to compute dataset {ds_name!r} "
+                                       f"from function {callable_name!r} in {path!r}: "
+                                       f"expected an xarray.Dataset but got a {type(ds)}")
             else:
                 raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_name!r}")
 

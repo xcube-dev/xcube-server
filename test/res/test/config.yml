@@ -4,6 +4,13 @@ Datasets:
     Path: "../../../xcube_server/res/demo/cube.nc"
     Style: default
 
+  - Identifier: demo-1w
+    Title: "Local HIGHROC OLCI weekly L3 cube for region SNS"
+    FileSystem: "computed"
+    Path: "script.py"
+    Args: ["@demo@", "1W"]
+    Style: default
+
 Styles:
   - Identifier: default
     ColorMappings:
