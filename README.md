@@ -21,7 +21,7 @@ xcube datasets are any datasets that
 Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
 object storage (OBS).
 
-As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-server/blob/master/xcube-server/res/local/config.yml).
+As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-server/blob/master/xcube_server/res/demo/config.yml).
 
 ## OGC WMTS compatibility
 
