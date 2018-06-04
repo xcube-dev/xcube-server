@@ -77,7 +77,7 @@
             for(let dataset of datasetsJson.datasets){
                 datasetName  = dataset.name;
                 let overlayGroup = new ol.layer.Group({
-                    title: datasetName,
+                    title: dataset.title || dataset.name,
                     layers: [
                     ]
                 });
@@ -94,7 +94,7 @@
                         datasets[name][variableName] = variable;
                         overlayGroup.getLayers().push(
                             new ol.layer.Tile({
-                                title: variableName,
+                                title: variable.title || variable.name,
                                 type: 'base',
                                 visible: false,
                                 source: newTileXYZSourceFromJsonOptions(variable.tileSourceOptions)
