@@ -21,7 +21,7 @@ xcube datasets are any datasets that
 Remote Zarr directories must be stored in publicly accessible, AWS S3 compatible 
 object storage (OBS).
 
-As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-server/blob/master/xcube-server/res/local/config.yml).
+As an example, here is the [configuration of the demo server](https://github.com/bcdev/xcube-server/blob/master/xcube_server/res/demo/config.yml).
 
 ## OGC WMTS compatibility
 
@@ -119,6 +119,8 @@ At project level:
 
 In code:
 
+* Bug/Performance: ServiceContext.dataset_cache uses dataset names as ID, but actually, caching of *open* datasets 
+  should be based on *same* dataset sources, namely given the local file path or the remote URL
 * Feature: WMTS GetFeatureInfo
 * Feature: Add layer selector and time slider to OL demo client
 * Feature: Let users specify TileGrid in configuration
@@ -135,4 +137,5 @@ In code:
   effectively selected coordinates.
 * Feature/Performance: use multi-resolution levels embedded in future cube datasets
 * Feature/Performance: consider external chunking when computing TileGrid
+* Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache.
 

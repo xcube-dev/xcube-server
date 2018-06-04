@@ -51,7 +51,7 @@
 
     var viewer = new Cesium.Viewer('globe');
 
-    getXCubeImageryProvider('http://localhost:8080/xcube/tilegrid/demo/conc_chl/cesium.json')
+    getXCubeImageryProvider('http://localhost:8080/xcube/tilegrid/local/conc_tsm/cesium.json')
     .then(imageryProvider => {
         var imageryLayer = viewer.imageryLayers.addImageryProvider(imageryProvider);
         imageryLayer.minificationFilter = Cesium.TextureMinificationFilter.NEAREST;

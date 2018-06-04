@@ -1,17 +1,26 @@
 Datasets:
   - Identifier: local
-    Title: "Local NetCDF Demonstration Dataset"
+    Title: "Local HIGHROC OLCI L2C cube for region SNS"
     Path: "cube.nc"
+    FileSystem: "local"
     Style: default
 
   - Identifier: remote
-    Title: "Remote DCS4COP OLCI RAW CUBE for region SNS"
+    Title: "Remote HIGHROC OLCI L2C cube for region SNS"
     Endpoint: "http://obs.eu-de.otc.t-systems.com"
     Path: "dcs4cop-obs-01/OLCI-SNS-RAW-CUBE-2.zarr"
     FileSystem: "obs"
     Region: "eu-de"
     Style: default
 
+  - Identifier: computed
+    Title: "Local HIGHROC OLCI weekly L3 cube for region SNS"
+    FileSystem: "computed"
+    Path: "resample_in_time.py"
+    Function: "compute_dataset"
+    #Args: ["@remote@", "1W"]
+    Args: ["@local@", "1W"]
+    Style: default
 
 Styles:
   - Identifier: default

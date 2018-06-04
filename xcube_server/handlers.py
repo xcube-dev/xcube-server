@@ -24,7 +24,7 @@ import json
 from tornado import gen
 from tornado.ioloop import IOLoop
 
-from xcube_server.context import _tile_grid_to_ol4_xyz_source_options
+from xcube_server.context import get_tile_source_options
 from . import __version__, __description__
 from .service import ServiceRequestHandler
 
@@ -58,6 +58,7 @@ class GetVariablesJsonHandler(ServiceRequestHandler):
     @gen.coroutine
     def get(self, ds_name: str):
         ds = self.service_context.get_dataset(ds_name)
+        client = self.params.get_query_argument('client', 'ol4')
         variables = list()
         for var_name in ds.data_vars:
             var = ds.data_vars[var_name]
@@ -65,10 +66,10 @@ class GetVariablesJsonHandler(ServiceRequestHandler):
                 continue
             attrs = var.attrs
             tile_grid = self.service_context.get_or_compute_tile_grid(ds_name, var)
-            # TODO: add parameter to switch between clients for tileSourceOptions
-            ol_tile_xyz_source_options = _tile_grid_to_ol4_xyz_source_options(
-                self.service_context.get_dataset_tile_url(ds_name, var_name, self.base_url),
-                tile_grid)
+            ol_tile_xyz_source_options = get_tile_source_options(tile_grid,
+                                                                 self.service_context.get_dataset_tile_url(
+                                                                     ds_name, var_name, self.base_url),
+                                                                 client)
             variables.append(dict(id=f'{ds_name}{var_name}',
                                   name=var_name,
                                   dims=list(var.dims),

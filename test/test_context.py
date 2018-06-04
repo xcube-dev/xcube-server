@@ -1,6 +1,5 @@
 import os
 import unittest
-from typing import Dict, Optional
 
 import xarray as xr
 
@@ -13,12 +12,46 @@ class ServiceContextTest(unittest.TestCase):
 
     # TODO: test error cases!
 
+    def test_config_and_dataset_cache(self):
+        ctx = new_test_service_context()
+        self.assertNotIn('demo', ctx.dataset_cache)
+
+        ctx.get_dataset('demo')
+        self.assertIn('demo', ctx.dataset_cache)
+
+        ctx.config = dict(Datasets=[
+            dict(Identifier='demo',
+                 Path="../../../xcube_server/res/demo/cube.nc"),
+            dict(Identifier='demo2',
+                 Path="../../../xcube_server/res/demo/cube.nc"),
+        ])
+        self.assertIn('demo', ctx.dataset_cache)
+        self.assertNotIn('demo2', ctx.dataset_cache)
+
+        ctx.get_dataset('demo2')
+        self.assertIn('demo', ctx.dataset_cache)
+        self.assertIn('demo2', ctx.dataset_cache)
+
+        ctx.config = dict(Datasets=[
+            dict(Identifier='demo2',
+                 Path="../../../xcube_server/res/demo/cube.nc"),
+        ])
+        self.assertNotIn('demo', ctx.dataset_cache)
+        self.assertIn('demo2', ctx.dataset_cache)
+
+        ctx.config = dict()
+        self.assertNotIn('demo', ctx.dataset_cache)
+        self.assertNotIn('demo2', ctx.dataset_cache)
+
     def test_get_capabilities(self):
         self.maxDiff = None
         with open(os.path.join(get_res_test_dir(), 'WMTSCapabilities.xml')) as fp:
             expected_capabilities = fp.read()
         ctx = new_test_service_context()
         capabilities = ctx.get_wmts_capabilities('text/xml', 'http://bibo')
+        print(80*'=')
+        print(capabilities)
+        print(80*'=')
         self.assertEqual(expected_capabilities, capabilities)
 
     def test_get_dataset_tile(self):

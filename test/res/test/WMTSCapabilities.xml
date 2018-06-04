@@ -228,10 +228,125 @@
                 <Value>2017-01-30T10:46:29.566899712/2017-01-30T10:46:38.106885120</Value>
             </Dimension>
         </Layer>
+        <Layer>
+            <ows:Identifier>demo-1w.quality_flags</ows:Identifier>
+            <ows:Title>quality_flags</ows:Title>
+            <ows:Abstract></ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/wmts/1.0.0/tile/demo-1w/quality_flags/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-22T00:00:00.000000000</Value>
+                <Value>2017-01-29T00:00:00.000000000</Value>
+                <Value>2017-02-05T00:00:00.000000000</Value>
+            </Dimension>
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo-1w.kd489</ows:Identifier>
+            <ows:Title>kd489</ows:Title>
+            <ows:Abstract></ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/wmts/1.0.0/tile/demo-1w/kd489/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-22T00:00:00.000000000</Value>
+                <Value>2017-01-29T00:00:00.000000000</Value>
+                <Value>2017-02-05T00:00:00.000000000</Value>
+            </Dimension>
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo-1w.conc_tsm</ows:Identifier>
+            <ows:Title>conc_tsm</ows:Title>
+            <ows:Abstract></ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/wmts/1.0.0/tile/demo-1w/conc_tsm/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-22T00:00:00.000000000</Value>
+                <Value>2017-01-29T00:00:00.000000000</Value>
+                <Value>2017-02-05T00:00:00.000000000</Value>
+            </Dimension>
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo-1w.conc_chl</ows:Identifier>
+            <ows:Title>conc_chl</ows:Title>
+            <ows:Abstract></ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/wmts/1.0.0/tile/demo-1w/conc_chl/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-22T00:00:00.000000000</Value>
+                <Value>2017-01-29T00:00:00.000000000</Value>
+                <Value>2017-02-05T00:00:00.000000000</Value>
+            </Dimension>
+        </Layer>
+        <Layer>
+            <ows:Identifier>demo-1w.c2rcc_flags</ows:Identifier>
+            <ows:Title>c2rcc_flags</ows:Title>
+            <ows:Abstract></ows:Abstract>
+            <ows:WGS84BoundingBox>
+                <ows:LowerCorner>2.168404344971009e-19 50.0</ows:LowerCorner>
+                <ows:UpperCorner>5.0 52.5</ows:UpperCorner>
+            </ows:WGS84BoundingBox>
+            <Style isDefault="true"><ows:Identifier>Default</ows:Identifier></Style>
+            <Format>image/png</Format>
+            <TileMatrixSetLink><TileMatrixSet>TileGrid_2000_1000</TileMatrixSet></TileMatrixSetLink>
+            <ResourceURL format="image/png" resourceType="tile" template="http://bibo/xcube/wmts/1.0.0/tile/demo-1w/c2rcc_flags/{TileMatrix}/{TileCol}/{TileRow}.png"/>
+            <Dimension>
+                <ows:Identifier>time</ows:Identifier>
+                <ows:Title>time</ows:Title>
+                <ows:UOM>ISO8601</ows:UOM>
+                <Default>current</Default>
+                <Current>true</Current>
+                <Value>2017-01-22T00:00:00.000000000</Value>
+                <Value>2017-01-29T00:00:00.000000000</Value>
+                <Value>2017-02-05T00:00:00.000000000</Value>
+            </Dimension>
+        </Layer>
     </Contents>
     <Themes>
         <Theme>
-            <ows:Title>xcube-server Demonstration Dataset</ows:Title>
+            <ows:Title>xcube-server Demonstration L2C Cube</ows:Title>
             <ows:Abstract></ows:Abstract>
             <ows:Identifier>demo</ows:Identifier>
             <Theme>
@@ -258,6 +373,36 @@
                 <ows:Title>C2RCC quality flags</ows:Title>
                 <ows:Identifier>demo.c2rcc_flags</ows:Identifier>
                 <LayerRef>demo.c2rcc_flags</LayerRef>
+            </Theme>
+        </Theme>
+        <Theme>
+            <ows:Title>xcube-server Demonstration L3 Cube</ows:Title>
+            <ows:Abstract></ows:Abstract>
+            <ows:Identifier>demo-1w</ows:Identifier>
+            <Theme>
+                <ows:Title>quality_flags</ows:Title>
+                <ows:Identifier>demo-1w.quality_flags</ows:Identifier>
+                <LayerRef>demo-1w.quality_flags</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>kd489</ows:Title>
+                <ows:Identifier>demo-1w.kd489</ows:Identifier>
+                <LayerRef>demo-1w.kd489</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>conc_tsm</ows:Title>
+                <ows:Identifier>demo-1w.conc_tsm</ows:Identifier>
+                <LayerRef>demo-1w.conc_tsm</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>conc_chl</ows:Title>
+                <ows:Identifier>demo-1w.conc_chl</ows:Identifier>
+                <LayerRef>demo-1w.conc_chl</LayerRef>
+            </Theme>
+            <Theme>
+                <ows:Title>c2rcc_flags</ows:Title>
+                <ows:Identifier>demo-1w.c2rcc_flags</ows:Identifier>
+                <LayerRef>demo-1w.c2rcc_flags</LayerRef>
             </Theme>
         </Theme>
     </Themes>

@@ -1,14 +1,14 @@
 <!doctype html>
 <html lang="en">
-
 <head>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
     <!-- Tell IE to use the latest, best version. -->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <!-- Make the application on mobile take up the full browser screen and disable user scaling. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
     <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/css/ol.css" type="text/css">
     <link rel="stylesheet" href="../css/ol-layerswitcher.css" type="text/css" />
     <style>
@@ -41,7 +41,6 @@
     <script src="../js/ol-layerswitcher.js" type="text/javascript"></script>
     <title>xcube Tile Server Demo</title>
 </head>
-
 <body>
     <div id="map" class="map">
         <div style="height: 24px; padding: 4px; margin: 4px; position: absolute; bottom: 0px; z-index:100">
@@ -82,7 +81,7 @@
                     layers: [
                     ]
                 });
-                
+
                 fetch('http://localhost:8080/xcube/variables/' + datasetName + '.json')
                 .then(response => response.json())
                 .then(options => {
@@ -125,16 +124,16 @@
             info.innerHTML = "<strong>" + html + "</strong>";
         }
 
-        function onNewTime() {
-            if (timeValues === null || timeValues.length === 0) {
-                return null;
-            }
-            timeIndex += 1;
-            timeValue = timeValues[timeIndex % timeValues.length]
-            if (!timeValue) {
-                return;
-            }
-            updateTimeInfo();
+    function onNewTime() {
+        if (timeValues === null || timeValues.length === 0) {
+            return null;
+        }
+        timeIndex += 1;
+        timeValue = timeValues[timeIndex % timeValues.length]
+        if (!timeValue) {
+            return;
+        }
+        updateTimeInfo();
 
             map.getLayerGroup().getLayers().forEach((lyr) => {
                 let layerName = lyr.get('title');
@@ -191,5 +190,4 @@
 
     </script>
 </body>
-
 </html>
