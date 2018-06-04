@@ -51,13 +51,6 @@
         </div>
     </div>
     <script type="text/javascript">
-
-        /* var overlayGroup = new ol.layer.Group({
-                    title: 'test',
-                    layers: [
-                    ]
-                }); */
-
         var datasetNames = [];
         var animationId = null;
         var frameRate = 0.5; // frames per second
@@ -95,18 +88,16 @@
                 .then(options => {
                     variables = options.variables
                     let name = options.name;
+                    datasets[name] = [];
                     for (var variable of variables) {
                         var variableName = variable.name
-                        datasets[name] = [];
                         datasets[name].push(variableName);
-                        console.log('adding', name)
-                        console.log('adding2', variableName)
-                        datasets[name][variableName] = variable.tileSourceOptions;
-                        console.log('after adding', datasets[name])
+                        datasets[name][variableName] = variable;
                         overlayGroup.getLayers().push(
                             new ol.layer.Tile({
                                 title: variableName,
                                 type: 'base',
+                                visible: false,
                                 source: newTileXYZSourceFromJsonOptions(variable.tileSourceOptions)
                             })
                         )
@@ -117,10 +108,8 @@
                 .then(response => response.json())
                 .then(coords => {
                     timeValues = coords.values;
-                    console.log(timeValues);
                     initAnimation();
                 });
-                console.log('pushing overlayGroup', overlayGroup)
                 map.addLayer(overlayGroup);
             }
         })
@@ -147,21 +136,18 @@
             }
             updateTimeInfo();
 
-            console.log('groups', map.getLayerGroup().getLayers());
-            console.log('getLayers', map.getLayers());
-            console.log('getOverlays', map.getOverlays());
-
             map.getLayerGroup().getLayers().forEach((lyr) => {
-                console.log('datasets', datasets);
+                let layerName = lyr.get('title');
+                if(layerName){
+                    lyr.getLayers().forEach((lyr2) => {
+                        if(lyr2.get('visible')){
+                            let sourceOptions = datasets[layerName][lyr2.get('title')]['tileSourceOptions'];
+                            let newLayerSourceOptions = { ...sourceOptions, url: sourceOptions.url + '?time=' + timeValue };
+                            lyr2.setSource(newTileXYZSourceFromJsonOptions(newLayerSourceOptions));
+                        }
+                    })
+                }
             })
-
-/*             LayerSwitcher.forEachRecursive(map.getLayerGroup().getLayers(), (lyr) => {
-                console.log('lyr', lyr)
-                let visibleVariable = variables.find(x => x.name == lyr.get('title'));
-                console.log('visibleVariable', visibleVariable)
-                let newLayerSourceOptions = { ...visibleVariable.tileSourceOptions, url: visibleVariable.tileSourceOptions.url + '?time=' + timeValue };
-                lyr.setSource(newTileXYZSourceFromJsonOptions(newLayerSourceOptions));
-            }); */
         }
 
         function setButtonEnabled(id, enabled) {
