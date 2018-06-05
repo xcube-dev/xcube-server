@@ -57,7 +57,6 @@
         var timeValues = null;
         var timeValue = null;
         var timeIndex = 0;
-        var variables = [];
         var datasets = {};
 
         var map = new ol.Map({
@@ -75,33 +74,36 @@
         .then(response => response.json())
         .then(datasetsJson => {
             for(let dataset of datasetsJson.datasets){
-                datasetName  = dataset.name;
-                let overlayGroup = new ol.layer.Group({
-                    title: dataset.title || dataset.name,
+                var datasetName  = dataset.name;
+                var overlayGroup = new ol.layer.Group({
+                    name: datasetName,
+                    title: dataset.title || datasetName,
                     layers: [
                     ]
                 });
+                map.addLayer(overlayGroup);
 
                 fetch('http://localhost:8080/xcube/variables/' + datasetName + '.json')
                 .then(response => response.json())
                 .then(options => {
-                    variables = options.variables
-                    let name = options.name;
-                    datasets[name] = [];
+                    var variables = options.variables
+                    var datasetName = options.name;
+                    datasets[datasetName] = [];
                     for (var variable of variables) {
                         var variableName = variable.name
-                        datasets[name].push(variableName);
-                        datasets[name][variableName] = variable;
+                        datasets[datasetName].push(variableName);
+                        datasets[datasetName][variableName] = variable;
                         overlayGroup.getLayers().push(
                             new ol.layer.Tile({
-                                title: variable.title || variable.name,
+                                name: variableName,
+                                title: variable.title || variableName,
                                 type: 'base',
                                 visible: false,
                                 source: newTileXYZSourceFromJsonOptions(variable.tileSourceOptions)
                             })
-                        )
-                    }
-                })
+                        );
+                    }                   
+                });
 
                 fetch('http://localhost:8080/xcube/coords/' + datasetName + '/time.json')
                 .then(response => response.json())
@@ -109,7 +111,6 @@
                     timeValues = coords.values;
                     initAnimation();
                 });
-                map.addLayer(overlayGroup);
             }
         })
 
@@ -124,29 +125,30 @@
             info.innerHTML = "<strong>" + html + "</strong>";
         }
 
-    function onNewTime() {
-        if (timeValues === null || timeValues.length === 0) {
-            return null;
-        }
-        timeIndex += 1;
-        timeValue = timeValues[timeIndex % timeValues.length]
-        if (!timeValue) {
-            return;
-        }
-        updateTimeInfo();
+        function onNewTime() {
+            if (timeValues === null || timeValues.length === 0) {
+                return null;
+            }
+            timeIndex += 1;
+            timeValue = timeValues[timeIndex % timeValues.length]
+            if (!timeValue) {
+                return;
+            }
+            updateTimeInfo();
 
-            map.getLayerGroup().getLayers().forEach((lyr) => {
-                let layerName = lyr.get('title');
-                if(layerName){
-                    lyr.getLayers().forEach((lyr2) => {
-                        if(lyr2.get('visible')){
-                            let sourceOptions = datasets[layerName][lyr2.get('title')]['tileSourceOptions'];
-                            let newLayerSourceOptions = { ...sourceOptions, url: sourceOptions.url + '?time=' + timeValue };
-                            lyr2.setSource(newTileXYZSourceFromJsonOptions(newLayerSourceOptions));
+            map.getLayerGroup().getLayers().forEach((overlayGroup) => {
+                var datasetName = overlayGroup.get('name');
+                if (datasetName) {
+                    overlayGroup.getLayers().forEach((layer) => {
+                        if (layer.get('visible')) {
+                            var layerName = layer.get('name');
+                            var sourceOptions = datasets[datasetName][layerName]['tileSourceOptions'];
+                            var newLayerSourceOptions = { ...sourceOptions, url: sourceOptions.url + '?time=' + timeValue };
+                            layer.setSource(newTileXYZSourceFromJsonOptions(newLayerSourceOptions));
                         }
-                    })
+                    });
                 }
-            })
+            });
         }
 
         function setButtonEnabled(id, enabled) {
