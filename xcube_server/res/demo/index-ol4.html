@@ -75,17 +75,17 @@
         .then(datasetsJson => {
             for(let dataset of datasetsJson.datasets){
                 var datasetName  = dataset.name;
-                var overlayGroup = new ol.layer.Group({
-                    name: datasetName,
-                    title: dataset.title || datasetName,
-                    layers: [
-                    ]
-                });
-                map.addLayer(overlayGroup);
 
                 fetch('http://localhost:8080/xcube/variables/' + datasetName + '.json')
                 .then(response => response.json())
                 .then(options => {
+                    let name = options.name;
+                    var overlayGroup = new ol.layer.Group({
+                            name: name,
+                            title: dataset.title || name,
+                        layers: [
+                        ]
+                    });
                     var variables = options.variables
                     var datasetName = options.name;
                     datasets[datasetName] = [];
@@ -103,6 +103,7 @@
                             })
                         );
                     }                   
+                    map.addLayer(overlayGroup);
                 });
 
                 fetch('http://localhost:8080/xcube/coords/' + datasetName + '/time.json')
