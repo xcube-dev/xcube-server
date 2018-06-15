@@ -1,8 +1,11 @@
 Datasets:
   - Identifier: local
     Title: "Local HIGHROC OLCI L2C cube for region SNS"
-    Path: "cube.nc"
+    #Path: "cube.nc"
     FileSystem: "local"
+    #Path: "cube.nc"
+    Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
+    Format: zarr
     Style: default
 
   - Identifier: remote
@@ -14,7 +17,7 @@ Datasets:
     Style: default
 
   - Identifier: computed
-    Title: "Local HIGHROC OLCI weekly L3 cube for region SNS"
+    Title: "Computed HIGHROC OLCI weekly L3 cube for region SNS"
     FileSystem: "computed"
     Path: "resample_in_time.py"
     Function: "compute_dataset"
