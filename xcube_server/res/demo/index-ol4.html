@@ -119,7 +119,7 @@
             var info = document.getElementById('info');
             if (timeValue) {
                 html = timeValue;
-                html += ', step ' + timeIndex + " of " + timeValues.length;
+                html += ", step " + (timeIndex + 1) + " of " + timeValues.length;
             } else {
                 html = 'YYYY-DD-HH';
             }
@@ -131,7 +131,8 @@
                 return null;
             }
             timeIndex += 1;
-            timeValue = timeValues[timeIndex % timeValues.length]
+            timeIndex %= timeValues.length;
+            timeValue = timeValues[timeIndex];
             if (!timeValue) {
                 return;
             }
