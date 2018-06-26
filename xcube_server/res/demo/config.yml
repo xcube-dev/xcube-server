@@ -1,11 +1,10 @@
 Datasets:
   - Identifier: local
     Title: "Local HIGHROC OLCI L2C cube for region SNS"
-    #Path: "cube.nc"
     FileSystem: "local"
-    #Path: "cube.nc"
-    Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
-    Format: zarr
+    Path: "cube.nc"
+    #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
+    #Format: zarr
     Style: default
 
   - Identifier: remote
