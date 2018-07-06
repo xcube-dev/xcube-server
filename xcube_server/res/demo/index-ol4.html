@@ -50,6 +50,8 @@
         </div>
     </div>
     <script type="text/javascript">
+        // var baseUrl = 'http://www.brockmann-consult.de:9090/';
+        var baseUrl = 'http://localhost:9090/';
         var datasetNames = [];
         var animationId = null;
         var frameRate = 0.5; // frames per second
@@ -70,13 +72,13 @@
             })
         });
 
-        fetch('http://localhost:8080/xcube/datasets.json')
+        fetch(baseUrl + 'xcube/datasets.json')
         .then(response => response.json())
         .then(datasetsJson => {
             for(let dataset of datasetsJson.datasets){
                 var datasetName  = dataset.name;
 
-                fetch('http://localhost:8080/xcube/variables/' + datasetName + '.json')
+                fetch(baseUrl + 'xcube/variables/' + datasetName + '.json')
                 .then(response => response.json())
                 .then(options => {
                     let name = options.name;
@@ -106,7 +108,7 @@
                     map.addLayer(overlayGroup);
                 });
 
-                fetch('http://localhost:8080/xcube/coords/' + datasetName + '/time.json')
+                fetch(baseUrl + 'xcube/coords/' + datasetName + '/time.json')
                 .then(response => response.json())
                 .then(coords => {
                     timeValues = coords.values;
