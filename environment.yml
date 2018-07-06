@@ -6,6 +6,8 @@ channels:
 
 dependencies:
   - python =3.6*
+  - boto3 =1.7.51
+  - botocore =1.10.51
   - cython =0.28.2
   - h5netcdf =0.5.1
   - matplotlib =2.2.2
@@ -15,7 +17,7 @@ dependencies:
   - pyyaml =3.12
   - s3fs =0.1.5
   - tornado =5.0.2
-  - xarray =0.10.4
+  - xarray =0.10.7
   - zarr =2.2.0
   #
   # development tools
