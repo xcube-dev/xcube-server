@@ -6,6 +6,9 @@ channels:
 
 dependencies:
   - python =3.6*
+  #
+  # runtime dependencies
+  #
   - boto3 =1.7.51
   - botocore =1.10.51
   - cython =0.28.2
