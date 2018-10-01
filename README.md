@@ -112,7 +112,6 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-server/blob/master/xcub
 
 At project level:
 
-* Move to public GitHub organisation
 * Build on Travis & AppVeyor
 * Configure Flake8
 * Configure Coverage
@@ -125,7 +124,7 @@ In code:
 * Feature: Add layer selector and time slider to OL demo client
 * Feature: Let users specify TileGrid in configuration
 * Bug/Performance: /xcube/wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
-  169466.91ms - investigate and e.g. cache.
+  15 seconds for first call - investigate and e.g. cache.
 * Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
   There may be different identifiers that have the same path!
 * Performance: After some period check if datasets haven't been used for a long time - close them and remove from cache.
