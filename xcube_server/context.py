@@ -173,6 +173,7 @@ class ServiceContext:
 """
 
         dataset_descriptors = self.get_dataset_descriptors()
+        print(dataset_descriptors)
         tile_grids = dict()
         indent = '    '
 
@@ -280,13 +281,15 @@ class ServiceContext:
                                                     (4, f'<Default>{default}</Default>'),
                                                     (4, f'<Current>{current}</Current>')]
                             if coord_bnds_var is not None:
+                                coord_bnds_var_values = coord_bnds_var.values
                                 for i in range(len(coord_var)):
-                                    value1 = coord_bnds_var.values[i, 0]
-                                    value2 = coord_bnds_var.values[i, 1]
+                                    value1 = coord_bnds_var_values[i, 0]
+                                    value2 = coord_bnds_var_values[i, 1]
                                     dimensions_xml_lines.append((4, f'<Value>{value1}/{value2}</Value>'))
                             else:
+                                coord_var_values = coord_var.values
                                 for i in range(len(coord_var)):
-                                    value = coord_var.values[i]
+                                    value = coord_var_values[i]
                                     dimensions_xml_lines.append((4, f'<Value>{value}</Value>'))
                             dimensions_xml_lines.append((3, '</Dimension>'))
                             dimensions_xml_cache[dimension_xml_key] = dimensions_xml_lines
