@@ -49,6 +49,7 @@ _LOG = logging.getLogger('xcube')
 Config = Dict[str, Any]
 
 
+# noinspection PyMethodMayBeStatic
 class ServiceContext:
 
     def __init__(self, base_dir=None, config: Config = None):
@@ -93,6 +94,10 @@ class ServiceContext:
         self._config = config
 
     def get_wmts_capabilities(self, format_name: str, base_url: str):
+        default_format_name = 'text/xml'
+        format_name = format_name or default_format_name
+        if format_name != default_format_name:
+            raise ValueError(f'format_name must be "{default_format_name}"')
 
         service_identification_xml = f"""<ows:ServiceIdentification>
         <ows:Title>xcube WMTS</ows:Title>
@@ -173,7 +178,6 @@ class ServiceContext:
 """
 
         dataset_descriptors = self.get_dataset_descriptors()
-        print(dataset_descriptors)
         tile_grids = dict()
         indent = '    '
 
