@@ -1,0 +1,282 @@
+openapi: 3.0.0
+servers:
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/forman/xcube-server/1.0.0
+info:
+  description: |
+    A light-weight web server that provides
+    various services based on xarray-enabled datasets.
+  version: "0.1.0"
+  title: XCube Server API
+  contact:
+    email: bcdev@brockmann-consult.de
+  license:
+    name: MIT
+    url: 'https://opensource.org/licenses/MIT'
+tags:
+  - name: style
+    description: Style-related
+  - name: tiles
+    description: Secured Admin-only calls
+  - name: time-series
+    description: Operations available to regular developers
+paths:
+  '/datasets.json':
+    get:
+      tags:
+        - style
+      summary: Get all datasets
+      operationId: getDatasets
+      description: |
+        Get a list of all available datasets.
+      responses:
+        '200':
+          description: Dataset list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetsRefs'
+  '/variables/{dataset}.json':
+    get:
+      tags:
+        - style
+      summary: Get variables for dataset
+      operationId: getVariables
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+      description: |
+        Get a dataset information object that
+        also contains descriptions of all variables.
+      responses:
+        '200':
+          description: Dataset information object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatasetInfo'
+  '/tilegrid/{dataset}/{variable}/ol4.json':
+    get:
+      tags:
+        - style
+      summary: Get tiling schema for OL4
+      operationId: getOL4TileSchema
+      description: |
+        Get a tile grid description compatible with
+        an OpenLayers v4.x ol.source.XYZ layer source.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+      responses:
+        '200':
+          description: Tile schema for OL4.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OL4TileSchema'
+        '404':
+          description: Resource not found.
+  '/tilegrid/{dataset}/{variable}/cesium.json':
+    get:
+      tags:
+        - style
+      summary: Get tile grid for Cesium
+      operationId: getCesiumTileGrid
+      description: |
+        Get a tile grid description compatible with
+        a Cesium v1.x XYZ image tile provider.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+      responses:
+        '200':
+          description: Cesium Tile Grid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CesiumTileGrid'
+        '404':
+          description: Resource not found.
+  '/colorbars.{format}':
+    get:
+      tags:
+        - style
+      summary: Get available color bars
+      operationId: getColorBars
+      description: |
+        Retrieve all available color maps.
+        For each color map its name, description
+        and base64-encoded image is provided.
+      parameters:
+        - name: format
+          in: path
+          description: Response format.
+          required: true
+          schema:
+            type: string
+            enum: ["json", "html"]
+      responses:
+        '200':
+          description: Color bars.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: object
+        '404':
+          description: Resource not found.
+
+components:
+  parameters:
+    dataset:
+      name: dataset
+      in: path
+      description: Dataset name.
+      required: true
+      schema:
+        type: string
+    variable:
+      name: variable
+      in: path
+      description: Variable name.
+      required: true
+      schema:
+        type: string
+  schemas:
+    DatasetInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        bbox:
+          type: array
+          minItems: 4
+          maxItems: 4
+          items:
+            type: number
+        variables:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariableInfo'
+    VariableInfo:
+      type: object
+      required:
+        - id
+        - name
+        - dims
+        - shape
+        - dtype
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        dtype:
+          type: string
+        units:
+          type: string
+        dims:
+          type: array
+          items:
+            type: string
+        shape:
+          type: array
+          items:
+            type: number
+        tileSourceOptions:
+          $ref: '#/components/schemas/OL4TileSchema'
+    DatasetsRefs:
+      type: object
+      properties:
+        datasets:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatasetRef'
+    DatasetRef:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+    CesiumTileGrid:
+      type: object
+      properties:
+        url:
+          type: string
+        rectangle:
+          $ref: '#/components/schemas/CesiumRectangle'
+        minimumLevel:
+          type: number
+        maximumLevel:
+          type: number
+        tileWidth:
+          type: number
+        tileHeight:
+          type: number
+        tilingScheme:
+          $ref: '#/components/schemas/CesiumTilingScheme'
+    CesiumTilingScheme:
+      type: object
+      properties:
+        rectangle:
+          $ref: '#/components/schemas/CesiumRectangle'
+        numberOfLevelZeroTilesX:
+          type: number
+        numberOfLevelZeroTilesY:
+          type: number
+        minZoom:
+          type: number
+        maxZoom:
+          type: number
+        tileGrid:
+          $ref: '#/components/schemas/OL4TileGrid'
+    CesiumRectangle:
+      type: object
+      properties:
+        west:
+          type: number
+        south:
+          type: number
+        east:
+          type: number
+        north:
+          type: number
+    OL4TileSchema:
+      type: object
+      properties:
+        url:
+          type: string
+        projection:
+          type: string
+        minZoom:
+          type: number
+        maxZoom:
+          type: number
+        tileGrid:
+          $ref: '#/components/schemas/OL4TileGrid'
+    OL4TileGrid:
+      type: object
+      properties:
+        extent:
+          type: array
+          items:
+            type: number
+        origin:
+          type: array
+          items:
+            type: number
+        tileSize:
+          type: array
+          items:
+            type: number
+        resolutions:
+          type: array
+          items:
+            type: number
