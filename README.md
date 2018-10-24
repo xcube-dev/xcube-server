@@ -39,13 +39,13 @@ The following operations are supported:
 
 ### Server
 
-Initially
+Initially, checkout code and create conda environment `xcube-server-dev`:
 
     $ git clone https://github.com/bcdev/xcube-server.git
     $ cd xcube-server
     $ conda env create
 
-If the last command fails because `xcube-dev` environment already exists, then just update it
+If the last command fails because `xcube-server-dev` environment already exists, then just update it
 
     $ conda env update
 
@@ -56,7 +56,7 @@ Once in a while
 
 Install
 
-    $ source activate xcube-dev
+    $ source activate xcube-server-dev
     $ python setup.py develop
     $ pytest --cov=xcube_server
 

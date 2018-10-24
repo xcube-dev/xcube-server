@@ -1,4 +1,4 @@
-name: xcube-dev
+name: xcube-server-dev
 
 channels:
   - conda-forge
