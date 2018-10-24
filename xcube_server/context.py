@@ -35,7 +35,7 @@ from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
 from .defaults import DEFAULT_MAX_THREAD_COUNT, DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, TRACE_PERF, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
-    FILE_TILE_CACHE_ENABLED
+    FILE_TILE_CACHE_ENABLED, API_PREFIX
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from .ne2 import NaturalEarth2Image
@@ -145,7 +145,7 @@ class ServiceContext:
     </ows:ServiceProvider>
 """
 
-        wmts_kvp_url = base_url + '/xcube/wmts/1.0.0/kvp?'
+        wmts_kvp_url = base_url + API_PREFIX + '/wmts/1.0.0/kvp?'
 
         operations_metadata_xml = f"""<ows:OperationsMetadata>
         <ows:Operation name="GetCapabilities">
@@ -181,7 +181,7 @@ class ServiceContext:
         tile_grids = dict()
         indent = '    '
 
-        layer_base_url = base_url + '/xcube/wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
+        layer_base_url = base_url + API_PREFIX + '/wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png'
 
         dimensions_xml_cache = dict()
 
@@ -327,7 +327,7 @@ class ServiceContext:
         themes_xml_lines.append((1, '</Themes>'))
         themes_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in themes_xml_lines])
 
-        get_capablities_rest_url = base_url + '/xcube/wmts/1.0.0/WMTSCapabilities.xml'
+        get_capablities_rest_url = base_url + API_PREFIX + '/wmts/1.0.0/WMTSCapabilities.xml'
         service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
 
         return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -472,7 +472,7 @@ class ServiceContext:
 
     # noinspection PyMethodMayBeStatic
     def get_dataset_tile_url(self, ds_name: str, var_name: str, base_url: str):
-        return base_url + f'/xcube/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png'
+        return base_url + API_PREFIX + f'/tile/{ds_name}/{var_name}' + '/{z}/{x}/{y}.png'
 
     # noinspection PyMethodMayBeStatic
     def get_tile_grid(self, ds_name: str, var_name: str, var: xr.DataArray):
@@ -490,7 +490,7 @@ class ServiceContext:
     def get_ne2_tile_grid(self, format_name: str, base_url: str):
         if format_name == 'ol4.json':
             return get_tile_source_options(NaturalEarth2Image.get_pyramid().tile_grid,
-                                           base_url + '/xcube/tile/ne2/{z}/{x}/{y}.jpg',
+                                           base_url + API_PREFIX + '/tile/ne2/{z}/{x}/{y}.jpg',
                                            client='ol4')
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
