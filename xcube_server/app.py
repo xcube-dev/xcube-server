@@ -48,7 +48,7 @@ def new_application():
         (url_pattern('/xcube/datasets.json'), GetDatasetsJsonHandler),
         (url_pattern('/xcube/variables/{{ds_name}}.json'), GetVariablesJsonHandler),
         (url_pattern('/xcube/coords/{{ds_name}}/{{dim_name}}.json'), GetCoordinatesJsonHandler),
-        (url_pattern('/xcube/colorbars.json'), GetColorBarsHandler, dict(format_name='text/json')),
+        (url_pattern('/xcube/colorbars.json'), GetColorBarsHandler, dict(format_name='application/json')),
         (url_pattern('/xcube/colorbars.html'), GetColorBarsHandler, dict(format_name='text/html')),
     ])
     return application

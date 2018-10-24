@@ -94,7 +94,7 @@ class ServiceContext:
         self._config = config
 
     def get_wmts_capabilities(self, format_name: str, base_url: str):
-        default_format_name = 'text/xml'
+        default_format_name = 'application/xml'
         format_name = format_name or default_format_name
         if format_name != default_format_name:
             raise ValueError(f'format_name must be "{default_format_name}"')
@@ -499,7 +499,7 @@ class ServiceContext:
         from .im.cmaps import get_cmaps
         import json
         cmaps = get_cmaps()
-        if format_name == 'text/json':
+        if format_name == 'application/json':
             return json.dumps(cmaps, indent=2)
         elif format_name == 'text/html':
             html_head = '<!DOCTYPE html>\n' + \

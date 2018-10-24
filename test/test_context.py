@@ -48,7 +48,7 @@ class ServiceContextTest(unittest.TestCase):
         with open(os.path.join(get_res_test_dir(), 'WMTSCapabilities.xml')) as fp:
             expected_capabilities = fp.read()
         ctx = new_test_service_context()
-        capabilities = ctx.get_wmts_capabilities('text/xml', 'http://bibo')
+        capabilities = ctx.get_wmts_capabilities('application/xml', 'http://bibo')
         print(80*'=')
         print(capabilities)
         print(80*'=')
@@ -165,7 +165,7 @@ class ServiceContextTest(unittest.TestCase):
     def test_get_colorbars(self):
         ctx = ServiceContext()
 
-        response = ctx.get_color_bars('text/json')
+        response = ctx.get_color_bars('application/json')
         self.assertIsInstance(response, str)
         self.assertTrue(len(response) > 40)
         self.assertEqual('[\n  [\n    "Perceptually Uniform Sequenti', response[0:40])
