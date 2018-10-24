@@ -495,13 +495,13 @@ class ServiceContext:
         else:
             raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
-    def get_color_bars(self, format_name):
+    def get_color_bars(self, mime_type: str):
         from .im.cmaps import get_cmaps
         import json
         cmaps = get_cmaps()
-        if format_name == 'application/json':
+        if mime_type == 'application/json':
             return json.dumps(cmaps, indent=2)
-        elif format_name == 'text/html':
+        elif mime_type == 'text/html':
             html_head = '<!DOCTYPE html>\n' + \
                         '<html lang="en">\n' + \
                         '<head>' + \
@@ -522,7 +522,7 @@ class ServiceContext:
                     html_body += f'        <tr><td style="width: 5em">{cmap_name}:</td><td style="width: 40em">{cmap_image}</td></tr>\n'
                 html_body += '    </table>\n'
             return html_head + html_body + html_foot
-        raise ServiceBadRequestError(f'Format {format_name!r} not supported for color bars')
+        raise ServiceBadRequestError(f'Format {mime_type!r} not supported for color bars')
 
     def get_dataset_descriptors(self):
         dataset_descriptors = self.config.get('Datasets')

@@ -24,6 +24,7 @@ import json
 from tornado.ioloop import IOLoop
 
 from xcube_server.context import get_tile_source_options
+from xcube_server.errors import ServiceResourceNotFoundError
 from . import __version__, __description__
 from .service import ServiceRequestHandler
 
@@ -162,13 +163,13 @@ class GetTileGridNE2Handler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class GetColorBarsHandler(ServiceRequestHandler):
 
-    # noinspection PyAttributeOutsideInit
-    def initialize(self, format_name: str = 'application/json'):
-        self.format_name = format_name
-
-    def get(self):
-        response = self.service_context.get_color_bars(self.format_name)
-        self.set_header('Content-Type', self.format_name)
+    # noinspection PyShadowingBuiltins
+    def get(self, format: str):
+        mime_type = dict(json='application/json', html='text/html').get(format)
+        if not mime_type:
+            raise ServiceResourceNotFoundError("Invalid format.")
+        response = self.service_context.get_color_bars(mime_type)
+        self.set_header('Content-Type', mime_type)
         self.write(response)
 
 
