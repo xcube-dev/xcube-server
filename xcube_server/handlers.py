@@ -21,7 +21,6 @@
 
 import json
 
-from tornado import gen
 from tornado.ioloop import IOLoop
 
 from xcube_server.context import get_tile_source_options
@@ -31,18 +30,21 @@ from .service import ServiceRequestHandler
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
+# noinspection PyAbstractClass
 class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
-    @gen.coroutine
-    def get(self):
-        capabilities = yield IOLoop.current().run_in_executor(None,
+
+    async def get(self):
+        capabilities = await IOLoop.current().run_in_executor(None,
                                                               self.service_context.get_wmts_capabilities,
                                                               'application/xml',
                                                               self.base_url)
         self.set_header('Content-Type', 'application/xml')
-        self.write(capabilities)
+        self.finish(capabilities)
 
 
+# noinspection PyAbstractClass
 class GetDatasetsJsonHandler(ServiceRequestHandler):
+
     def get(self):
         dataset_descriptors = self.service_context.get_dataset_descriptors()
         datasets = list()
@@ -54,8 +56,9 @@ class GetDatasetsJsonHandler(ServiceRequestHandler):
         self.write(json.dumps(response))
 
 
+# noinspection PyAbstractClass
 class GetVariablesJsonHandler(ServiceRequestHandler):
-    @gen.coroutine
+
     def get(self, ds_name: str):
         ds = self.service_context.get_dataset(ds_name)
         client = self.params.get_query_argument('client', 'ol4')
@@ -87,10 +90,12 @@ class GetVariablesJsonHandler(ServiceRequestHandler):
                               attrs.get('geospatial_lat_max', +90)],
                         variables=variables)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response))
+        self.finish(json.dumps(response))
 
 
+# noinspection PyAbstractClass
 class GetCoordinatesJsonHandler(ServiceRequestHandler):
+
     def get(self, ds_name: str, dim_name: str):
         import numpy as np
         ds, var = self.service_context.get_dataset_and_coord_variable(ds_name, dim_name)
@@ -113,24 +118,22 @@ class GetCoordinatesJsonHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass,PyBroadException
 class GetTileDatasetHandler(ServiceRequestHandler):
 
-    @gen.coroutine
-    def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
-        tile = yield IOLoop.current().run_in_executor(None,
+    async def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
+        tile = await IOLoop.current().run_in_executor(None,
                                                       self.service_context.get_dataset_tile,
                                                       ds_name, var_name,
                                                       x, y, z,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')
-        self.write(tile)
+        self.finish(tile)
 
 
 # noinspection PyAbstractClass
 class GetTileGridDatasetHandler(ServiceRequestHandler):
 
     def get(self, ds_name: str, var_name: str, format_name: str):
-        import json
-
-        ts = self.service_context.get_dataset_tile_grid(ds_name, var_name, format_name, self.base_url)
+        ts = self.service_context.get_dataset_tile_grid(ds_name, var_name,
+                                                        format_name, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(ts, indent=2))
 
@@ -138,11 +141,13 @@ class GetTileGridDatasetHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class GetTileNE2Handler(ServiceRequestHandler):
 
-    @gen.coroutine
-    def get(self, z: str, x: str, y: str):
-        tile = yield IOLoop.current().run_in_executor(None, self.service_context.get_ne2_tile, x, y, z, self.params)
+    async def get(self, z: str, x: str, y: str):
+        tile = await IOLoop.current().run_in_executor(None,
+                                                      self.service_context.get_ne2_tile,
+                                                      x, y, z,
+                                                      self.params)
         self.set_header('Content-Type', 'image/jpg')
-        self.write(tile)
+        self.finish(tile)
 
 
 # noinspection PyAbstractClass
@@ -172,4 +177,6 @@ class InfoHandler(ServiceRequestHandler):
 
     def get(self):
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(dict(name='xcube_server', description=__description__, version=__version__), indent=2))
+        self.write(json.dumps(dict(name='xcube_server',
+                                   description=__description__,
+                                   version=__version__), indent=2))
