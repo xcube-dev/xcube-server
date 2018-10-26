@@ -21,6 +21,8 @@
 
 import os
 
+from . import __version__
+
 DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
 DEFAULT_CONFIG_FILE = os.path.abspath('xcube_server.yml')
@@ -40,3 +42,5 @@ FILE_TILE_CACHE_PATH = './image-cache'
 MEM_TILE_CACHE_CAPACITY = 1000
 
 TRACE_PERF = False
+
+API_PREFIX = f"/api/{__version__}"
