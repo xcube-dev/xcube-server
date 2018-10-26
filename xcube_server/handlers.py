@@ -23,9 +23,11 @@ import json
 
 from tornado.ioloop import IOLoop
 
-from xcube_server.context import get_tile_source_options
-from xcube_server.errors import ServiceResourceNotFoundError
 from . import __version__, __description__
+from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
+from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
+from .controllers.wmts import get_wmts_capabilities
+from .errors import ServiceResourceNotFoundError
 from .service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -36,7 +38,8 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 
     async def get(self):
         capabilities = await IOLoop.current().run_in_executor(None,
-                                                              self.service_context.get_wmts_capabilities,
+                                                              get_wmts_capabilities,
+                                                              self.service_context,
                                                               'application/xml',
                                                               self.base_url)
         self.set_header('Content-Type', 'application/xml')
@@ -47,73 +50,28 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 class GetDatasetsJsonHandler(ServiceRequestHandler):
 
     def get(self):
-        dataset_descriptors = self.service_context.get_dataset_descriptors()
-        datasets = list()
-        for dataset_descriptor in dataset_descriptors:
-            datasets.append(dict(name=dataset_descriptor['Identifier'],
-                                 title=dataset_descriptor['Title']))
-        response = dict(datasets=datasets)
+        response = get_datasets(self.service_context)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response))
+        self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass
 class GetVariablesJsonHandler(ServiceRequestHandler):
 
     def get(self, ds_name: str):
-        ds = self.service_context.get_dataset(ds_name)
         client = self.params.get_query_argument('client', 'ol4')
-        variables = list()
-        for var_name in ds.data_vars:
-            var = ds.data_vars[var_name]
-            if 'time' not in var.dims or 'lat' not in var.dims or 'lon' not in var.dims:
-                continue
-            attrs = var.attrs
-            tile_grid = self.service_context.get_or_compute_tile_grid(ds_name, var)
-            ol_tile_xyz_source_options = get_tile_source_options(tile_grid,
-                                                                 self.service_context.get_dataset_tile_url(
-                                                                     ds_name, var_name, self.base_url),
-                                                                 client)
-            variables.append(dict(id=f'{ds_name}{var_name}',
-                                  name=var_name,
-                                  dims=list(var.dims),
-                                  shape=list(var.shape),
-                                  dtype=str(var.dtype),
-                                  units=attrs.get('units', ''),
-                                  title=attrs.get('title', attrs.get('long_name', var_name)),
-                                  tileSourceOptions=ol_tile_xyz_source_options))
-        attrs = ds.attrs
-        response = dict(name=ds_name,
-                        title=attrs.get('title', ''),
-                        bbox=[attrs.get('geospatial_lon_min', -180),
-                              attrs.get('geospatial_lat_min', -90),
-                              attrs.get('geospatial_lon_max', +180),
-                              attrs.get('geospatial_lat_max', +90)],
-                        variables=variables)
+        response = get_dataset_variables(self.service_context, ds_name, client, self.base_url)
         self.set_header('Content-Type', 'application/json')
-        self.finish(json.dumps(response))
+        self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass
 class GetCoordinatesJsonHandler(ServiceRequestHandler):
 
     def get(self, ds_name: str, dim_name: str):
-        import numpy as np
-        ds, var = self.service_context.get_dataset_and_coord_variable(ds_name, dim_name)
-        values = list()
-        if np.issubdtype(var.dtype, np.floating):
-            converter = float
-        elif np.issubdtype(var.dtype, np.integer):
-            converter = int
-        else:
-            converter = str
-        for value in var.values:
-            values.append(converter(value))
-        response = dict(name=dim_name,
-                        dtype=str(var.dtype),
-                        values=values)
+        response = get_dataset_coordinates(self.service_context, ds_name, dim_name)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response))
+        self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass,PyBroadException
@@ -121,7 +79,8 @@ class GetTileDatasetHandler(ServiceRequestHandler):
 
     async def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
         tile = await IOLoop.current().run_in_executor(None,
-                                                      self.service_context.get_dataset_tile,
+                                                      get_dataset_tile,
+                                                      self.service_context,
                                                       ds_name, var_name,
                                                       x, y, z,
                                                       self.params)
@@ -133,31 +92,33 @@ class GetTileDatasetHandler(ServiceRequestHandler):
 class GetTileGridDatasetHandler(ServiceRequestHandler):
 
     def get(self, ds_name: str, var_name: str, format_name: str):
-        ts = self.service_context.get_dataset_tile_grid(ds_name, var_name,
-                                                        format_name, self.base_url)
+        response = get_dataset_tile_grid(self.service_context,
+                                         ds_name, var_name,
+                                         format_name, self.base_url)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(ts, indent=2))
+        self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass
 class GetTileNE2Handler(ServiceRequestHandler):
 
     async def get(self, z: str, x: str, y: str):
-        tile = await IOLoop.current().run_in_executor(None,
-                                                      self.service_context.get_ne2_tile,
-                                                      x, y, z,
-                                                      self.params)
+        response = await IOLoop.current().run_in_executor(None,
+                                                          get_ne2_tile,
+                                                          self.service_context,
+                                                          x, y, z,
+                                                          self.params)
         self.set_header('Content-Type', 'image/jpg')
-        self.finish(tile)
+        self.finish(response)
 
 
 # noinspection PyAbstractClass
 class GetTileGridNE2Handler(ServiceRequestHandler):
 
     def get(self, format_name: str):
-        ts = self.service_context.get_ne2_tile_grid(format_name, self.base_url)
+        response = get_ne2_tile_grid(self.service_context, format_name, self.base_url)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(ts, indent=2))
+        self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass
@@ -168,7 +129,7 @@ class GetColorBarsHandler(ServiceRequestHandler):
         mime_type = dict(json='application/json', html='text/html').get(format)
         if not mime_type:
             raise ServiceResourceNotFoundError("Invalid format.")
-        response = self.service_context.get_color_bars(mime_type)
+        response = get_color_bars(self.service_context, mime_type)
         self.set_header('Content-Type', mime_type)
         self.write(response)
 
