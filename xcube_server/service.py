@@ -44,7 +44,6 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
 
-
 class Service:
     """
     A web service that provides a remote API to some application.
@@ -188,7 +187,7 @@ class Service:
 class ServiceRequestHandler(RequestHandler):
 
     def __init__(self, application, request, **kwargs):
-        super(ServiceRequestHandler, self).__init__(application, request, **kwargs)
+        super().__init__(application, request, **kwargs)
         self._params = ServiceRequestParams(self)
 
     @property
