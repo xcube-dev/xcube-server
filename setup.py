@@ -31,6 +31,7 @@ requirements = [
     'matplotlib',
     'netcdf4',
     'numpy',
+    'pandas',
     'pillow',
     'pyyaml',
     's3fs',
