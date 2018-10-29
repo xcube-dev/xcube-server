@@ -11,6 +11,10 @@ Datasets:
     Args: ["@demo@", "1W"]
     Style: default
 
+Features:
+  - Identifier: default
+    Path: test.geojson
+
 Styles:
   - Identifier: default
     ColorMappings:

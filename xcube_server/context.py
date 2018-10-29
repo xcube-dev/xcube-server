@@ -19,12 +19,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import concurrent.futures
+import glob
 import logging
 import os
 import time
 from typing import Any, Dict, List, Optional
 
+import fiona
 import numpy as np
 import pandas as pd
 import s3fs
@@ -37,6 +38,7 @@ from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, TRACE_PERF, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
     FILE_TILE_CACHE_ENABLED, API_PREFIX
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
+from .logtime import log_time
 from .reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
@@ -65,6 +67,7 @@ class ServiceContext:
                                         threshold=0.75)
         else:
             self.rgb_tile_cache = None
+        self.feature_cache = None
 
     @property
     def config(self) -> Config:
@@ -160,15 +163,18 @@ class ServiceContext:
                 s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
                 store = s3fs.S3Map(root=path, s3=s3, check=False)
                 cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-                ds = xr.open_zarr(cached_store)
+                with log_time(_LOG, f"opened remote {path}"):
+                    ds = xr.open_zarr(cached_store)
             elif fs_type == 'local':
                 if not os.path.isabs(path):
                     path = os.path.join(self.base_dir, path)
                 data_format = dataset_descriptor.get('Format', 'nc')
                 if data_format == 'nc':
-                    ds = xr.open_dataset(path)
+                    with log_time(_LOG, f"opened local NetCDF file {path}"):
+                        ds = xr.open_dataset(path)
                 elif data_format == 'zarr':
-                    ds = xr.open_zarr(path)
+                    with log_time(_LOG, f"opened local zarr file {path}"):
+                        ds = xr.open_zarr(path)
                 else:
                     raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
             elif fs_type == 'computed':
@@ -209,7 +215,8 @@ class ServiceContext:
                         args.append(arg_value)
 
                 try:
-                    ds = callable_obj(*args)
+                    with log_time(_LOG, f"created computed dataset {ds_name}"):
+                        ds = callable_obj(*args)
                 except Exception as e:
                     raise ServiceError(f"Failed to compute dataset {ds_name!r} "
                                        f"from function {callable_name!r} in {path!r}: {e}") from e
@@ -229,6 +236,28 @@ class ServiceContext:
                 print(f'PERF: opening {ds_name!r} took {t2-t1} seconds')
 
         return ds
+
+    def get_features(self) -> List[Dict]:
+        if self.feature_cache is None:
+            features_configs = self._config.get("Features")
+            if features_configs:
+                if len(features_configs) != 1:
+                    raise ServiceError("Currently, there can only be one feature source")
+                features_config = features_configs[0]
+                path = features_config.get("Path")
+                if not path:
+                    raise ServiceError("Missing 'Path' entry in feature source")
+                if not os.path.isabs(path):
+                    path = os.path.join(self.base_dir, path)
+                features = []
+                files = glob.glob(path)
+                for file in files:
+                    with fiona.open(file) as fc:
+                        for feature in fc:
+                            feature["id"] = len(features)
+                            features.append(feature)
+                self.feature_cache = features
+        return self.feature_cache
 
     def get_dataset_and_coord_variable(self, ds_name: str, dim_name: str):
         ds = self.get_dataset(ds_name)
