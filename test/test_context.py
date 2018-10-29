@@ -5,6 +5,7 @@ import xarray as xr
 
 from test.helpers import get_res_test_dir, new_test_service_context, RequestParamsMock
 from xcube_server.context import ServiceContext
+from xcube_server.defaults import API_PREFIX
 from xcube_server.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
 
@@ -115,7 +116,7 @@ class ServiceContextTest(unittest.TestCase):
         ctx = new_test_service_context()
         tile_grid = ctx.get_dataset_tile_grid('demo', 'conc_chl', 'ol4.json', 'http://bibo')
         self.assertEqual({
-            'url': 'http://bibo/xcube/tile/demo/conc_chl/{z}/{x}/{y}.png',
+            'url': f'http://bibo{API_PREFIX}/tile/demo/conc_chl/' + '{z}/{x}/{y}.png',
             'projection': 'EPSG:4326',
             'minZoom': 0,
             'maxZoom': 2,
@@ -127,7 +128,7 @@ class ServiceContextTest(unittest.TestCase):
 
         tile_grid = ctx.get_dataset_tile_grid('demo', 'conc_chl', 'cesium.json', 'http://bibo')
         self.assertEqual({
-            'url': 'http://bibo/xcube/tile/demo/conc_chl/{z}/{x}/{y}.png',
+            'url': f'http://bibo{API_PREFIX}/tile/demo/conc_chl/' + '{z}/{x}/{y}.png',
             'rectangle': dict(west=2.168404344971009e-19, south=50.0, east=5.0, north=52.5),
             'minimumLevel': 0,
             'maximumLevel': 2,
@@ -147,7 +148,7 @@ class ServiceContextTest(unittest.TestCase):
         ctx = ServiceContext()
         tile_grid = ctx.get_ne2_tile_grid('ol4.json', 'http://bibo')
         self.assertEqual({
-            'url': 'http://bibo/xcube/tile/ne2/{z}/{x}/{y}.jpg',
+            'url': f'http://bibo{API_PREFIX}/tile/ne2/' + '{z}/{x}/{y}.jpg',
             'projection': 'EPSG:4326',
             'minZoom': 0,
             'maxZoom': 2,

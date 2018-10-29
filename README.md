@@ -72,20 +72,20 @@ Test it:
 
 * Tile service
   * WMTS:
-    * [Get WMTSCapabilities XML](http://localhost:8080/xcube/wmts/1.0.0/WMTSCapabilities.xml)
-    * [Get local tile PNG](http://localhost:8080/xcube/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-    * [Get remote tile PNG](http://localhost:8080/xcube/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+    * [Get WMTSCapabilities XML](http://localhost:8080/api/0.1.0.dev1/wmts/1.0.0/WMTSCapabilities.xml)
+    * [Get local tile PNG](http://localhost:8080/api/0.1.0.dev1/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+    * [Get remote tile PNG](http://localhost:8080/api/0.1.0.dev1/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
   * Tile images
-    * [Get tile PNG](http://localhost:8080/xcube/tile/local/conc_chl/0/1/0.png)
+    * [Get tile PNG](http://localhost:8080/api/0.1.0.dev1/tile/local/conc_chl/0/1/0.png)
   * Tile grid service
-    * [Get tile grid JSON for OL4](http://localhost:8080/xcube/tilegrid/local/conc_chl/ol4.json)
-    * [Get tile grid JSON for Cesium](http://localhost:8080/xcube/tilegrid/local/conc_chl/cesium.json)
+    * [Get tile grid JSON for OL4](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/ol4.json)
+    * [Get tile grid JSON for Cesium](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/cesium.json)
 * List services
-    * [Get datasets JSON](http://localhost:8080/xcube/datasets.json)
-    * [Get dataset variables JSON](http://localhost:8080/xcube/variables/local.json)
-    * [Get dataset coordinates JSON](http://localhost:8080/xcube/coords/local/time.json)
-    * [Get color bars JSON](http://localhost:8080/xcube/colorbars.json), 
-      [Get color bars HTML](http://localhost:8080/xcube/colorbars.html)
+    * [Get datasets JSON](http://localhost:8080/api/0.1.0.dev1/datasets.json)
+    * [Get dataset variables JSON](http://localhost:8080/api/0.1.0.dev1/variables/local.json)
+    * [Get dataset coordinates JSON](http://localhost:8080/api/0.1.0.dev1/coords/local/time.json)
+    * [Get color bars JSON](http://localhost:8080/api/0.1.0.dev1/colorbars.json), 
+      [Get color bars HTML](http://localhost:8080/api/0.1.0.dev1/colorbars.html)
 
 
 ### Clients

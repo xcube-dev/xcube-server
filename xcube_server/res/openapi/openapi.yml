@@ -6,7 +6,7 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.1.0.dev2"
+  version: "0.1.0"
   title: XCube Server API
   contact:
     email: bcdev@brockmann-consult.de
@@ -410,92 +410,3 @@ components:
           items:
             type: number
             format: float64
-    GeoJsonObject:
-      description: "GeoJSON object according to RFC 7946 Section 3"
-      type: object
-      required:
-        - type
-      properties:
-        type:
-          type: string
-        bbox:
-          type: array
-          minItems: 4
-          maxItems: 4
-          items:
-            type: number
-      additionalProperties: true
-    GeoJsonGeometry:
-      description: "GeoJSON geometry object according to RFC 7946 Section 3.1"
-      allOf:
-      - $ref: '#/components/schemas/GeoJsonObject'
-      - type: object
-        required:
-          - type
-        properties:
-          type:
-            type: string
-            enum: ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]
-    GeoJsonGeometryPrimitive:
-      description: "GeoJSON geometry objects according to RFC 7946 Section 3.1.1 to 3.1.7"
-      allOf:
-      - $ref: '#/components/schemas/GeoJsonObject'
-      - type: object
-        required:
-          - type
-          - coordinates
-        properties:
-          type:
-            type: string
-            enum: ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon"]
-          coordinates:
-            type: array
-            items:
-              type: number
-    GeoJsonGeometryCollection:
-      description: "GeoJSON geometry collection according to RFC 7946 Section 3.1.8"
-      allOf:
-      - $ref: '#/components/schemas/GeoJsonObject'
-      - type: object
-        required:
-          - type
-          - geometries
-        properties:
-          type:
-            type: string
-            enum: ["GeometryCollection"]
-          geometries:
-            type: array
-            items:
-              $ref: '#/components/schemas/GeoJsonGeometry'
-    GeoJsonFeature:
-      description: "GeoJSON feature collection according to RFC 7946 Section 3.2"
-      allOf:
-      - $ref: '#/components/schemas/GeoJsonObject'
-      - type: object
-        required:
-          - type
-          - geometry
-        properties:
-          type:
-            type: string
-            enum: ["Feature"]
-          geometry:
-            $ref: '#/components/schemas/GeoJsonGeometry'
-    GeoJsonFeatureCollection:
-      description: "GeoJSON feature collection according to RFC 7946 Section 3.3"
-      allOf:
-      - $ref: '#/components/schemas/GeoJsonObject'
-      - type: object
-        required:
-          - type
-          - features
-        properties:
-          type:
-            type: string
-            enum: ["FeatureCollection"]
-          features:
-            type: array
-            minItems: 0
-            items:
-              $ref: '#/components/schemas/GeoJsonFeature'
