@@ -187,7 +187,7 @@ class Service:
 class ServiceRequestHandler(RequestHandler):
 
     def __init__(self, application, request, **kwargs):
-        super(ServiceRequestHandler, self).__init__(application, request, **kwargs)
+        super().__init__(application, request, **kwargs)
         self._params = ServiceRequestParams(self)
 
     @property
