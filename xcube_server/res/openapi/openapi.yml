@@ -6,7 +6,7 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.1.0.dev2"
+  version: "0.1.0.dev3"
   title: XCube Server API
   contact:
     email: bcdev@brockmann-consult.de
@@ -204,7 +204,59 @@ paths:
                 $ref: '#/components/schemas/CesiumTileGrid'
         '404':
           description: Resource not found.
-
+  '/features':
+    get:
+      tags:
+        - features
+      summary: Find features
+      operationId: findFeatures
+      description: |
+        Find features matching the given geometry and/or query string.
+        Returns a FeatureCollection which may be empty.
+      parameters:
+        - $ref: '#/components/parameters/bbox'
+        - $ref: '#/components/parameters/geom'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/comb'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
+        '404':
+          description: Resource not found.
+    post:
+      tags:
+        - features
+      summary: Find features
+      operationId: findFeaturesForGeoJSON
+      description: |
+        Find features matching the query string and/or the geometry passed as a GeoJSON request.
+        Returns a FeatureCollection which may be empty.
+      parameters:
+        - $ref: '#/components/parameters/bbox'
+        - $ref: '#/components/parameters/geom'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/comb'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonObject'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
+  '/features/{dataset}':
+    get:
+      tags:
+        - features
+      summary: Find features for dataset
+      operationId: findFeaturesForDataset
+      description: |
+        Find features intersecting with the given dataset and/or matching the given query string.
+        Returns a FeatureCollection which may be empty.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/comb'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
 components:
   parameters:
     dataset:
@@ -252,6 +304,40 @@ components:
       schema:
         type: number
         format: int32
+    query:
+      name: query
+      in: query
+      description: Query string.
+      required: false
+      schema:
+        type: string
+    bbox:
+      name: bbox
+      in: query
+      description: Bounding box given as xmin,ymin,xmax,ymax.
+      required: false
+      schema:
+        type: array
+        minItems: 4
+        maxItems: 4
+        items:
+          type: number
+    geom:
+      name: geom
+      in: query
+      description: Geometry WKT string.
+      required: false
+      schema:
+        type: string
+    comb:
+      name: comb
+      in: query
+      description: Combination of criteria.
+      required: false
+      schema:
+        type: string
+        default: "and"
+        enum: ["and", "or"]
   schemas:
     DatasetInfo:
       type: object
@@ -499,3 +585,17 @@ components:
             minItems: 0
             items:
               $ref: '#/components/schemas/GeoJsonFeature'
+  requestBodies:
+    GeoJsonObject:
+      description: GeoJSON FeatureCollection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonObject'
+  responses:
+    GeoJsonFeatureCollection:
+      description: GeoJSON FeatureCollection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonFeatureCollection'
