@@ -29,7 +29,7 @@ from tornado.web import Application, StaticFileHandler
 from xcube_server import __version__, __description__
 from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
     GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsHandler, GetDatasetsJsonHandler, \
-    GetVariablesJsonHandler, GetCoordinatesJsonHandler
+    GetVariablesJsonHandler, GetCoordinatesJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler
 from xcube_server.service import url_pattern, Service
 from xcube_server.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
     DEFAULT_CONFIG_FILE, API_PREFIX
@@ -51,6 +51,8 @@ def new_application():
         (API_PREFIX + url_pattern('/variables/{{ds_name}}.json'), GetVariablesJsonHandler),
         (API_PREFIX + url_pattern('/coords/{{ds_name}}/{{dim_name}}.json'), GetCoordinatesJsonHandler),
         (API_PREFIX + url_pattern('/colorbars.{{format}}'), GetColorBarsHandler),
+        (API_PREFIX + url_pattern('/features.json'), FindFeaturesHandler),
+        (API_PREFIX + url_pattern('/features/{{ds_name}}.json'), FindDatasetFeaturesHandler),
     ])
     return application
 

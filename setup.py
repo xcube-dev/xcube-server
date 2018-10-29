@@ -27,12 +27,14 @@ from setuptools import setup, find_packages
 # in alphabetical oder
 requirements = [
     'cython',
+    'fiona',
     'h5netcdf',
     'matplotlib',
     'netcdf4',
     'numpy',
     'pillow',
     'pyyaml',
+    'shapely',
     's3fs',
     'tornado',
     'xarray',

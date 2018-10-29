@@ -163,17 +163,17 @@ class ServiceContext:
                 s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
                 store = s3fs.S3Map(root=path, s3=s3, check=False)
                 cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-                with log_time(_LOG, f"opened remote {path}"):
+                with log_time(f"opened remote dataset {path}"):
                     ds = xr.open_zarr(cached_store)
             elif fs_type == 'local':
                 if not os.path.isabs(path):
                     path = os.path.join(self.base_dir, path)
                 data_format = dataset_descriptor.get('Format', 'nc')
                 if data_format == 'nc':
-                    with log_time(_LOG, f"opened local NetCDF file {path}"):
+                    with log_time(f"opened local NetCDF dataset {path}"):
                         ds = xr.open_dataset(path)
                 elif data_format == 'zarr':
-                    with log_time(_LOG, f"opened local zarr file {path}"):
+                    with log_time(f"opened local zarr dataset {path}"):
                         ds = xr.open_zarr(path)
                 else:
                     raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
@@ -215,7 +215,7 @@ class ServiceContext:
                         args.append(arg_value)
 
                 try:
-                    with log_time(_LOG, f"created computed dataset {ds_name}"):
+                    with log_time(f"created computed dataset {ds_name}"):
                         ds = callable_obj(*args)
                 except Exception as e:
                     raise ServiceError(f"Failed to compute dataset {ds_name!r} "
