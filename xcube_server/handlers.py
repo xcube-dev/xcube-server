@@ -26,6 +26,7 @@ from tornado.ioloop import IOLoop
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
+from .controllers.time_series import get_time_series_info
 from .controllers.wmts import get_wmts_capabilities
 from .errors import ServiceResourceNotFoundError
 from .service import ServiceRequestHandler
@@ -142,3 +143,12 @@ class InfoHandler(ServiceRequestHandler):
         self.write(json.dumps(dict(name='xcube_server',
                                    description=__description__,
                                    version=__version__), indent=2))
+
+
+# noinspection PyAbstractClass
+class TimeSeriesInfoHandler(ServiceRequestHandler):
+
+    async def get(self):
+        self.set_header('Content-Type', 'application/json')
+        response = get_time_series_info(self.service_context)
+        self.finish(response)
