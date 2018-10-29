@@ -204,7 +204,7 @@ paths:
                 $ref: '#/components/schemas/CesiumTileGrid'
         '404':
           description: Resource not found.
-    'ts':
+  '/ts':
     get:
       tags:
         - time-series
@@ -558,26 +558,26 @@ components:
       type: object
       properties:
         name:
-          type: str
+          type: string
         dates:
           type: array
           items:
-            type: str
+            type: string
         bounds:
           type: object
           properties:
             xmin:
               type: number
-              format double
+              format: double
             ymin:
               type: number
               format: double
             xmax:
               type: number
-              format double
+              format: double
             ymax:
               type: number
-              format double
+              format: double
     TimeSeries:
       type: object
       properties:
