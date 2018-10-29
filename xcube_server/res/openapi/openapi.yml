@@ -209,7 +209,7 @@ paths:
       tags:
         - time-series
       operationId: tsInfo
-      summary: Lists time steps available for variables
+      summary: Lists time stamps available for variables
       description: Returns for each variable the times in UTC format for which data is available.
       responses:
         '200':
@@ -545,15 +545,10 @@ components:
     TimeSeriesInfo:
       type: object
       properties:
-        datasets:
+        layers:
           type: array
           items:
-            type: object
-            properties:
-              variables:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TimeSeriesVariableInfo'
+            $ref: '#/components/schemas/TimeSeriesVariableInfo'
     TimeSeriesVariableInfo:
       type: object
       properties:
