@@ -33,7 +33,7 @@ import zarr
 
 from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
-from .defaults import DEFAULT_MAX_THREAD_COUNT, DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
+from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, TRACE_PERF, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
     FILE_TILE_CACHE_ENABLED
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
@@ -56,8 +56,7 @@ class ServiceContext:
         self.base_dir = os.path.abspath(base_dir or '')
         self._config = config or dict()
         self.dataset_cache = dict()  # contains tuples of form (ds, ds_descriptor, tile_grid_cache)
-        self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=DEFAULT_MAX_THREAD_COUNT,
-                                                                 thread_name_prefix='xcube_server')
+        # TODO by forman: move pyramid_cache, mem_tile_cache, rgb_tile_cache into dataset_cache values
         self.pyramid_cache = dict()
         self.mem_tile_cache = Cache(MemoryCacheStore(),
                                     capacity=MEM_TILE_CACHE_CAPACITY,
