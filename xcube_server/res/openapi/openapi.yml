@@ -241,6 +241,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimeSeries'
+        '400':
+          description: Invalid query parameters
         '500':
           description: Unexpected error.
 
