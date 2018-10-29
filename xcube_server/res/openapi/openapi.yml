@@ -20,8 +20,8 @@ tags:
     description: Tiles API
   - name: time-series
     description: Time-series API
-  - name: locations
-    description: Locations API
+  - name: features
+    description: Features API
 paths:
   '/datasets.json':
     get:
