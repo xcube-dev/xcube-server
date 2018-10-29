@@ -33,7 +33,7 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
     for descriptor in descriptors:
         if 'Identifier' in descriptor:
             dataset = ctx.get_dataset(descriptor['Identifier'])
-            if not 'time' in dataset.variables:
+            if 'time' not in dataset.variables:
                 continue
             attributes = dataset.attrs
             bounds = {'xmin': attributes.get('geospatial_lon_min', -180),
@@ -66,6 +66,7 @@ def get_time_series_for_point(ctx: ServiceContext, ds_name: str, var_name: str, 
     if 'time' not in dim_names:
         raise ServiceBadRequestError(f'variable {var_name!r} of dataset {ds_name!r} has no time information')
     point_subset = variable.sel(lat=lat, lon=lon, method='Nearest')
+    # noinspection PyTypeChecker
     time_subset = point_subset.sel(time=slice(start_date, end_date))
     time_series_for_point = {'results': []}
     for entry in time_subset:
