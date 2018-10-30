@@ -2,6 +2,7 @@ import unittest
 
 from test.helpers import new_test_service_context
 from xcube_server.controllers.features import find_features, find_dataset_features
+from xcube_server.errors import ServiceBadRequestError
 
 
 class FeaturesControllerTest(unittest.TestCase):
@@ -13,15 +14,25 @@ class FeaturesControllerTest(unittest.TestCase):
 
     def test_find_features_by_box(self):
         ctx = new_test_service_context()
-        feature_collection = find_features(ctx,
-                                           box_coords="-1,49,2,55")
+        feature_collection = find_features(ctx, box_coords="-1,49,2,55")
         self._assertFeatureCollection(feature_collection, 2, {'1', '4'})
+
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            find_features(ctx, box_coords="-1,49,55")
+        self.assertEqual("HTTP 400: Received invalid bounding box geometry.", f"{cm.exception}")
+
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            find_features(ctx, box_coords="-1,49,x,55")
+        self.assertEqual("HTTP 400: Received invalid bounding box geometry.", f"{cm.exception}")
 
     def test_find_features_by_wkt(self):
         ctx = new_test_service_context()
-        feature_collection = find_features(ctx,
-                                           geom_wkt="POLYGON ((2 49, 2 55, -1 55, -1 49, 2 49))")
+        feature_collection = find_features(ctx, geom_wkt="POLYGON ((2 49, 2 55, -1 55, -1 49, 2 49))")
         self._assertFeatureCollection(feature_collection, 2, {'1', '4'})
+
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            find_features(ctx, geom_wkt="POLYGLON ((2 49, 2 55, -1 55, -1 49, 2 49))")
+        self.assertEqual("HTTP 400: Received invalid geometry WKT.", f"{cm.exception}")
 
     def test_find_features_by_geojson(self):
         ctx = new_test_service_context()
@@ -38,6 +49,11 @@ class FeaturesControllerTest(unittest.TestCase):
         geojson_obj = {'type': 'FeatureCollection', 'features': [geojson_obj]}
         feature_collection = find_features(ctx, geojson_obj=geojson_obj)
         self._assertFeatureCollection(feature_collection, 2, {'1', '4'})
+
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            geojson_obj = {'type': 'FeatureCollection', 'features': []}
+            find_features(ctx, geojson_obj=geojson_obj)
+        self.assertEqual("HTTP 400: Received invalid GeoJSON object.", f"{cm.exception}")
 
     def test_find_dataset_features(self):
         ctx = new_test_service_context()

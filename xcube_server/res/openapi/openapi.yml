@@ -232,11 +232,10 @@ paths:
       operationId: findFeaturesForGeoJSON
       description: |
         Find features matching the query expression and/or the geometry passed as a GeoJSON request.
+        If a GeoJSON FeatureCollection object is passed, only the first feature's geometry is used.
         Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
         Returns a FeatureCollection which may be empty.
       parameters:
-        - $ref: '#/components/parameters/bounds'
-        - $ref: '#/components/parameters/geom'
         - $ref: '#/components/parameters/expr'
         - $ref: '#/components/parameters/comb'
       requestBody:

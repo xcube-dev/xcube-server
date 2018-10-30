@@ -3,7 +3,9 @@ from typing import Any, Dict, List
 
 import shapely.geometry
 import shapely.wkt
+from shapely.errors import WKTReadingError
 
+from xcube_server.errors import ServiceBadRequestError
 from xcube_server.logtime import log_time
 from ..context import ServiceContext
 
@@ -31,16 +33,25 @@ def find_features(ctx: ServiceContext,
                   comb_op: str = "and") -> GeoJsonFeatureCollection:
     query_geometry = None
     if box_coords:
-        query_geometry = _get_box_geometry(*[float(s) for s in box_coords.split(",")])
+        try:
+            query_geometry = _get_box_geometry(*[float(s) for s in box_coords.split(",")])
+        except (TypeError, ValueError) as e:
+            raise ServiceBadRequestError("Received invalid bounding box geometry.") from e
     elif geom_wkt:
-        query_geometry = shapely.wkt.loads(geom_wkt)
+        try:
+            query_geometry = shapely.wkt.loads(geom_wkt)
+        except (TypeError, WKTReadingError) as e:
+            raise ServiceBadRequestError("Received invalid geometry WKT.") from e
     elif geojson_obj:
-        if geojson_obj["type"] == "FeatureCollection":
-            query_geometry = shapely.geometry.shape(geojson_obj["features"][0]["geometry"])
-        elif geojson_obj["type"] == "Feature":
-            query_geometry = shapely.geometry.shape(geojson_obj["geometry"])
-        else:
-            query_geometry = shapely.geometry.shape(geojson_obj)
+        try:
+            if geojson_obj["type"] == "FeatureCollection":
+                query_geometry = shapely.geometry.shape(geojson_obj["features"][0]["geometry"])
+            elif geojson_obj["type"] == "Feature":
+                query_geometry = shapely.geometry.shape(geojson_obj["geometry"])
+            else:
+                query_geometry = shapely.geometry.shape(geojson_obj)
+        except (IndexError, ValueError, KeyError) as e:
+            raise ServiceBadRequestError("Received invalid GeoJSON object.") from e
     return _find_features(ctx, query_geometry, query_expr, comb_op)
 
 
