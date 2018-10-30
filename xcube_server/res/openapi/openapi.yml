@@ -204,6 +204,48 @@ paths:
                 $ref: '#/components/schemas/CesiumTileGrid'
         '404':
           description: Resource not found.
+  '/ts':
+    get:
+      tags:
+        - time-series
+      operationId: tsInfo
+      summary: Lists time stamps available for variables
+      description: Returns for each variable the times in UTC format for which data is available.
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeriesInfo'
+        '500':
+          description: Unexpected error.
+  '/ts/{dataset}/{variable}/point':
+    get:
+      tags:
+        - time-series
+      operationId: tsPoint
+      summary: Computes a time-series
+      description: Computes a time series given a coordinate and a product.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/lat'
+        - $ref: '#/components/parameters/lon'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Unexpected error.
+
   '/features':
     get:
       tags:
@@ -342,6 +384,42 @@ components:
         type: string
         default: "and"
         enum: ["and", "or"]
+    lat:
+      name: lat
+      in: query
+      description: A latitude.
+      required: true
+      schema:
+        type: number
+        format: double
+        minimum: -90.0
+        maximum: 90.0
+    lon:
+      name: lon
+      in: query
+      description: A longitude.
+      required: true
+      schema:
+        type: number
+        format: double
+        minimum: -180.0
+        maximum: 180.0
+    startDate:
+      name: startDate
+      in: query
+      description: minimum date of the time series, following schema yyyy-MM-dd (inclusive).
+      required: false
+      schema:
+        type: string
+      example: 1970-01-01
+    endDate:
+      name: endDate
+      in: query
+      description: aximum date of the time series, following schema yyyy-MM-dd (inclusive).
+      required: false
+      schema:
+        type: string
+      example: 2099-01-01
   schemas:
     DatasetInfo:
       type: object
@@ -557,6 +635,65 @@ components:
             minItems: 0
             items:
               $ref: '#/components/schemas/GeoJsonFeature'
+    TimeSeriesInfo:
+      type: object
+      properties:
+        layers:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSeriesVariableInfo'
+    TimeSeriesVariableInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        dates:
+          type: array
+          items:
+            type: string
+        bounds:
+          type: object
+          properties:
+            xmin:
+              type: number
+              format: double
+            ymin:
+              type: number
+              format: double
+            xmax:
+              type: number
+              format: double
+            ymax:
+              type: number
+              format: double
+    TimeSeries:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimeSeriesEntry'
+    TimeSeriesEntry:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/ArithmeticMean'
+        date:
+          type: string
+    ArithmeticMean:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int32
+          minimum: 0
+        validCount:
+          type: integer
+          format: int32
+          minimum: 0
+        average:
+          type: number
+          format: double
   requestBodies:
     GeoJsonObject:
       description: GeoJSON FeatureCollection

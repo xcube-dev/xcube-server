@@ -27,6 +27,7 @@ from xcube_server.controllers.features import find_features, find_dataset_featur
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
+from .controllers.time_series import get_time_series_info, get_time_series_for_point
 from .controllers.wmts import get_wmts_capabilities
 from .errors import ServiceResourceNotFoundError, ServiceBadRequestError
 from .service import ServiceRequestHandler
@@ -185,3 +186,25 @@ class InfoHandler(ServiceRequestHandler):
         self.write(json.dumps(dict(name='xcube_server',
                                    description=__description__,
                                    version=__version__), indent=2))
+
+
+# noinspection PyAbstractClass
+class TimeSeriesInfoHandler(ServiceRequestHandler):
+
+    async def get(self):
+        response = await IOLoop.current().run_in_executor(None, get_time_series_info, self.service_context)
+        self.set_header('Content-Type', 'application/json')
+        self.finish(response)
+
+
+# noinspection PyAbstractClass
+class TimeSeriesForPointHandler(ServiceRequestHandler):
+
+    async def get(self, ds_name: str, var_name: str):
+        response = await IOLoop.current().run_in_executor(None,
+                                                          get_time_series_for_point,
+                                                          self.service_context,
+                                                          ds_name, var_name,
+                                                          self.params)
+        self.set_header('Content-Type', 'application/json')
+        self.finish(response)

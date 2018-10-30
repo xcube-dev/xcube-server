@@ -32,6 +32,7 @@ requirements = [
     'matplotlib',
     'netcdf4',
     'numpy',
+    'pandas',
     'pillow',
     'pyyaml',
     'shapely',
