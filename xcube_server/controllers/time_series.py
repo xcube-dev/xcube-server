@@ -23,7 +23,7 @@ from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
 from ..reqparams import RequestParams
 import numpy as np
-import shapely
+import shapely.geometry
 from pandas import Timestamp
 from typing import Dict
 
@@ -62,24 +62,27 @@ def get_time_series_for_point(ctx: ServiceContext, ds_name: str, var_name: str, 
     end_date = np.datetime64(params.get_query_argument('endDate', default='2099-12-31'))
     dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
     dim_names = list(variable.dims)
-    if 'lon' not in dim_names or 'lat' not in dim_names:
-        raise ServiceBadRequestError(f'variable {var_name!r} of dataset {ds_name!r} is not geo-spatial')
     if 'time' not in dim_names:
         raise ServiceBadRequestError(f'variable {var_name!r} of dataset {ds_name!r} has no time information')
-    point_subset = variable.sel(lat=lat, lon=lon, method='Nearest')
-    # noinspection PyTypeChecker
-    time_subset = point_subset.sel(time=slice(start_date, end_date))
+    if 'lon' not in dim_names or 'lat' not in dim_names:
+        raise ServiceBadRequestError(f'variable {var_name!r} of dataset {ds_name!r} is not geo-spatial')
+    point = shapely.geometry.Point(lon, lat)
+    ds_bounds = _get_dataset_bounds(ctx, ds_name)
     time_series_for_point = {'results': []}
-    for entry in time_subset:
-        statistics = {'totalCount': 1}
-        if np.isnan(entry.data):
-            statistics['validCount'] = 0
-            statistics['average'] = np.NAN
-        else:
-            statistics['validCount'] = 1
-            statistics['average'] = entry.item()
-        result = {'result': statistics, 'date': Timestamp(entry.time.data).strftime('%Y-%m-%d')}
-        time_series_for_point['results'].append(result)
+    if ds_bounds.contains(point):
+        point_subset = variable.sel(lat=lat, lon=lon, method='Nearest')
+        # noinspection PyTypeChecker
+        time_subset = point_subset.sel(time=slice(start_date, end_date))
+        for entry in time_subset:
+            statistics = {'totalCount': 1}
+            if np.isnan(entry.data):
+                statistics['validCount'] = 0
+                statistics['average'] = np.NAN
+            else:
+                statistics['validCount'] = 1
+                statistics['average'] = entry.item()
+            result = {'result': statistics, 'date': Timestamp(entry.time.data).strftime('%Y-%m-%d')}
+            time_series_for_point['results'].append(result)
     return time_series_for_point
 
 

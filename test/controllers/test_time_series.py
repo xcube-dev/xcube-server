@@ -23,10 +23,17 @@ class TimeSeriesControllerTest(unittest.TestCase):
         self.assertEqual("lat and lon must be given as query parameters",
                          error.exception.reason)
 
+    def test_get_time_series_for_point_invalid_lat_and_lon(self):
+        ctx = new_test_service_context()
+        time_series_for_point = get_time_series_for_point(ctx, 'demo', 'conc_tsm',
+                                                          RequestParamsMock(lat=-30.0, lon=-150.0))
+        expected_dict = {'results': []}
+        self.assertDictEqual(expected_dict, time_series_for_point)
+
     def test_get_time_series_for_point(self):
         ctx = new_test_service_context()
         time_series_for_point = get_time_series_for_point(ctx, 'demo', 'conc_tsm',
-                                                          RequestParamsMock(lat=51.4, lon='2.1',
+                                                          RequestParamsMock(lat=51.4, lon=2.1,
                                                                             startDate='2017-01-15',
                                                                             endDate='2017-01-29'))
         expected_dict = self._get_expected_time_series_point_dict()
