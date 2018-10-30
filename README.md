@@ -80,12 +80,15 @@ Test it:
   * Tile grid service
     * [Get tile grid JSON for OL4](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/ol4.json)
     * [Get tile grid JSON for Cesium](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/cesium.json)
+  * Time series service
+    * [Get time series for single point](http://localhost:8080/api/0.1.0.dev1/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
 * List services
     * [Get datasets JSON](http://localhost:8080/api/0.1.0.dev1/datasets.json)
     * [Get dataset variables JSON](http://localhost:8080/api/0.1.0.dev1/variables/local.json)
     * [Get dataset coordinates JSON](http://localhost:8080/api/0.1.0.dev1/coords/local/time.json)
     * [Get color bars JSON](http://localhost:8080/api/0.1.0.dev1/colorbars.json), 
       [Get color bars HTML](http://localhost:8080/api/0.1.0.dev1/colorbars.html)
+    * [Get time stamps per dataset](http://localhost:8080/api/0.1.0.dev1/ts)
 
 
 ### Clients
