@@ -6,7 +6,7 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.1.0.dev2"
+  version: "0.1.0.dev3"
   title: XCube Server API
   contact:
     email: bcdev@brockmann-consult.de
@@ -20,8 +20,8 @@ tags:
     description: Tiles API
   - name: time-series
     description: Time-series API
-  - name: locations
-    description: Locations API
+  - name: features
+    description: Features API
 paths:
   '/datasets.json':
     get:
@@ -246,6 +246,61 @@ paths:
         '500':
           description: Unexpected error.
 
+  '/features':
+    get:
+      tags:
+        - features
+      summary: Find features
+      operationId: findFeatures
+      description: |
+        Find features matching the given geometry and/or query expression.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
+        Returns a FeatureCollection which may be empty.
+
+      parameters:
+        - $ref: '#/components/parameters/bounds'
+        - $ref: '#/components/parameters/geom'
+        - $ref: '#/components/parameters/expr'
+        - $ref: '#/components/parameters/comb'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
+        '404':
+          description: Resource not found.
+    post:
+      tags:
+        - features
+      summary: Find features
+      operationId: findFeaturesForGeoJSON
+      description: |
+        Find features matching the query expression and/or the geometry passed as a GeoJSON request.
+        If a GeoJSON FeatureCollection object is passed, only the first feature's geometry is used.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
+        Returns a FeatureCollection which may be empty.
+      parameters:
+        - $ref: '#/components/parameters/expr'
+        - $ref: '#/components/parameters/comb'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonObject'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
+  '/features/{dataset}':
+    get:
+      tags:
+        - features
+      summary: Find features for dataset
+      operationId: findFeaturesForDataset
+      description: |
+        Find features intersecting with the given dataset and/or matching the given query string.
+        Returns a FeatureCollection which may be empty.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/expr'
+        - $ref: '#/components/parameters/comb'
+      responses:
+        '200':
+          $ref: '#/components/responses/GeoJsonFeatureCollection'
 components:
   parameters:
     dataset:
@@ -293,6 +348,42 @@ components:
       schema:
         type: number
         format: int32
+    expr:
+      name: expr
+      in: query
+      description: |
+        Query expression. May comprise any search terms.
+        To search for specific fields, use the filed name as prefix followed by a colon, e.g. "NAME:*Lake".
+      required: false
+      schema:
+        type: string
+    bounds:
+      name: bounds
+      in: query
+      description: Bounding box given as xmin,ymin,xmax,ymax.
+      required: false
+      schema:
+        type: array
+        minItems: 4
+        maxItems: 4
+        items:
+          type: number
+    geom:
+      name: geom
+      in: query
+      description: Geometry WKT string.
+      required: false
+      schema:
+        type: string
+    comb:
+      name: comb
+      in: query
+      description: Combination operation to be applied if multiple search criteria are given.
+      required: false
+      schema:
+        type: string
+        default: "and"
+        enum: ["and", "or"]
     lat:
       name: lat
       in: query
@@ -603,3 +694,17 @@ components:
         average:
           type: number
           format: double
+  requestBodies:
+    GeoJsonObject:
+      description: GeoJSON FeatureCollection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonObject'
+  responses:
+    GeoJsonFeatureCollection:
+      description: GeoJSON FeatureCollection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonFeatureCollection'

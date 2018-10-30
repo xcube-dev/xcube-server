@@ -74,6 +74,10 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(API_PREFIX + '/colorbars.json')
         self.assertEqual(200, response.code)
 
-    def test_fetch_color_bars_html(self):
-        response = self.fetch(API_PREFIX + '/colorbars.html')
+    def test_fetch_features(self):
+        response = self.fetch(API_PREFIX + '/features.json?bbox=10,10,20,20')
+        self.assertEqual(200, response.code)
+
+    def test_fetch_features_for_dataset(self):
+        response = self.fetch(API_PREFIX + '/features/demo.json')
         self.assertEqual(200, response.code)

@@ -23,12 +23,13 @@ import json
 
 from tornado.ioloop import IOLoop
 
+from xcube_server.controllers.features import find_features, find_dataset_features
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
 from .controllers.time_series import get_time_series_info, get_time_series_for_point
 from .controllers.wmts import get_wmts_capabilities
-from .errors import ServiceResourceNotFoundError
+from .errors import ServiceResourceNotFoundError, ServiceBadRequestError
 from .service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -133,6 +134,48 @@ class GetColorBarsHandler(ServiceRequestHandler):
         response = get_color_bars(self.service_context, mime_type)
         self.set_header('Content-Type', mime_type)
         self.write(response)
+
+
+# noinspection PyAbstractClass
+class FindFeaturesHandler(ServiceRequestHandler):
+
+    # noinspection PyShadowingBuiltins
+    def get(self):
+        query_expr = self.params.get_query_argument("query", None)
+        geom_wkt = self.params.get_query_argument("geom", None)
+        box_coords = self.params.get_query_argument("bbox", None)
+        comb_op = self.params.get_query_argument("comb", "and")
+        if geom_wkt and box_coords:
+            raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given.')
+        response = find_features(self.service_context,
+                                 geom_wkt=geom_wkt, box_coords=box_coords,
+                                 query_expr=query_expr, comb_op=comb_op)
+        self.set_header('Content-Type', "application/json")
+        self.write(json.dumps(response, indent=2))
+
+    # noinspection PyShadowingBuiltins
+    def post(self):
+        query_expr = self.params.get_query_argument("query", None)
+        comb_op = self.params.get_query_argument("comb", "and")
+        geojson_obj = json.loads(self.request.body.decode('utf-8'))
+        response = find_features(self.service_context,
+                                 geojson_obj=geojson_obj,
+                                 query_expr=query_expr, comb_op=comb_op)
+        self.set_header('Content-Type', "application/json")
+        self.write(json.dumps(response, indent=2))
+
+
+# noinspection PyAbstractClass
+class FindDatasetFeaturesHandler(ServiceRequestHandler):
+
+    # noinspection PyShadowingBuiltins
+    def get(self, ds_name: str):
+        query_expr = self.params.get_query_argument("query", None)
+        comb_op = self.params.get_query_argument("comb", "and")
+        response = find_dataset_features(self.service_context,
+                                         ds_name, query_expr=query_expr, comb_op=comb_op)
+        self.set_header('Content-Type', "application/json")
+        self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass

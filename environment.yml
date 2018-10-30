@@ -12,6 +12,7 @@ dependencies:
   - boto3 =1.9.2
   - botocore =1.12.3
   - cython =0.28.5
+  - fiona =1.8b2
   - h5netcdf =0.6.2
   - matplotlib =2.2.3
   - netcdf4 =1.4.0

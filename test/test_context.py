@@ -7,7 +7,6 @@ from xcube_server.errors import ServiceResourceNotFoundError
 
 
 class ServiceContextTest(unittest.TestCase):
-
     def test_config_and_dataset_cache(self):
         ctx = new_test_service_context()
         self.assertNotIn('demo', ctx.dataset_cache)
@@ -65,3 +64,11 @@ class ServiceContextTest(unittest.TestCase):
         self.assertEqual(('jet', 0., 6.), cm)
         cm = ctx.get_color_mapping('demo', '_')
         self.assertEqual(('jet', 0., 1.), cm)
+
+    def test_feature_cache(self):
+        ctx = new_test_service_context()
+        features = ctx.get_features()
+        self.assertIsInstance(features, list)
+        self.assertEqual(6, len(features))
+        self.assertIs(features, ctx.get_features())
+

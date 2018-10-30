@@ -24,6 +24,10 @@ Datasets:
     Args: ["@local@", "1W"]
     Style: default
 
+Features:
+  - Identifier: local
+    Path: "features/*.geojson"
+
 Styles:
   - Identifier: default
     ColorMappings:

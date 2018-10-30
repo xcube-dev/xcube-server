@@ -80,6 +80,9 @@ Test it:
   * Tile grid service
     * [Get tile grid JSON for OL4](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/ol4.json)
     * [Get tile grid JSON for Cesium](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/cesium.json)
+* Feature service
+    * [Get features GeoJSON](http://localhost:8080/api/0.1.0.dev1/features.json)
+    * [Get dataset features GeoJSON](http://localhost:8080/api/0.1.0.dev1/features/local.json)
   * Time series service
     * [Get time series for single point](http://localhost:8080/api/0.1.0.dev1/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
 * List services
