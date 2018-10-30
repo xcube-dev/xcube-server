@@ -586,10 +586,10 @@ components:
       type: object
       properties:
         result:
-          $ref: '#/components/schemas/TimeSeriesStatistics'
+          $ref: '#/components/schemas/ArithmeticMean'
         date:
           type: string
-    TimeSeriesStatistics:
+    ArithmeticMean:
       type: object
       properties:
         totalCount:
