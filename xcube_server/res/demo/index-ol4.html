@@ -82,10 +82,9 @@
                 .then(options => {
                     let name = options.name;
                     var overlayGroup = new ol.layer.Group({
-                            name: name,
-                            title: dataset.title || name,
-                        layers: [
-                        ]
+                        name: name,
+                        title: dataset.title || name,
+                        layers: []
                     });
                     var variables = options.variables
                     var datasetName = options.name;
@@ -114,7 +113,32 @@
                     initAnimation();
                 });
             }
-        })
+        });
+
+        // Add feature layer
+        var pointStyle = new ol.style.Circle({
+            radius: 5,
+            fill: new ol.style.Fill({color: 'yellow', opacity: 0.5}),
+            stroke: new ol.style.Stroke({color: 'red', width: 2})
+        });
+        var styles = {
+            'Point': new ol.style.Style({
+               image: pointStyle
+            })
+        };
+        var styleFunction = function(feature) {
+            return styles[feature.getGeometry().getType()];
+        };
+        map.addLayer(new ol.layer.Vector({
+            title: 'Stations',
+            style: styleFunction,
+            source: new ol.source.Vector({
+                url: baseUrl + '/features',
+                format: new ol.format.GeoJSON(),
+                //features: (new ol.format.GeoJSON()).readFeatures(featureCollection),
+                //projection: 'EPSG:4326',
+            })
+        }));
 
         function updateTimeInfo() {
             var info = document.getElementById('info');
