@@ -27,13 +27,13 @@ import sys
 from tornado.web import Application, StaticFileHandler
 
 from xcube_server import __version__, __description__
-from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
-    GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsHandler, GetDatasetsJsonHandler, \
-    GetVariablesJsonHandler, GetCoordinatesJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler
-    GetVariablesJsonHandler, GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler
-from xcube_server.service import url_pattern, Service
 from xcube_server.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
     DEFAULT_CONFIG_FILE, API_PREFIX
+from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
+    GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsHandler, GetDatasetsJsonHandler, \
+    FindFeaturesHandler, FindDatasetFeaturesHandler, \
+    GetVariablesJsonHandler, GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler
+from xcube_server.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -43,7 +43,8 @@ def new_application():
         (API_PREFIX + '/res/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
         (API_PREFIX + url_pattern('/'), InfoHandler),
         (API_PREFIX + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'), GetWMTSCapabilitiesXmlHandler),
-        (API_PREFIX + url_pattern('/wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'), GetTileDatasetHandler),
+        (API_PREFIX + url_pattern('/wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
+         GetTileDatasetHandler),
         (API_PREFIX + url_pattern('/tile/{{ds_name}}/{{var_name}}/{{z}}/{{x}}/{{y}}.png'), GetTileDatasetHandler),
         (API_PREFIX + url_pattern('/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), GetTileNE2Handler),
         (API_PREFIX + url_pattern('/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), GetTileGridDatasetHandler),
@@ -53,7 +54,7 @@ def new_application():
         (API_PREFIX + url_pattern('/coords/{{ds_name}}/{{dim_name}}.json'), GetCoordinatesJsonHandler),
         (API_PREFIX + url_pattern('/colorbars.{{format}}'), GetColorBarsHandler),
         (API_PREFIX + url_pattern('/ts'), TimeSeriesInfoHandler),
-        (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/point'), TimeSeriesForPointHandler)
+        (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/point'), TimeSeriesForPointHandler),
         (API_PREFIX + url_pattern('/features.json'), FindFeaturesHandler),
         (API_PREFIX + url_pattern('/features/{{ds_name}}.json'), FindDatasetFeaturesHandler),
     ])
