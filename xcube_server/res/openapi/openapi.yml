@@ -351,7 +351,7 @@ components:
           type: string
         title:
           type: string
-        bounds:
+        bbox:
           type: array
           minItems: 4
           maxItems: 4
