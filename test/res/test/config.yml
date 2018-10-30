@@ -12,8 +12,8 @@ Datasets:
     Style: default
 
 Features:
-  - Identifier: default
-    Path: test.geojson
+  - Identifier: local
+    Path: "features/*.geojson"
 
 Styles:
   - Identifier: default

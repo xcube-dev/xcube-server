@@ -17,8 +17,9 @@ def find_dataset_features(ctx: ServiceContext,
                           ds_name: str,
                           query_expr: Any = None,
                           comb_op: str = "and") -> GeoJsonFeatureCollection:
+    query_geometry = _get_dataset_bounds(ctx, ds_name)
     return _find_features(ctx,
-                          query_geometry=_get_dataset_bounds(ctx, ds_name),
+                          query_geometry=query_geometry,
                           query_expr=query_expr, comb_op=comb_op)
 
 
