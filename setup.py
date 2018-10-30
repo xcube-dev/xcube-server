@@ -34,6 +34,7 @@ requirements = [
     'pandas',
     'pillow',
     'pyyaml',
+    'shapely',
     's3fs',
     'tornado',
     'xarray',
