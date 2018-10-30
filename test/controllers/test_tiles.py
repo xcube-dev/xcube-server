@@ -41,7 +41,7 @@ class TilesControllerTest(unittest.TestCase):
         self.maxDiff = None
 
         ctx = new_test_service_context()
-        tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol4.json', 'http://bibo')
+        tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol4', 'http://bibo')
         self.assertEqual({
             'url': f'http://bibo{API_PREFIX}/tile/demo/conc_chl/' + '{z}/{x}/{y}.png',
             'projection': 'EPSG:4326',
@@ -53,7 +53,7 @@ class TilesControllerTest(unittest.TestCase):
                          'tileSize': [250, 250]},
         }, tile_grid)
 
-        tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'cesium.json', 'http://bibo')
+        tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'cesium', 'http://bibo')
         self.assertEqual({
             'url': f'http://bibo{API_PREFIX}/tile/demo/conc_chl/' + '{z}/{x}/{y}.png',
             'rectangle': dict(west=2.168404344971009e-19, south=50.0, east=5.0, north=52.5),
@@ -73,7 +73,7 @@ class TilesControllerTest(unittest.TestCase):
 
     def test_get_ne2_tile_grid(self):
         ctx = ServiceContext()
-        tile_grid = get_ne2_tile_grid(ctx, 'ol4.json', 'http://bibo')
+        tile_grid = get_ne2_tile_grid(ctx, 'ol4', 'http://bibo')
         self.assertEqual({
             'url': f'http://bibo{API_PREFIX}/tile/ne2/' + '{z}/{x}/{y}.jpg',
             'projection': 'EPSG:4326',

@@ -124,14 +124,10 @@ def get_dataset_tile_grid(ctx: ServiceContext,
                           base_url: str) -> Dict[str, Any]:
     dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
     tile_grid = get_tile_grid(ctx, ds_name, var_name, variable)
-    if format_name == 'ol4.json':
+    if format_name == 'ol4' or format_name == 'cesium':
         return get_tile_source_options(tile_grid,
                                        get_dataset_tile_url(ctx, ds_name, var_name, base_url),
-                                       client='ol4')
-    elif format_name == 'cesium.json':
-        return get_tile_source_options(tile_grid,
-                                       get_dataset_tile_url(ctx, ds_name, var_name, base_url),
-                                       client='cesium')
+                                       client=format_name)
     else:
         raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
 
@@ -158,7 +154,7 @@ def get_ne2_tile(ctx: ServiceContext, x: str, y: str, z: str, params: RequestPar
 
 
 def get_ne2_tile_grid(ctx: ServiceContext, format_name: str, base_url: str):
-    if format_name == 'ol4.json':
+    if format_name == 'ol4':
         return get_tile_source_options(NaturalEarth2Image.get_pyramid().tile_grid,
                                        ctx.get_service_url(base_url, 'tile', 'ne2', '{z}/{x}/{y}.jpg'),
                                        client='ol4')

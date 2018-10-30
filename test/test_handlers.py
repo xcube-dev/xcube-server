@@ -39,11 +39,11 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile_grid_ol4_json(self):
-        response = self.fetch(API_PREFIX + '/tilegrid/demo/conc_chl/ol4.json')
+        response = self.fetch(API_PREFIX + '/tilegrid/demo/conc_chl/ol4')
         self.assertEqual(200, response.code)
 
     def test_fetch_dataset_tile_grid_cesium_json(self):
-        response = self.fetch(API_PREFIX + '/tilegrid/demo/conc_chl/cesium.json')
+        response = self.fetch(API_PREFIX + '/tilegrid/demo/conc_chl/cesium')
         self.assertEqual(200, response.code)
 
     def test_fetch_ne2_tile(self):
@@ -51,33 +51,37 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertEqual(200, response.code)
 
     def test_fetch_ne2_tile_grid(self):
-        response = self.fetch(API_PREFIX + '/tilegrid/ne2/ol4.json')
+        response = self.fetch(API_PREFIX + '/tilegrid/ne2/ol4')
         self.assertEqual(200, response.code)
 
     def test_fetch_datasets_json(self):
-        response = self.fetch(API_PREFIX + '/datasets.json')
+        response = self.fetch(API_PREFIX + '/datasets')
         self.assertEqual(200, response.code)
 
     def test_fetch_variables_json(self):
-        response = self.fetch(API_PREFIX + '/variables/demo.json')
+        response = self.fetch(API_PREFIX + '/variables/demo')
         self.assertEqual(200, response.code)
-        response = self.fetch(API_PREFIX + '/variables/demo.json?client=ol4')
+        response = self.fetch(API_PREFIX + '/variables/demo?client=ol4')
         self.assertEqual(200, response.code)
-        response = self.fetch(API_PREFIX + '/variables/demo.json?client=cesium')
+        response = self.fetch(API_PREFIX + '/variables/demo?client=cesium')
         self.assertEqual(200, response.code)
 
     def test_fetch_coords_json(self):
-        response = self.fetch(API_PREFIX + '/coords/demo/time.json')
+        response = self.fetch(API_PREFIX + '/coords/demo/time')
         self.assertEqual(200, response.code)
 
     def test_fetch_color_bars_json(self):
-        response = self.fetch(API_PREFIX + '/colorbars.json')
+        response = self.fetch(API_PREFIX + '/colorbars')
+        self.assertEqual(200, response.code)
+
+    def test_fetch_color_bars_html(self):
+        response = self.fetch(API_PREFIX + '/colorbars.html')
         self.assertEqual(200, response.code)
 
     def test_fetch_features(self):
-        response = self.fetch(API_PREFIX + '/features.json?bbox=10,10,20,20')
+        response = self.fetch(API_PREFIX + '/features?bbox=10,10,20,20')
         self.assertEqual(200, response.code)
 
     def test_fetch_features_for_dataset(self):
-        response = self.fetch(API_PREFIX + '/features/demo.json')
+        response = self.fetch(API_PREFIX + '/features/demo')
         self.assertEqual(200, response.code)
