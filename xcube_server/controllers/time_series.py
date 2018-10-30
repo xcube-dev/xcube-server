@@ -86,7 +86,7 @@ def get_time_series_for_point(ctx: ServiceContext, ds_name: str, var_name: str, 
     return time_series_for_point
 
 
-#TODO move this function to utils class or similar
+# TODO move this function to utils class or similar
 def _get_dataset_bounds(ctx: ServiceContext, ds_name: str) -> shapely.geometry.base.BaseGeometry:
     dataset = ctx.get_dataset(ds_name)
     lon_var = dataset.coords.get("lon")
@@ -118,7 +118,7 @@ def _get_dataset_bounds(ctx: ServiceContext, ds_name: str) -> shapely.geometry.b
     return _get_box_geometry(lon_min, lat_min, lon_max, lat_max)
 
 
-#TODO move this function to utils class or similar
+# TODO move this function to utils class or similar
 def _get_box_geometry(lon_min: float, lat_min: float,
                       lon_max: float, lat_max: float) -> shapely.geometry.base.BaseGeometry:
     if lon_max >= lon_min:

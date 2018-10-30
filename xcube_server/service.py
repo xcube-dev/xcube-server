@@ -44,6 +44,7 @@ __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
 
+
 class Service:
     """
     A web service that provides a remote API to some application.
