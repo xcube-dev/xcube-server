@@ -19,6 +19,7 @@ dependencies:
   - pandas =0.23.4
   - pillow =5.2.0
   - pyyaml =3.13
+  - shapely =1.6.4
   - s3fs =0.1.6
   - tornado =5.1
   - xarray =0.10.8
