@@ -55,7 +55,7 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
     </ows:ServiceProvider>
 """
 
-    wmts_kvp_url = ctx.get_service_url(base_url, '/wmts/1.0.0/kvp?')
+    wmts_kvp_url = ctx.get_service_url(base_url, 'wmts/1.0.0/kvp?')
 
     operations_metadata_xml = f"""
     <ows:OperationsMetadata>
@@ -92,7 +92,7 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
     tile_grids = dict()
     indent = '    '
 
-    layer_base_url = ctx.get_service_url(base_url, '/wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png')
+    layer_base_url = ctx.get_service_url(base_url, 'wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png')
 
     dimensions_xml_cache = dict()
 
@@ -238,7 +238,7 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
     themes_xml_lines.append((1, '</Themes>'))
     themes_xml = '\n'.join(['%s%s' % (n * indent, xml) for n, xml in themes_xml_lines])
 
-    get_capablities_rest_url = ctx.get_service_url(base_url, '/wmts/1.0.0/WMTSCapabilities.xml')
+    get_capablities_rest_url = ctx.get_service_url(base_url, 'wmts/1.0.0/WMTSCapabilities.xml')
     service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
 
     return f"""<?xml version="1.0" encoding="UTF-8"?>
