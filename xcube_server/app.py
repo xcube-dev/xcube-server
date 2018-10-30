@@ -30,9 +30,9 @@ from xcube_server import __version__, __description__
 from xcube_server.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
     DEFAULT_CONFIG_FILE, API_PREFIX
 from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
-    GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsHandler, GetDatasetsJsonHandler, \
-    FindFeaturesHandler, FindDatasetFeaturesHandler, \
-    GetVariablesJsonHandler, GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler
+    GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
+    GetDatasetsJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler, GetVariablesJsonHandler, \
+    GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler
 from xcube_server.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -49,14 +49,15 @@ def new_application():
         (API_PREFIX + url_pattern('/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), GetTileNE2Handler),
         (API_PREFIX + url_pattern('/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), GetTileGridDatasetHandler),
         (API_PREFIX + url_pattern('/tilegrid/ne2/{{format_name}}'), GetTileGridNE2Handler),
-        (API_PREFIX + url_pattern('/datasets.json'), GetDatasetsJsonHandler),
-        (API_PREFIX + url_pattern('/variables/{{ds_name}}.json'), GetVariablesJsonHandler),
-        (API_PREFIX + url_pattern('/coords/{{ds_name}}/{{dim_name}}.json'), GetCoordinatesJsonHandler),
-        (API_PREFIX + url_pattern('/colorbars.{{format}}'), GetColorBarsHandler),
+        (API_PREFIX + url_pattern('/datasets'), GetDatasetsJsonHandler),
+        (API_PREFIX + url_pattern('/variables/{{ds_name}}'), GetVariablesJsonHandler),
+        (API_PREFIX + url_pattern('/coords/{{ds_name}}/{{dim_name}}'), GetCoordinatesJsonHandler),
+        (API_PREFIX + url_pattern('/colorbars'), GetColorBarsJsonHandler),
+        (API_PREFIX + url_pattern('/colorbars.html'), GetColorBarsHtmlHandler),
         (API_PREFIX + url_pattern('/ts'), TimeSeriesInfoHandler),
         (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/point'), TimeSeriesForPointHandler),
-        (API_PREFIX + url_pattern('/features.json'), FindFeaturesHandler),
-        (API_PREFIX + url_pattern('/features/{{ds_name}}.json'), FindDatasetFeaturesHandler),
+        (API_PREFIX + url_pattern('/features'), FindFeaturesHandler),
+        (API_PREFIX + url_pattern('/features/{{ds_name}}'), FindDatasetFeaturesHandler),
     ])
     return application
 

@@ -23,7 +23,7 @@ tags:
   - name: features
     description: Features API
 paths:
-  '/datasets.json':
+  '/datasets':
     get:
       tags:
         - catalogue
@@ -38,7 +38,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatasetsRefs'
-  '/variables/{dataset}.json':
+  '/variables/{dataset}':
     get:
       tags:
         - catalogue
@@ -56,7 +56,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatasetInfo'
-  '/coords/{dataset}/{dim}.json':
+  '/coords/{dataset}/{dim}':
     get:
       tags:
         - catalogue
@@ -76,7 +76,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CoordinateVariable'
-  '/colorbars.json':
+  '/colorbars':
     get:
       tags:
         - catalogue
@@ -162,7 +162,7 @@ paths:
                     format: binary
         '404':
           description: Resource not found.
-  '/tilegrid/{dataset}/{variable}/ol4.json':
+  '/tilegrid/{dataset}/{variable}/ol4':
     get:
       tags:
         - tiles
@@ -183,7 +183,7 @@ paths:
                 $ref: '#/components/schemas/OL4TileSchema'
         '404':
           description: Resource not found.
-  '/tilegrid/{dataset}/{variable}/cesium.json':
+  '/tilegrid/{dataset}/{variable}/cesium':
     get:
       tags:
         - tiles

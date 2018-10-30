@@ -124,13 +124,22 @@ class GetTileGridNE2Handler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetColorBarsHandler(ServiceRequestHandler):
+class GetColorBarsJsonHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self, format: str):
-        mime_type = dict(json='application/json', html='text/html').get(format)
-        if not mime_type:
-            raise ServiceResourceNotFoundError("Invalid format.")
+    def get(self):
+        mime_type = 'application/json'
+        response = get_color_bars(self.service_context, mime_type)
+        self.set_header('Content-Type', mime_type)
+        self.write(response)
+
+
+# noinspection PyAbstractClass
+class GetColorBarsHtmlHandler(ServiceRequestHandler):
+
+    # noinspection PyShadowingBuiltins
+    def get(self):
+        mime_type = 'text/html'
         response = get_color_bars(self.service_context, mime_type)
         self.set_header('Content-Type', mime_type)
         self.write(response)
