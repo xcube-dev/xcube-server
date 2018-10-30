@@ -211,12 +211,14 @@ paths:
       summary: Find features
       operationId: findFeatures
       description: |
-        Find features matching the given geometry and/or query string.
+        Find features matching the given geometry and/or query expression.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
         Returns a FeatureCollection which may be empty.
+
       parameters:
-        - $ref: '#/components/parameters/bbox'
+        - $ref: '#/components/parameters/bounds'
         - $ref: '#/components/parameters/geom'
-        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/expr'
         - $ref: '#/components/parameters/comb'
       responses:
         '200':
@@ -229,12 +231,13 @@ paths:
       summary: Find features
       operationId: findFeaturesForGeoJSON
       description: |
-        Find features matching the query string and/or the geometry passed as a GeoJSON request.
+        Find features matching the query expression and/or the geometry passed as a GeoJSON request.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
         Returns a FeatureCollection which may be empty.
       parameters:
-        - $ref: '#/components/parameters/bbox'
+        - $ref: '#/components/parameters/bounds'
         - $ref: '#/components/parameters/geom'
-        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/expr'
         - $ref: '#/components/parameters/comb'
       requestBody:
         $ref: '#/components/requestBodies/GeoJsonObject'
@@ -252,7 +255,7 @@ paths:
         Returns a FeatureCollection which may be empty.
       parameters:
         - $ref: '#/components/parameters/dataset'
-        - $ref: '#/components/parameters/query'
+        - $ref: '#/components/parameters/expr'
         - $ref: '#/components/parameters/comb'
       responses:
         '200':
@@ -304,15 +307,17 @@ components:
       schema:
         type: number
         format: int32
-    query:
-      name: query
+    expr:
+      name: expr
       in: query
-      description: Query string.
+      description: |
+        Query expression. May comprise any search terms.
+        To search for specific fields, use the filed name as prefix followed by a colon, e.g. "NAME:*Lake".
       required: false
       schema:
         type: string
-    bbox:
-      name: bbox
+    bounds:
+      name: bounds
       in: query
       description: Bounding box given as xmin,ymin,xmax,ymax.
       required: false
@@ -332,7 +337,7 @@ components:
     comb:
       name: comb
       in: query
-      description: Combination of criteria.
+      description: Combination operation to be applied if multiple search criteria are given.
       required: false
       schema:
         type: string
@@ -346,7 +351,7 @@ components:
           type: string
         title:
           type: string
-        bbox:
+        bounds:
           type: array
           minItems: 4
           maxItems: 4
