@@ -29,10 +29,61 @@ from .controllers.catalogue import get_datasets, get_dataset_variables, get_data
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
 from .controllers.time_series import get_time_series_info, get_time_series_for_point
 from .controllers.wmts import get_wmts_capabilities
-from .errors import ServiceResourceNotFoundError, ServiceBadRequestError
+from .errors import ServiceBadRequestError
 from .service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
+
+
+# noinspection PyAbstractClass
+class WMTSKvpHandler(ServiceRequestHandler):
+
+    async def get(self):
+        # According to WMTS 1.0 spec, all keys must be case insensitive.
+        self.request.query_arguments = {k.lower(): v for k, v in self.request.query_arguments.items()}
+
+        service = self.params.get_query_argument('service')
+        if service != "WMTS":
+            raise ServiceBadRequestError('Value for "service" parameter must be "WMTS".')
+        request = self.params.get_query_argument('request')
+        if request == "GetCapabilities":
+            capabilities = await IOLoop.current().run_in_executor(None,
+                                                                  get_wmts_capabilities,
+                                                                  self.service_context,
+                                                                  'application/xml',
+                                                                  self.base_url)
+            self.set_header('Content-Type', 'application/xml')
+            self.finish(capabilities)
+        elif request == "GetTile":
+            version = self.params.get_query_argument('version')
+            if version != "1.0.0":
+                raise ServiceBadRequestError('Value for "version" parameter must be "1.0.0".')
+            layer = self.params.get_query_argument('layer')
+            try:
+                ds_name, var_name = layer.split(".")
+            except ValueError as e:
+                raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>".') from e
+            mime_type = self.params.get_query_argument('format')
+            if mime_type != "image/png":
+                raise ServiceBadRequestError('Value for "format" parameter must be "image/png".')
+            # The following parameters are mandatory s prescribed by WMTS spec, but we don't need them
+            # tileMatrixSet = self.params.get_query_argument_int('tilematrixset')
+            # style = self.params.get_query_argument('style')
+            x = self.params.get_query_argument_int('tilecol')
+            y = self.params.get_query_argument_int('tilerow')
+            z = self.params.get_query_argument_int('tilematrix')
+            tile = await IOLoop.current().run_in_executor(None,
+                                                          get_dataset_tile,
+                                                          self.service_context,
+                                                          ds_name, var_name,
+                                                          x, y, z,
+                                                          self.params)
+            self.set_header('Content-Type', 'image/png')
+            self.finish(tile)
+        elif request == "GetFeatureInfo":
+            raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')
+        else:
+            raise ServiceBadRequestError(f'Invalid request type "{request}".')
 
 
 # noinspection PyAbstractClass
