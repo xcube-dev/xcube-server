@@ -34,13 +34,28 @@ from .service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+_WMTS_KVP_KEYS = [
+    'Service',
+    'Request',
+    'Version',
+    'Format',
+    'Style',
+    'Layer',
+    'TileMatrixSet',
+    'TileMatrix',
+    'TileRow',
+    'TileCol'
+]
+
+_WMTS_KVP_LOWER_KEYS = [k.lower() for k in _WMTS_KVP_KEYS]
+
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
 
     async def get(self):
-        # According to WMTS 1.0 spec, all keys must be case insensitive.
-        self.request.query_arguments = {k.lower(): v for k, v in self.request.query_arguments.items()}
+        # According to WMTS 1.0 spec, all WMTS-specific keys must be case insensitive.
+        self._convert_wmts_keys_to_lower_case()
 
         service = self.params.get_query_argument('service')
         if service != "WMTS":
@@ -63,12 +78,12 @@ class WMTSKvpHandler(ServiceRequestHandler):
                 ds_name, var_name = layer.split(".")
             except ValueError as e:
                 raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>".') from e
-            mime_type = self.params.get_query_argument('format')
-            if mime_type != "image/png":
-                raise ServiceBadRequestError('Value for "format" parameter must be "image/png".')
             # The following parameters are mandatory s prescribed by WMTS spec, but we don't need them
             # tileMatrixSet = self.params.get_query_argument_int('tilematrixset')
             # style = self.params.get_query_argument('style')
+            mime_type = self.params.get_query_argument('format')
+            if mime_type != "image/png":
+                raise ServiceBadRequestError('Value for "format" parameter must be "image/png".')
             x = self.params.get_query_argument_int('tilecol')
             y = self.params.get_query_argument_int('tilerow')
             z = self.params.get_query_argument_int('tilematrix')
@@ -84,6 +99,17 @@ class WMTSKvpHandler(ServiceRequestHandler):
             raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')
         else:
             raise ServiceBadRequestError(f'Invalid request type "{request}".')
+
+    def _convert_wmts_keys_to_lower_case(self):
+        query_arguments = dict(self.request.query_arguments)
+        query_keys = {k.lower(): k for k in query_arguments.keys()}
+        for lower_key in _WMTS_KVP_LOWER_KEYS:
+            if lower_key in query_keys:
+                query_key = query_keys[lower_key]
+                value = query_arguments[query_key]
+                del query_arguments[query_key]
+                query_arguments[lower_key] = value
+        self.request.query_arguments = query_arguments
 
 
 # noinspection PyAbstractClass
