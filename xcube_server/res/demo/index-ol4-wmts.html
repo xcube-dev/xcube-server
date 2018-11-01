@@ -33,9 +33,11 @@
         capabilities = format.read(text);
         var options = ol.source.WMTS.optionsFromCapabilities(capabilities, {
             layer: 'local.conc_chl',
-            // matrixSet: 'EPSG:4326',
+            // matrixSet: 'TileGrid_2000_1000',
+            // projection: 'EPSG:4326',
             // format: 'image/png',
-            requestEncoding: 'REST'
+            requestEncoding: 'REST',
+            dimensions: {time: 'current'},
         });
 
         map = new ol.Map({
