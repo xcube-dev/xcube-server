@@ -1,5 +1,13 @@
+import math
+
 from .tiles import get_or_compute_tile_grid
 from ..context import ServiceContext
+
+#_WGS84_MEAN_EARTH_RADIUS_IN_METERS = 6.37810088e6
+_WGS84_MEAN_EARTH_RADIUS_IN_METERS = 6378137.0  # WGS84 ellipsoid semi-major axis
+_WGS84_MEAN_EARTH_PERIMETER_IN_METERS = 2.0 * math.pi * _WGS84_MEAN_EARTH_RADIUS_IN_METERS
+_WGS84_METERS_PER_DEGREE = _WGS84_MEAN_EARTH_PERIMETER_IN_METERS / 360.0
+_STD_PIXEL_SIZE_IN_METERS = 2.8e-3
 
 
 def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
@@ -96,7 +104,7 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
     tile_grids = dict()
     indent = '    '
 
-    layer_base_url = ctx.get_service_url(base_url, 'wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileCol}/{TileRow}.png')
+    layer_base_url = ctx.get_service_url(base_url, 'wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileRow}/{TileCol}.png')
 
     dimensions_xml_cache = dict()
 
@@ -119,27 +127,37 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
                     tile_grids[tile_grid_id] = tile_grid
                     write_tile_matrix_set = True
 
+            supported_crs = "urn:ogc:def:crs:OGC:1.3:CRS84"
+            # supported_crs = "http://www.opengis.net/def/crs/EPSG/9.5.3/4326"
+
             if tile_grid is not None:
                 if write_tile_matrix_set:
-                    contents_xml_lines.append((2, '<TileMatrixSet>'))
-                    contents_xml_lines.append((3, f'<ows:Identifier>{tile_grid_id}</ows:Identifier>'))
-                    contents_xml_lines.append((3, f'<ows:SupportedCRS>EPSG:4326</ows:SupportedCRS>'))
-
                     tile_size_x = tile_grid.tile_size[0]
                     tile_size_y = tile_grid.tile_size[1]
                     lon1 = tile_grid.geo_extent.west
                     lat1 = tile_grid.geo_extent.south
                     lon2 = tile_grid.geo_extent.east
                     lat2 = tile_grid.geo_extent.north
-                    res0 = (lat2 - lat1) / (tile_size_y * tile_grid.num_level_zero_tiles_y)
+                    tile_span_y = (lat2 - lat1) / tile_grid.num_level_zero_tiles_y
+                    pixel_span = tile_span_y / tile_size_y
+                    scale_denominator_0 = pixel_span * _WGS84_METERS_PER_DEGREE / _STD_PIXEL_SIZE_IN_METERS
+
+                    contents_xml_lines.append((2, '<TileMatrixSet>'))
+                    contents_xml_lines.append((3, f'<ows:Identifier>{tile_grid_id}</ows:Identifier>'))
+                    contents_xml_lines.append((3, f'<ows:SupportedCRS>{supported_crs}</ows:SupportedCRS>'))
+                    contents_xml_lines.append((3, '<ows:BoundingBox>'))
+                    contents_xml_lines.append((4, f'<ows:LowerCorner>{lon1} {lat1}</ows:LowerCorner>'))
+                    contents_xml_lines.append((4, f'<ows:UpperCorner>{lon2} {lat2}</ows:UpperCorner>'))
+                    contents_xml_lines.append((3, '</ows:BoundingBox>'))
+
                     for level in range(tile_grid.num_levels):
                         factor = 2 ** level
                         num_tiles_x = tile_grid.num_level_zero_tiles_x * factor
                         num_tiles_y = tile_grid.num_level_zero_tiles_y * factor
-                        res = res0 / factor
+                        scale_denominator = scale_denominator_0 / factor
                         contents_xml_lines.append((3, '<TileMatrix>'))
                         contents_xml_lines.append((4, f'<ows:Identifier>{level}</ows:Identifier>'))
-                        contents_xml_lines.append((4, f'<ScaleDenominator>{res}</ScaleDenominator>'))
+                        contents_xml_lines.append((4, f'<ScaleDenominator>{scale_denominator}</ScaleDenominator>'))
                         contents_xml_lines.append((4, f'<TopLeftCorner>{lon1} {lat2}</TopLeftCorner>'))
                         contents_xml_lines.append((4, f'<TileWidth>{tile_size_x}</TileWidth>'))
                         contents_xml_lines.append((4, f'<TileHeight>{tile_size_y}</TileHeight>'))
