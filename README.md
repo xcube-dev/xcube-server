@@ -25,8 +25,8 @@ As an example, here is the [configuration of the demo server](https://github.com
 
 ## OGC WMTS compatibility
 
-`xcube-server` currently only conforms to the REST API of version 1.0
-of the [OGC WMTS specification](http://www.opengeospatial.org/standards/wmts). 
+`xcube-server` implements the RESTful and KVP architectural styles
+of the [OGC WMTS 1.0.0 specification](http://www.opengeospatial.org/standards/wmts).
 
 The following operations are supported:
 
