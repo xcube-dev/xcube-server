@@ -33,7 +33,7 @@ from .cmaps import ensure_cmaps_loaded
 from .geoextent import GeoExtent
 from .tilegrid import TileGrid
 from .utils import downsample_ndarray, aggregate_ndarray_first
-from xcube_server.cache import Cache, MemoryCacheStore
+from ..cache import Cache, MemoryCacheStore
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -635,6 +635,7 @@ class FastNdarrayDownsamplingImage(OpImage):
                          tile_cache=tile_cache)
         self._array = array
         self._step_size = step_size
+        self._empty_tile = None
 
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
         x, y, w, h = rectangle
@@ -643,6 +644,22 @@ class FastNdarrayDownsamplingImage(OpImage):
         y *= s
         w *= s
         h *= s
+
+        # TODO by forman: check why this is 10x slower than without it
+        # num_tiles_x, num_tiles_y = self.num_tiles
+        # if tile_x < 0 or tile_x > num_tiles_x - 1 or tile_y < 0 or tile_y > num_tiles_y - 1:
+        #     print("Empty: ", tile_y, tile_x)
+        #     if self._empty_tile is not None \
+        #             and self._empty_tile.shape[-2] == h \
+        #             and self._empty_tile.shape[-1] == w:
+        #         return self._empty_tile
+        #     shape = list(self._array.shape)
+        #     shape[-2] = h
+        #     shape[-1] = w
+        #     tile = np.empty(shape, dtype=self._array.dtype)
+        #     tile.fill(np.nan)
+        #     self._empty_tile = tile
+        #     return tile
 
         # For performance, we first read the non-resampled tile data.
         # We could use slices with 'zoom' as step size, but this is incredibly slow when using xarray with dask!
