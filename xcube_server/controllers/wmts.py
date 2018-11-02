@@ -3,11 +3,11 @@ import math
 from .tiles import get_or_compute_tile_grid
 from ..context import ServiceContext
 
-#_WGS84_MEAN_EARTH_RADIUS_IN_METERS = 6.37810088e6
-_WGS84_MEAN_EARTH_RADIUS_IN_METERS = 6378137.0  # WGS84 ellipsoid semi-major axis
+# WGS84 ellipsoid semi-major axis
+_WGS84_MEAN_EARTH_RADIUS_IN_METERS = 6378137.0
 _WGS84_MEAN_EARTH_PERIMETER_IN_METERS = 2.0 * math.pi * _WGS84_MEAN_EARTH_RADIUS_IN_METERS
 _WGS84_METERS_PER_DEGREE = _WGS84_MEAN_EARTH_PERIMETER_IN_METERS / 360.0
-_STD_PIXEL_SIZE_IN_METERS = 2.8e-3
+_STD_PIXEL_SIZE_IN_METERS = 0.28e-3
 
 
 def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
