@@ -71,4 +71,3 @@ class ServiceContextTest(unittest.TestCase):
         self.assertIsInstance(features, list)
         self.assertEqual(6, len(features))
         self.assertIs(features, ctx.get_features())
-

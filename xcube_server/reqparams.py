@@ -20,7 +20,7 @@
 # SOFTWARE.
 
 from abc import abstractmethod, ABCMeta
-from typing import Optional, Tuple
+from typing import Optional
 
 from .errors import ServiceBadRequestError
 

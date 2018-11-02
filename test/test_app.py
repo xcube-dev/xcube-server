@@ -1,12 +1,6 @@
 import unittest
 
 
-from xcube_server.app import new_service
-from xcube_server.service import Service
-
-
-# from tornado.ioloop import IOLoop
-
 class AppSmokeTest(unittest.TestCase):
 
     def test_start_stop_service(self):

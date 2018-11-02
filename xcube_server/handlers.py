@@ -29,7 +29,7 @@ from .controllers.catalogue import get_datasets, get_dataset_variables, get_data
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
 from .controllers.time_series import get_time_series_info, get_time_series_for_point
 from .controllers.wmts import get_wmts_capabilities
-from .errors import ServiceResourceNotFoundError, ServiceBadRequestError
+from .errors import ServiceBadRequestError
 from .service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
