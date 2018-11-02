@@ -436,7 +436,7 @@ class ColorMappedRgbaImage(DecoratorImage):
             if self._no_data_value is not None:
                 array = np.ma.masked_equal(source_tile, self._no_data_value)
                 array = array.clip(value_min, value_max, out=array)
-            elif np.issubdtype(source_tile.dtype, float) or np.issubdtype(source_tile.dtype, complex):
+            elif np.issubdtype(source_tile.dtype, np.floating):
                 array = np.ma.masked_invalid(source_tile)
                 array = array.clip(value_min, value_max, out=array)
             else:
