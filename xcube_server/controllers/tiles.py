@@ -6,7 +6,7 @@ import xarray as xr
 
 from xcube_server.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from xcube_server.ne2 import NaturalEarth2Image
-from xcube_server.tile import compute_tile_grid
+from xcube_server.utils import compute_tile_grid
 from ..context import ServiceContext
 from ..defaults import TRACE_PERF
 from ..errors import ServiceBadRequestError, ServiceError
