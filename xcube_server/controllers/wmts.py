@@ -167,7 +167,7 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
 
                     contents_xml_lines.append((2, '</TileMatrixSet>'))
 
-                var_title = var.attrs.get('title', var.attrs.get('long_name', var_name))
+                var_title = ds_name + "/" + var.attrs.get('title', var.attrs.get('long_name', var_name))
                 var_abstract = var.attrs.get('comment', '')
 
                 layer_tile_url = layer_base_url % (ds_name, var_name)
