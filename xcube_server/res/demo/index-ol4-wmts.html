@@ -33,12 +33,15 @@
         capabilities = format.read(text);
         var options = ol.source.WMTS.optionsFromCapabilities(capabilities, {
             layer: 'local.conc_chl',
+            // format: 'image/png',
             // matrixSet: 'TileGrid_2000_1000',
             // projection: 'EPSG:4326',
-            // format: 'image/png',
-            requestEncoding: 'REST',
-            dimensions: {time: 'current'},
+
+            // Note, we need 'KVP' encoding, because in OpenLayers 4.6.5, dimensions are not passed as
+            // query parameters, which should be done according to WMTS spec.
+            // requestEncoding: 'REST',
         });
+        options.dimensions = {time: '2017-01-28'};
 
         map = new ol.Map({
           layers: [
