@@ -23,6 +23,7 @@ from abc import abstractmethod, ABCMeta
 from typing import Optional
 
 from .errors import ServiceBadRequestError
+from .undefined import UNDEFINED
 
 
 class RequestParams(metaclass=ABCMeta):
@@ -60,7 +61,7 @@ class RequestParams(metaclass=ABCMeta):
             raise ServiceBadRequestError(f'{name!r} must be a number, but was {value!r}') from e
 
     @abstractmethod
-    def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
+    def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
         """
         Get query argument.
         :param name: Query argument name
@@ -69,7 +70,7 @@ class RequestParams(metaclass=ABCMeta):
         :raise: ServiceBadRequestError
         """
 
-    def get_query_argument_int(self, name: str, default: Optional[int]) -> Optional[int]:
+    def get_query_argument_int(self, name: str, default: Optional[int] = UNDEFINED) -> Optional[int]:
         """
         Get query argument of type int.
         :param name: Query argument name
@@ -77,10 +78,10 @@ class RequestParams(metaclass=ABCMeta):
         :return: int value
         :raise: ServiceBadRequestError
         """
-        value = self.get_query_argument(name, default=None)
+        value = self.get_query_argument(name, default=default)
         return self.to_int(name, value) if value is not None else default
 
-    def get_query_argument_float(self, name: str, default: Optional[float]) -> Optional[float]:
+    def get_query_argument_float(self, name: str, default: Optional[float] = UNDEFINED) -> Optional[float]:
         """
         Get query argument of type float.
         :param name: Query argument name
@@ -88,5 +89,5 @@ class RequestParams(metaclass=ABCMeta):
         :return: float value
         :raise: ServiceBadRequestError
         """
-        value = self.get_query_argument(name, default=None)
+        value = self.get_query_argument(name, default=default)
         return self.to_float(name, value) if value is not None else default

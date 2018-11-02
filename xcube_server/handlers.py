@@ -34,6 +34,83 @@ from .service import ServiceRequestHandler
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
+_WMTS_KVP_KEYS = [
+    'Service',
+    'Request',
+    'Version',
+    'Format',
+    'Style',
+    'Layer',
+    'TileMatrixSet',
+    'TileMatrix',
+    'TileRow',
+    'TileCol'
+]
+
+_WMTS_KVP_LOWER_KEYS = [k.lower() for k in _WMTS_KVP_KEYS]
+
+
+# noinspection PyAbstractClass
+class WMTSKvpHandler(ServiceRequestHandler):
+
+    async def get(self):
+        # According to WMTS 1.0 spec, all WMTS-specific keys must be case insensitive.
+        self._convert_wmts_keys_to_lower_case()
+
+        service = self.params.get_query_argument('service')
+        if service != "WMTS":
+            raise ServiceBadRequestError('Value for "service" parameter must be "WMTS".')
+        request = self.params.get_query_argument('request')
+        if request == "GetCapabilities":
+            capabilities = await IOLoop.current().run_in_executor(None,
+                                                                  get_wmts_capabilities,
+                                                                  self.service_context,
+                                                                  'application/xml',
+                                                                  self.base_url)
+            self.set_header('Content-Type', 'application/xml')
+            self.finish(capabilities)
+        elif request == "GetTile":
+            version = self.params.get_query_argument('version')
+            if version != "1.0.0":
+                raise ServiceBadRequestError('Value for "version" parameter must be "1.0.0".')
+            layer = self.params.get_query_argument('layer')
+            try:
+                ds_name, var_name = layer.split(".")
+            except ValueError as e:
+                raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>".') from e
+            # The following parameters are mandatory s prescribed by WMTS spec, but we don't need them
+            # tileMatrixSet = self.params.get_query_argument_int('tilematrixset')
+            # style = self.params.get_query_argument('style')
+            mime_type = self.params.get_query_argument('format')
+            if mime_type != "image/png":
+                raise ServiceBadRequestError('Value for "format" parameter must be "image/png".')
+            x = self.params.get_query_argument_int('tilecol')
+            y = self.params.get_query_argument_int('tilerow')
+            z = self.params.get_query_argument_int('tilematrix')
+            tile = await IOLoop.current().run_in_executor(None,
+                                                          get_dataset_tile,
+                                                          self.service_context,
+                                                          ds_name, var_name,
+                                                          x, y, z,
+                                                          self.params)
+            self.set_header('Content-Type', 'image/png')
+            self.finish(tile)
+        elif request == "GetFeatureInfo":
+            raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')
+        else:
+            raise ServiceBadRequestError(f'Invalid request type "{request}".')
+
+    def _convert_wmts_keys_to_lower_case(self):
+        query_arguments = dict(self.request.query_arguments)
+        query_keys = {k.lower(): k for k in query_arguments.keys()}
+        for lower_key in _WMTS_KVP_LOWER_KEYS:
+            if lower_key in query_keys:
+                query_key = query_keys[lower_key]
+                value = query_arguments[query_key]
+                del query_arguments[query_key]
+                query_arguments[lower_key] = value
+        self.request.query_arguments = query_arguments
+
 
 # noinspection PyAbstractClass
 class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):

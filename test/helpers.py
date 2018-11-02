@@ -4,7 +4,9 @@ from typing import Optional
 import yaml
 
 from xcube_server.context import ServiceContext
+from xcube_server.errors import ServiceBadRequestError
 from xcube_server.reqparams import RequestParams
+from xcube_server.undefined import UNDEFINED
 
 
 def new_test_service_context() -> ServiceContext:
@@ -35,5 +37,7 @@ class RequestParamsMock(RequestParams):
     def __init__(self, **kvp):
         self.kvp = kvp
 
-    def get_query_argument(self, name: str, default: Optional[str]) -> Optional[str]:
+    def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
+        if default is UNDEFINED and name not in self.kvp:
+            raise ServiceBadRequestError(f'Missing query parameter "{name}"')
         return self.kvp.get(name, default)

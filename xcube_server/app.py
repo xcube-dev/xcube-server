@@ -32,7 +32,7 @@ from xcube_server.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_
 from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
     GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler, GetVariablesJsonHandler, \
-    GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler
+    GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler, WMTSKvpHandler
 from xcube_server.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -42,6 +42,7 @@ def new_application():
     application = Application([
         (API_PREFIX + '/res/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
         (API_PREFIX + url_pattern('/'), InfoHandler),
+        (API_PREFIX + url_pattern('/wmts/1.0.0/kvp'), WMTSKvpHandler),
         (API_PREFIX + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'), GetWMTSCapabilitiesXmlHandler),
         (API_PREFIX + url_pattern('/wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
          GetTileDatasetHandler),

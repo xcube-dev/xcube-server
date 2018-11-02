@@ -8,21 +8,22 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
     if format_name != default_format_name:
         raise ValueError(f'format_name must be "{default_format_name}"')
 
-    service_identification_xml = f"""
-    <ows:ServiceIdentification>
-        <ows:Title>xcube WMTS</ows:Title>
-        <ows:Abstract>Web Map Tile Service (WMTS) for xcube-conformant data cubes</ows:Abstract>
-        <ows:Keywords>
-            <ows:Keyword>tile</ows:Keyword>
-            <ows:Keyword>tile matrix set</ows:Keyword>
-            <ows:Keyword>map</ows:Keyword>
-        </ows:Keywords>
-        <ows:ServiceType>OGC WMTS</ows:ServiceType>
-        <ows:ServiceTypeVersion>1.0.0</ows:ServiceTypeVersion>
-        <ows:Fees>none</ows:Fees>
-        <ows:AccessConstraints>none</ows:AccessConstraints>
-    </ows:ServiceIdentification>
-"""
+    service_identification_xml = (
+        f"\n"
+        f"    <ows:ServiceIdentification>\n"
+        f"        <ows:Title>xcube WMTS</ows:Title>\n"
+        f"        <ows:Abstract>Web Map Tile Service (WMTS) for xcube-conformant data cubes</ows:Abstract>\n"
+        f"        <ows:Keywords>\n"
+        f"            <ows:Keyword>tile</ows:Keyword>\n"
+        f"            <ows:Keyword>tile matrix set</ows:Keyword>\n"
+        f"            <ows:Keyword>map</ows:Keyword>\n"
+        f"        </ows:Keywords>\n"
+        f"        <ows:ServiceType>OGC WMTS</ows:ServiceType>\n"
+        f"        <ows:ServiceTypeVersion>1.0.0</ows:ServiceTypeVersion>\n"
+        f"        <ows:Fees>none</ows:Fees>\n"
+        f"        <ows:AccessConstraints>none</ows:AccessConstraints>\n"
+        f"    </ows:ServiceIdentification>\n"
+    )
 
     service_provider = ctx.config['ServiceProvider']
     service_contact = service_provider['ServiceContact']
@@ -30,63 +31,66 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
     phone = contact_info['Phone']
     address = contact_info['Address']
 
-    service_provider_xml = f"""
-    <ows:ServiceProvider>
-        <ows:ProviderName>{service_provider['ProviderName']}</ows:ProviderName>
-        <ows:ProviderSite xlink:href="{service_provider['ProviderSite']}"/>
-        <ows:ServiceContact>
-            <ows:IndividualName>{service_contact['IndividualName']}</ows:IndividualName>
-            <ows:PositionName>{service_contact['PositionName']}</ows:PositionName>
-            <ows:ContactInfo>
-                <ows:Phone>
-                    <ows:Voice>{phone['Voice']}</ows:Voice>
-                    <ows:Facsimile>{phone['Facsimile']}</ows:Facsimile>
-                </ows:Phone>
-                <ows:Address>
-                    <ows:DeliveryPoint>{address['DeliveryPoint']}</ows:DeliveryPoint>
-                    <ows:City>{address['City']}</ows:City>
-                    <ows:AdministrativeArea>{address['AdministrativeArea']}</ows:AdministrativeArea>
-                    <ows:PostalCode>{address['PostalCode']}</ows:PostalCode>
-                    <ows:Country>{address['Country']}</ows:Country>
-                    <ows:ElectronicMailAddress>{address['ElectronicMailAddress']}</ows:ElectronicMailAddress>
-                </ows:Address>
-            </ows:ContactInfo>
-        </ows:ServiceContact>
-    </ows:ServiceProvider>
-"""
+    service_provider_xml = (
+        f"\n"
+        f"    <ows:ServiceProvider>\n"
+        f"        <ows:ProviderName>{service_provider['ProviderName']}</ows:ProviderName>\n"
+        f"        <ows:ProviderSite xlink:href=\"{service_provider['ProviderSite']}\"/>\n"
+        f"        <ows:ServiceContact>\n"
+        f"            <ows:IndividualName>{service_contact['IndividualName']}</ows:IndividualName>\n"
+        f"            <ows:PositionName>{service_contact['PositionName']}</ows:PositionName>\n"
+        f"            <ows:ContactInfo>\n"
+        f"                <ows:Phone>\n"
+        f"                    <ows:Voice>{phone['Voice']}</ows:Voice>\n"
+        f"                    <ows:Facsimile>{phone['Facsimile']}</ows:Facsimile>\n"
+        f"                </ows:Phone>\n"
+        f"                <ows:Address>\n"
+        f"                    <ows:DeliveryPoint>{address['DeliveryPoint']}</ows:DeliveryPoint>\n"
+        f"                    <ows:City>{address['City']}</ows:City>\n"
+        f"                    <ows:AdministrativeArea>{address['AdministrativeArea']}</ows:AdministrativeArea>\n"
+        f"                    <ows:PostalCode>{address['PostalCode']}</ows:PostalCode>\n"
+        f"                    <ows:Country>{address['Country']}</ows:Country>\n"
+        f"                    <ows:ElectronicMailAddress>{address['ElectronicMailAddress']}"
+        f"</ows:ElectronicMailAddress>\n"
+        f"                </ows:Address>\n"
+        f"            </ows:ContactInfo>\n"
+        f"        </ows:ServiceContact>\n"
+        f"    </ows:ServiceProvider>\n"
+    )
 
     wmts_kvp_url = ctx.get_service_url(base_url, 'wmts/1.0.0/kvp?')
 
-    operations_metadata_xml = f"""
-    <ows:OperationsMetadata>
-        <ows:Operation name="GetCapabilities">
-            <ows:DCP>
-                <ows:HTTP>
-                    <ows:Get xlink:href="{wmts_kvp_url}">
-                        <ows:Constraint name="GetEncoding">
-                            <ows:AllowedValues>
-                                <ows:Value>KVP</ows:Value>
-                            </ows:AllowedValues>
-                        </ows:Constraint>
-                    </ows:Get>
-                </ows:HTTP>
-            </ows:DCP>
-        </ows:Operation>
-        <ows:Operation name="GetTile">
-            <ows:DCP>
-                <ows:HTTP>
-                    <ows:Get xlink:href="{wmts_kvp_url}">
-                        <ows:Constraint name="GetEncoding">
-                            <ows:AllowedValues>
-                                <ows:Value>KVP</ows:Value>
-                            </ows:AllowedValues>
-                        </ows:Constraint>
-                    </ows:Get>
-                </ows:HTTP>
-            </ows:DCP>
-        </ows:Operation>
-    </ows:OperationsMetadata>
-"""
+    operations_metadata_xml = (
+        f"\n"
+        f"    <ows:OperationsMetadata>\n"
+        f"        <ows:Operation name=\"GetCapabilities\">\n"
+        f"            <ows:DCP>\n"
+        f"                <ows:HTTP>\n"
+        f"                    <ows:Get xlink:href=\"{wmts_kvp_url}\">\n"
+        f"                        <ows:Constraint name=\"GetEncoding\">\n"
+        f"                            <ows:AllowedValues>\n"
+        f"                                <ows:Value>KVP</ows:Value>\n"
+        f"                            </ows:AllowedValues>\n"
+        f"                        </ows:Constraint>\n"
+        f"                    </ows:Get>\n"
+        f"                </ows:HTTP>\n"
+        f"            </ows:DCP>\n"
+        f"        </ows:Operation>\n"
+        f"        <ows:Operation name=\"GetTile\">\n"
+        f"            <ows:DCP>\n"
+        f"                <ows:HTTP>\n"
+        f"                    <ows:Get xlink:href=\"{wmts_kvp_url}\">\n"
+        f"                        <ows:Constraint name=\"GetEncoding\">\n"
+        f"                            <ows:AllowedValues>\n"
+        f"                                <ows:Value>KVP</ows:Value>\n"
+        f"                            </ows:AllowedValues>\n"
+        f"                        </ows:Constraint>\n"
+        f"                    </ows:Get>\n"
+        f"                </ows:HTTP>\n"
+        f"            </ows:DCP>\n"
+        f"        </ows:Operation>\n"
+        f"    </ows:OperationsMetadata>\n"
+    )
 
     dataset_descriptors = ctx.get_dataset_descriptors()
     tile_grids = dict()
@@ -241,18 +245,20 @@ def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
     get_capablities_rest_url = ctx.get_service_url(base_url, 'wmts/1.0.0/WMTSCapabilities.xml')
     service_metadata_url_xml = f'<ServiceMetadataURL xlink:href="{get_capablities_rest_url}"/>'
 
-    return f"""<?xml version="1.0" encoding="UTF-8"?>
-<Capabilities xmlns="http://www.opengis.net/wmts/1.0"
-          xmlns:ows="http://www.opengis.net/ows/1.1"
-          xmlns:xlink="http://www.w3.org/1999/xlink"
-          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-          xsi:schemaLocation="http://www.opengis.net/wmts/1.0 http://schemas.opengis.net/wmts/1.0.0/wmtsGetCapabilities_response.xsd"
-          version="1.0.0">
-    {service_identification_xml}
-    {service_provider_xml}
-    {operations_metadata_xml}
-    {contents_xml}
-    {themes_xml}
-    {service_metadata_url_xml}
-</Capabilities>
-"""
+    return (
+        f"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        f"<Capabilities xmlns=\"http://www.opengis.net/wmts/1.0\"\n"
+        f"          xmlns:ows=\"http://www.opengis.net/ows/1.1\"\n"
+        f"          xmlns:xlink=\"http://www.w3.org/1999/xlink\"\n"
+        f"          xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+        f"          xsi:schemaLocation=\"http://www.opengis.net/wmts/1.0"
+        f" http://schemas.opengis.net/wmts/1.0.0/wmtsGetCapabilities_response.xsd\"\n"
+        f"          version=\"1.0.0\">\n"
+        f"    {service_identification_xml}\n"
+        f"    {service_provider_xml}\n"
+        f"    {operations_metadata_xml}\n"
+        f"    {contents_xml}\n"
+        f"    {themes_xml}\n"
+        f"    {service_metadata_url_xml}\n"
+        f"</Capabilities>\n"
+    )
