@@ -36,6 +36,7 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
+from xcube_server.errors import ServiceBadRequestError
 from xcube_server.undefined import UNDEFINED
 from .context import ServiceContext, Config
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX
@@ -251,11 +252,10 @@ class ServiceRequestParams(RequestParams):
         :return: the value or none
         :raise: ServiceBadRequestError
         """
-        if default is UNDEFINED:
-            return self.handler.get_query_argument(name)
-        else:
-            return self.handler.get_query_argument(name, default=default)
-
+        value = self.handler.get_query_argument(name, default=default)
+        if value is UNDEFINED:
+            raise ServiceBadRequestError(f'Missing query parameter "{name}"')
+        return value
 
 class _GlobalEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
     """
