@@ -10,11 +10,7 @@ _WGS84_METERS_PER_DEGREE = _WGS84_MEAN_EARTH_PERIMETER_IN_METERS / 360.0
 _STD_PIXEL_SIZE_IN_METERS = 0.28e-3
 
 
-def get_wmts_capabilities(ctx: ServiceContext, format_name: str, base_url: str):
-    default_format_name = 'application/xml'
-    format_name = format_name or default_format_name
-    if format_name != default_format_name:
-        raise ValueError(f'format_name must be "{default_format_name}"')
+def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
 
     service_identification_xml = (
         f"\n"
