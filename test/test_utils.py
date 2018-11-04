@@ -5,7 +5,7 @@ import shapely.geometry
 import xarray as xr
 
 from xcube_server.im import TileGrid
-from xcube_server.utils import compute_tile_grid, get_dataset_geometry, get_dataset_bounds
+from xcube_server.utils import compute_tile_grid, get_dataset_geometry, get_dataset_bounds, get_geometry_mask
 
 
 class GetDatasetGeometryTest(unittest.TestCase):
@@ -139,3 +139,40 @@ def _get_antimeridian_datasets():
     ds2 = ds2.assign_coords(
         lon_bnds=(("lon", 2), np.array([[165., 175], [175., -175.], [-175., -165], [-165., -155.]])))
     return ds1, ds2
+
+
+class GetGeometryMaskTest(unittest.TestCase):
+    def test_get_geometry_mask(self):
+        w = 16
+        h = 8
+        res = 1.0
+        lon_min = 0
+        lat_min = 0
+        lon_max = lon_min + w * res
+        lat_max = lat_min + h * res
+
+        triangle = shapely.geometry.Polygon(((lon_min, lat_min), (lon_max, lat_min), (lon_max, lat_max),
+                                             (lon_min, lat_min)))
+
+        actual_mask = get_geometry_mask(w, h, triangle, lon_min, lat_min, res)
+        expected_mask = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+                                  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]], dtype=np.byte)
+        np.testing.assert_array_almost_equal(expected_mask, actual_mask.astype('byte'))
+
+        smaller_triangle = triangle.buffer(-1.5 * res)
+        actual_mask = get_geometry_mask(w, h, smaller_triangle, lon_min, lat_min, res)
+        expected_mask = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0],
+                                  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]], dtype=np.byte)
+        np.testing.assert_array_almost_equal(expected_mask, actual_mask)
