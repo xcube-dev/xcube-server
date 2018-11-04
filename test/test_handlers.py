@@ -14,12 +14,12 @@ class HandlersTest(AsyncHTTPTestCase):
         return application
 
     def assertResponseOK(self, response):
+        self.assertEqual(200, response.code, response.reason)
         self.assertEqual("OK", response.reason)
-        self.assertEqual(200, response.code)
 
     def assertBadRequestResponse(self, response, expected_reason="Bad Request"):
-        self.assertEqual(expected_reason, response.reason)
         self.assertEqual(400, response.code)
+        self.assertEqual(expected_reason, response.reason)
 
     def test_fetch_base(self):
         response = self.fetch(API_PREFIX + '/')
@@ -171,8 +171,30 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(API_PREFIX + '/features/demo')
         self.assertResponseOK(response)
 
+    def test_fetch_time_series_info(self):
+        response = self.fetch(API_PREFIX + '/ts')
+        self.assertResponseOK(response)
+
     def test_fetch_time_series_point(self):
         response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point')
         self.assertBadRequestResponse(response, 'Missing query parameter "lon"')
         response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point?lon=2.1')
         self.assertBadRequestResponse(response, 'Missing query parameter "lat"')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point?lon=120.5&lat=-12.4')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point?lon=2.1&lat=51.1')
+        self.assertResponseOK(response)
+
+    def test_fetch_time_series_geometry(self):
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='')
+        self.assertBadRequestResponse(response, 'Missing GeoJSON geometry in request body')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type":"Point"}')
+        self.assertBadRequestResponse(response, 'Invalid GeoJSON geometry in request body')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type": "Point", "coordinates": [1, 51]}')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type":"Polygon", "coordinates": [[[1, 51], [2, 51], [2, 52], [1, 51]]]}')
+        self.assertResponseOK(response)

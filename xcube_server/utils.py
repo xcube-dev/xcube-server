@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Tuple, Union, Dict
+from typing import Optional, Tuple, Union, Dict, Any
 
 import affine
 import numpy as np
@@ -100,7 +100,7 @@ def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
 
 def get_geometry_mask(width: int, height: int,
                       geometry: Union[shapely.geometry.base.BaseGeometry, Dict],
-                      lon_min: float, lat_min: float, res: float):
+                      lon_min: float, lat_min: float, res: float) -> np.ndarray:
     # noinspection PyTypeChecker
     transform = affine.Affine(res, 0.0, lon_min,
                               0.0, -res, lat_min + res * height)
@@ -109,3 +109,30 @@ def get_geometry_mask(width: int, height: int,
                                            transform=transform,
                                            all_touched=True,
                                            invert=True)
+
+
+GEOJSON_PRIMITIVE_GEOMETRY_TYPES = {"Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon"}
+GEOJSON_MULTI_GEOMETRY_TYPE = "MultiGeometry"
+
+
+def is_geojson_geometry(obj: Any) -> bool:
+    if not isinstance(obj, dict) or "type" not in obj:
+        return False
+
+    if "type" not in obj:
+        return False
+
+    geometry_type = obj["type"]
+    if geometry_type in GEOJSON_PRIMITIVE_GEOMETRY_TYPES:
+        if "coordinates" not in obj:
+            return False
+        coordinates = obj["coordinates"]
+        return coordinates is None or isinstance(coordinates, list)
+
+    if geometry_type == GEOJSON_MULTI_GEOMETRY_TYPE:
+        if "geometries" not in obj:
+            return False
+        geometries = obj["geometries"]
+        return geometries is None or isinstance(geometries, list)
+
+    return False

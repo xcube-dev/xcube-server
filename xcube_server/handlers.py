@@ -21,16 +21,18 @@
 
 import json
 
+import tornado.escape
 from tornado.ioloop import IOLoop
 
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
 from .controllers.features import find_features, find_dataset_features
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
-from .controllers.time_series import get_time_series_info, get_time_series_for_point
+from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry
 from .controllers.wmts import get_wmts_capabilities_xml
 from .errors import ServiceBadRequestError
 from .service import ServiceRequestHandler
+from .utils import is_geojson_geometry
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -294,6 +296,30 @@ class TimeSeriesForPointHandler(ServiceRequestHandler):
                                                           self.service_context,
                                                           ds_name, var_name,
                                                           lon, lat,
+                                                          start_date, end_date)
+        self.set_header('Content-Type', 'application/json')
+        self.finish(response)
+
+
+# noinspection PyAbstractClass
+class TimeSeriesForGeometryHandler(ServiceRequestHandler):
+
+    async def post(self, ds_name: str, var_name: str):
+        if not self.request.body:
+            raise ServiceBadRequestError("Missing GeoJSON geometry in request body")
+
+        geometry = tornado.escape.json_decode(self.request.body)
+        if not is_geojson_geometry(geometry):
+            raise ServiceBadRequestError("Invalid GeoJSON geometry in request body")
+
+        start_date = self.params.get_query_argument_datetime('startDate', default=None)
+        end_date = self.params.get_query_argument_datetime('endDate', default=None)
+
+        response = await IOLoop.current().run_in_executor(None,
+                                                          get_time_series_for_geometry,
+                                                          self.service_context,
+                                                          ds_name, var_name,
+                                                          geometry,
                                                           start_date, end_date)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)
