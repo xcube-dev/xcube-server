@@ -99,7 +99,7 @@ class ServiceContext:
         dataset = self.get_dataset(ds_name)
         if var_name in dataset:
             return dataset, dataset[var_name]
-        raise ServiceResourceNotFoundError(f'Variable {var_name!r} not found in dataset {ds_name!r}')
+        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
 
     def get_dataset_descriptors(self):
         dataset_descriptors = self.config.get('Datasets')
@@ -113,7 +113,7 @@ class ServiceContext:
             raise ServiceConfigError(f"No datasets configured")
         dataset_descriptor = self.find_dataset_descriptor(dataset_descriptors, ds_name)
         if dataset_descriptor is None:
-            raise ServiceResourceNotFoundError(f"Dataset {ds_name!r} not found")
+            raise ServiceResourceNotFoundError(f'Dataset "{ds_name}" not found')
         return dataset_descriptor
 
     def get_color_mapping(self, ds_name: str, var_name: str):
