@@ -1,5 +1,5 @@
 import warnings
-from typing import Optional, Tuple, Union, Dict, Any
+from typing import Optional, Tuple, Union, Dict, Any, List
 
 import affine
 import numpy as np
@@ -111,28 +111,72 @@ def get_geometry_mask(width: int, height: int,
                                            invert=True)
 
 
-GEOJSON_PRIMITIVE_GEOMETRY_TYPES = {"Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon"}
-GEOJSON_MULTI_GEOMETRY_TYPE = "MultiGeometry"
+class GeoJSON:
+    PRIMITIVE_GEOMETRY_TYPES = {"Point", "LineString", "Polygon",
+                                "MultiPoint", "MultiLineString", "MultiPolygon"}
+    GEOMETRY_COLLECTION_TYPE = "GeometryCollection"
+    FEATURE_TYPE = "Feature"
+    FEATURE_COLLECTION_TYPE = "FeatureCollection"
 
-
-def is_geojson_geometry(obj: Any) -> bool:
-    if not isinstance(obj, dict) or "type" not in obj:
+    @classmethod
+    def is_geometry(cls, obj: Any) -> bool:
+        type_name = cls.get_type_name(obj)
+        if type_name in cls.PRIMITIVE_GEOMETRY_TYPES:
+            if "coordinates" not in obj:
+                return False
+            coordinates = obj["coordinates"]
+            return coordinates is None or isinstance(coordinates, list)
+        if type_name == cls.GEOMETRY_COLLECTION_TYPE:
+            if "geometries" not in obj:
+                return False
+            geometries = obj["geometries"]
+            return geometries is None or isinstance(geometries, list)
         return False
 
-    if "type" not in obj:
-        return False
+    @classmethod
+    def get_geometry_collection_geometries(cls, obj: Any) -> Optional[List[Dict]]:
+        type_name = cls.get_type_name(obj)
+        if type_name == cls.GEOMETRY_COLLECTION_TYPE:
+            if "geometries" not in obj:
+                return None
+            geometries = obj["geometries"]
+            if geometries is None:
+                return []
+            if isinstance(geometries, list):
+                return geometries
+            return None
+        return None
 
-    geometry_type = obj["type"]
-    if geometry_type in GEOJSON_PRIMITIVE_GEOMETRY_TYPES:
-        if "coordinates" not in obj:
-            return False
-        coordinates = obj["coordinates"]
-        return coordinates is None or isinstance(coordinates, list)
+    @classmethod
+    def get_feature_collection_features(cls, obj: Any) -> Optional[List[Dict]]:
+        type_name = cls.get_type_name(obj)
+        if type_name == cls.FEATURE_COLLECTION_TYPE:
+            if "features" not in obj:
+                return None
+            features = obj["features"]
+            if features is None:
+                return []
+            if isinstance(features, list):
+                return features
+            return None
+        return None
 
-    if geometry_type == GEOJSON_MULTI_GEOMETRY_TYPE:
-        if "geometries" not in obj:
-            return False
-        geometries = obj["geometries"]
-        return geometries is None or isinstance(geometries, list)
+    @classmethod
+    def get_feature_geometry(cls, obj: Any) -> Optional[Dict]:
+        type_name = cls.get_type_name(obj)
+        if type_name == cls.FEATURE_TYPE:
+            if "geometry" not in obj:
+                return None
+            geometry = obj["geometry"]
+            if cls.is_geometry(geometry):
+                return geometry
+            return None
+        return None
 
-    return False
+    @classmethod
+    def get_type_name(cls, obj: Any) -> Optional[str]:
+        if not isinstance(obj, dict) or "type" not in obj:
+            return None
+        if "type" not in obj:
+            return None
+        return obj["type"] or None

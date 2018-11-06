@@ -188,13 +188,50 @@ class HandlersTest(AsyncHTTPTestCase):
     def test_fetch_time_series_geometry(self):
         response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
                               body='')
-        self.assertBadRequestResponse(response, 'Missing GeoJSON geometry in request body')
+        self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON geometry in request body')
         response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
                               body='{"type":"Point"}')
-        self.assertBadRequestResponse(response, 'Invalid GeoJSON geometry in request body')
+        self.assertBadRequestResponse(response, 'Invalid GeoJSON geometry')
         response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
                               body='{"type": "Point", "coordinates": [1, 51]}')
         self.assertResponseOK(response)
         response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
                               body='{"type":"Polygon", "coordinates": [[[1, 51], [2, 51], [2, 52], [1, 51]]]}')
+        self.assertResponseOK(response)
+
+    def test_fetch_time_series_geometries(self):
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometries', method="POST",
+                              body='')
+        self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON geometry collection in request body')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometries', method="POST",
+                              body='{"type":"Point"}')
+        self.assertBadRequestResponse(response, 'Invalid GeoJSON geometry collection')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometries', method="POST",
+                              body='{"type": "GeometryCollection", "geometries": null}')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometries', method="POST",
+                              body='{"type": "GeometryCollection", "geometries": []}')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometries', method="POST",
+                              body='{"type": "GeometryCollection", "geometries": [{"type": "Point", "coordinates": [1, 51]}]}')
+        self.assertResponseOK(response)
+
+    def test_fetch_time_series_features(self):
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/features', method="POST",
+                              body='')
+        self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON feature collection in request body')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/features', method="POST",
+                              body='{"type":"Point"}')
+        self.assertBadRequestResponse(response, 'Invalid GeoJSON feature collection')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/features', method="POST",
+                              body='{"type": "FeatureCollection", "features": null}')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/features', method="POST",
+                              body='{"type": "FeatureCollection", "features": []}')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/features', method="POST",
+                              body='{"type": "FeatureCollection", "features": ['
+                                   '  {"type": "Feature", "properties": {}, '
+                                   '   "geometry": {"type": "Point", "coordinates": [1, 51]}}'
+                                   ']}')
         self.assertResponseOK(response)
