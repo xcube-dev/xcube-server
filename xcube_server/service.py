@@ -28,8 +28,10 @@ import sys
 import time
 import traceback
 from datetime import datetime
+from json import JSONDecodeError
 from typing import Optional
 
+import tornado.escape
 import tornado.options
 import yaml
 from tornado.ioloop import IOLoop
@@ -210,6 +212,13 @@ class ServiceRequestHandler(RequestHandler):
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
         self.set_header('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS')
 
+    def get_body_as_json_object(self, name="JSON object"):
+        """ Get the body argument as JSON object. """
+        try:
+            return tornado.escape.json_decode(self.request.body)
+        except (JSONDecodeError, TypeError, ValueError) as e:
+            raise ServiceBadRequestError(f"Invalid or missing {name} in request body") from e
+
     def on_finish(self):
         """
         Store time of last activity so we can measure time of inactivity and then optionally auto-exit.
@@ -256,6 +265,7 @@ class ServiceRequestParams(RequestParams):
         if value is UNDEFINED:
             raise ServiceBadRequestError(f'Missing query parameter "{name}"')
         return value
+
 
 class _GlobalEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
     """

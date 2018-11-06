@@ -1,11 +1,10 @@
 import unittest
 
 import numpy as np
-import shapely.geometry
 
 from test.helpers import new_test_service_context
 from xcube_server.controllers.time_series import get_time_series_info, get_time_series_for_point, \
-    get_time_series_for_geometry
+    get_time_series_for_geometry, get_time_series_for_geometry_collection
 
 
 class TimeSeriesControllerTest(unittest.TestCase):
@@ -40,7 +39,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
     def test_get_time_series_for_geometry(self):
         ctx = new_test_service_context()
         time_series = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
-                                                   shapely.geometry.Point(2.1, 51.4),
+                                                   dict(type="Point", coordinates=[2.1, 51.4]),
                                                    start_date=np.datetime64('2017-01-15'),
                                                    end_date=np.datetime64('2017-01-29'))
         expected_dict = {'results': [{'date': '2017-01-16T10:09:21.834255872',
@@ -58,9 +57,9 @@ class TimeSeriesControllerTest(unittest.TestCase):
         self.assertEqual(expected_dict, time_series)
 
         time_series = get_time_series_for_geometry(ctx, 'demo', 'conc_tsm',
-                                                   shapely.geometry.Polygon([
-                                                       (1., 51.), (2., 51.), (2., 52.), (1., 52.), (1., 51.)
-                                                   ]))
+                                                   dict(type="Polygon", coordinates=[[
+                                                       [1., 51.], [2., 51.], [2., 52.], [1., 52.], [1., 51.]
+                                                   ]]))
         expected_dict = {'results': [
             {'result': {'totalCount': 160801, 'validCount': 123540, 'average': 56.04547741839104},
              'date': '2017-01-16T10:09:21.834255872'},
@@ -72,6 +71,50 @@ class TimeSeriesControllerTest(unittest.TestCase):
              'date': '2017-01-28T09:58:11.350386176'},
             {'result': {'totalCount': 160801, 'validCount': 0, 'average': None},
              'date': '2017-01-30T10:46:33.836892416'}]}
+
+        self.assertEqual(expected_dict, time_series)
+
+    def test_get_time_series_for_geometries(self):
+        ctx = new_test_service_context()
+        time_series = get_time_series_for_geometry_collection(ctx,
+                                                              'demo', 'conc_tsm',
+                                                              dict(type="GeometryCollection",
+                                                                   geometries=[
+                                                                       dict(type="Point", coordinates=[2.1, 51.4])]),
+                                                              start_date=np.datetime64('2017-01-15'),
+                                                              end_date=np.datetime64('2017-01-29'))
+        expected_dict = {'results': [[{'date': '2017-01-16T10:09:21.834255872',
+                                       'result': {'average': 3.534773588180542,
+                                                  'totalCount': 1,
+                                                  'validCount': 1}},
+                                      {'date': '2017-01-25T09:35:51.060063488',
+                                       'result': {'average': None, 'totalCount': 1, 'validCount': 0}},
+                                      {'date': '2017-01-26T10:50:16.686192896',
+                                       'result': {'average': None, 'totalCount': 1, 'validCount': 0}},
+                                      {'date': '2017-01-28T09:58:11.350386176',
+                                       'result': {'average': 20.12085723876953,
+                                                  'totalCount': 1,
+                                                  'validCount': 1}}]]}
+        self.assertEqual(expected_dict, time_series)
+
+        time_series = get_time_series_for_geometry_collection(ctx,
+                                                              'demo', 'conc_tsm',
+                                                              dict(type="GeometryCollection",
+                                                                   geometries=[dict(type="Polygon", coordinates=[[
+                                                                       [1., 51.], [2., 51.], [2., 52.], [1., 52.],
+                                                                       [1., 51.]
+                                                                   ]])]))
+        expected_dict = {'results': [[
+            {'result': {'totalCount': 160801, 'validCount': 123540, 'average': 56.04547741839104},
+             'date': '2017-01-16T10:09:21.834255872'},
+            {'result': {'totalCount': 160801, 'validCount': 0, 'average': None},
+             'date': '2017-01-25T09:35:51.060063488'},
+            {'result': {'totalCount': 160801, 'validCount': 0, 'average': None},
+             'date': '2017-01-26T10:50:16.686192896'},
+            {'result': {'totalCount': 160801, 'validCount': 133267, 'average': 49.59349042604672},
+             'date': '2017-01-28T09:58:11.350386176'},
+            {'result': {'totalCount': 160801, 'validCount': 0, 'average': None},
+             'date': '2017-01-30T10:46:33.836892416'}]]}
 
         self.assertEqual(expected_dict, time_series)
 

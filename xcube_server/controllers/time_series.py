@@ -19,15 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from typing import Dict, Union
+from typing import Dict, List
 
 import numpy as np
 import shapely.geometry
 import xarray as xr
 from pandas import Timestamp
 
+from xcube_server.errors import ServiceBadRequestError
 from ..context import ServiceContext
-from ..utils import get_dataset_bounds, get_dataset_geometry, get_box_split_bounds_geometry, get_geometry_mask
+from ..utils import get_dataset_bounds, get_dataset_geometry, get_box_split_bounds_geometry, get_geometry_mask, \
+    GeoJSON
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:
@@ -54,7 +56,8 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
 def get_time_series_for_point(ctx: ServiceContext,
                               ds_name: str, var_name: str,
                               lon: float, lat: float,
-                              start_date: np.datetime64 = None, end_date: np.datetime64 = None) -> Dict:
+                              start_date: np.datetime64 = None,
+                              end_date: np.datetime64 = None) -> Dict:
     dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
     return _get_time_series_for_point(dataset, variable,
                                       shapely.geometry.Point(lon, lat),
@@ -63,14 +66,56 @@ def get_time_series_for_point(ctx: ServiceContext,
 
 def get_time_series_for_geometry(ctx: ServiceContext,
                                  ds_name: str, var_name: str,
-                                 geometry: Union[shapely.geometry.base.BaseGeometry, Dict],
-                                 start_date: np.datetime64 = None, end_date: np.datetime64 = None) -> Dict:
+                                 geometry: Dict,
+                                 start_date: np.datetime64 = None,
+                                 end_date: np.datetime64 = None) -> Dict:
     dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
+    if not GeoJSON.is_geometry(geometry):
+        raise ServiceBadRequestError("Invalid GeoJSON geometry")
     if isinstance(geometry, dict):
         geometry = shapely.geometry.shape(geometry)
     return _get_time_series_for_geometry(dataset, variable,
                                          geometry,
                                          start_date=start_date, end_date=end_date)
+
+
+def get_time_series_for_geometry_collection(ctx: ServiceContext,
+                                            ds_name: str, var_name: str,
+                                            geometry_collection: Dict,
+                                            start_date: np.datetime64 = None,
+                                            end_date: np.datetime64 = None) -> Dict:
+    dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
+    geometries = GeoJSON.get_geometry_collection_geometries(geometry_collection)
+    if geometries is None:
+        raise ServiceBadRequestError("Invalid GeoJSON geometry collection")
+    shapes = []
+    for geometry in geometries:
+        try:
+            geometry = shapely.geometry.shape(geometry)
+        except (TypeError, ValueError) as e:
+            raise ServiceBadRequestError("Invalid GeoJSON geometry collection") from e
+        shapes.append(geometry)
+    return _get_time_series_for_geometries(dataset, variable, shapes, start_date, end_date)
+
+
+def get_time_series_for_feature_collection(ctx: ServiceContext,
+                                           ds_name: str, var_name: str,
+                                           feature_collection: Dict,
+                                           start_date: np.datetime64 = None,
+                                           end_date: np.datetime64 = None) -> Dict:
+    dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
+    features = GeoJSON.get_feature_collection_features(feature_collection)
+    if features is None:
+        raise ServiceBadRequestError("Invalid GeoJSON feature collection")
+    shapes = []
+    for feature in features:
+        geometry = GeoJSON.get_feature_geometry(feature)
+        try:
+            geometry = shapely.geometry.shape(geometry)
+        except (TypeError, ValueError) as e:
+            raise ServiceBadRequestError("Invalid GeoJSON feature collection") from e
+        shapes.append(geometry)
+    return _get_time_series_for_geometries(dataset, variable, shapes, start_date, end_date)
 
 
 def _get_time_series_for_point(dataset: xr.Dataset,
@@ -79,13 +124,13 @@ def _get_time_series_for_point(dataset: xr.Dataset,
                                start_date: np.datetime64 = None,
                                end_date: np.datetime64 = None) -> Dict:
     bounds = get_dataset_geometry(dataset)
-    time_series = {'results': []}
     if not bounds.contains(point):
-        return time_series
+        return {'results': []}
 
     point_subset = variable.sel(lon=point.x, lat=point.y, method='Nearest')
     # noinspection PyTypeChecker
     time_subset = point_subset.sel(time=slice(start_date, end_date))
+    time_series = []
     for entry in time_subset:
         statistics = {'totalCount': 1}
         if np.isnan(entry.data):
@@ -95,8 +140,8 @@ def _get_time_series_for_point(dataset: xr.Dataset,
             statistics['validCount'] = 1
             statistics['average'] = entry.item()
         result = {'result': statistics, 'date': str(entry.time.data)}
-        time_series['results'].append(result)
-    return time_series
+        time_series.append(result)
+    return {'results': time_series}
 
 
 def _get_time_series_for_geometry(dataset: xr.Dataset,
@@ -113,10 +158,9 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
     dataset_geometry = get_box_split_bounds_geometry(ds_lon_min, ds_lat_min, ds_lon_max, ds_lat_max)
     # TODO: split geometry
     split_geometry = geometry
-    time_series = {'results': []}
     actual_geometry = dataset_geometry.intersection(split_geometry)
     if actual_geometry.is_empty:
-        return time_series
+        return {'results': []}
 
     width = len(dataset.lon)
     height = len(dataset.lat)
@@ -136,6 +180,7 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
     variable = variable.sel(time=slice(start_date, end_date))
     num_times = len(variable.time)
 
+    time_series = []
     for time_index in range(num_times):
         variable_slice = variable.isel(time=time_index)
 
@@ -151,9 +196,23 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
             statistics['validCount'] = valid_count
             statistics['average'] = float(mean_ts_var.data)
         result = {'result': statistics, 'date': str(mean_ts_var.time.data)}
-        time_series['results'].append(result)
+        time_series.append(result)
 
-    return time_series
+    return {'results': time_series}
+
+
+def _get_time_series_for_geometries(dataset: xr.Dataset,
+                                    variable: xr.DataArray,
+                                    geometries: List[shapely.geometry.base.BaseGeometry],
+                                    start_date: np.datetime64 = None,
+                                    end_date: np.datetime64 = None) -> Dict:
+    time_series = []
+    for geometry in geometries:
+        result = _get_time_series_for_geometry(dataset, variable,
+                                               geometry,
+                                               start_date=start_date, end_date=end_date)
+        time_series.append(result["results"])
+    return {'results': time_series}
 
 # def _clamp(x, x1, x2):
 #     if x < x1:
