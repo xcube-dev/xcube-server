@@ -42,7 +42,7 @@ class TimeSeriesControllerTest(unittest.TestCase):
     @staticmethod
     def _get_expected_info_dict():
         expected_dict = {'layers': []}
-        bounds = {'xmin': -180.0, 'ymin': -90.0, 'xmax': 180.0, 'ymax': 90.0}
+        bounds = {'xmin': 0.0, 'ymin': 50.0, 'xmax': 5.0, 'ymax': 52.5}
         demo_times = ['2017-01-16T10:09:21Z', '2017-01-25T09:35:51Z', '2017-01-26T10:50:16Z',
                       '2017-01-28T09:58:11Z', '2017-01-30T10:46:33Z']
         demoVariables = ['quality_flags', 'kd489', 'conc_tsm', 'conc_chl', 'c2rcc_flags']
