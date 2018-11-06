@@ -32,7 +32,8 @@ from xcube_server.defaults import DEFAULT_PORT, DEFAULT_ADDRESS, DEFAULT_UPDATE_
 from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
     GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler, GetVariablesJsonHandler, \
-    GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler, WMTSKvpHandler
+    GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler, WMTSKvpHandler, \
+    TimeSeriesForGeometryHandler
 from xcube_server.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -57,6 +58,7 @@ def new_application():
         (API_PREFIX + url_pattern('/colorbars.html'), GetColorBarsHtmlHandler),
         (API_PREFIX + url_pattern('/ts'), TimeSeriesInfoHandler),
         (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/point'), TimeSeriesForPointHandler),
+        (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/geometry'), TimeSeriesForGeometryHandler),
         (API_PREFIX + url_pattern('/features'), FindFeaturesHandler),
         (API_PREFIX + url_pattern('/features/{{ds_name}}'), FindDatasetFeaturesHandler),
     ])

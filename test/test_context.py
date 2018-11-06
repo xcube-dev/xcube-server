@@ -47,12 +47,12 @@ class ServiceContextTest(unittest.TestCase):
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_dataset_and_variable('demox', 'conc_ys')
         self.assertEqual(404, cm.exception.status_code)
-        self.assertEqual("Dataset 'demox' not found", cm.exception.reason)
+        self.assertEqual('Dataset "demox" not found', cm.exception.reason)
 
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_dataset_and_variable('demo', 'conc_ys')
         self.assertEqual(404, cm.exception.status_code)
-        self.assertEqual("Variable 'conc_ys' not found in dataset 'demo'", cm.exception.reason)
+        self.assertEqual('Variable "conc_ys" not found in dataset "demo"', cm.exception.reason)
 
     def test_get_color_mapping(self):
         ctx = new_test_service_context()

@@ -26,7 +26,7 @@ def get_dataset_tile(ctx: ServiceContext,
 
     dim_names = list(var.dims)
     if 'lon' not in dim_names or 'lat' not in dim_names:
-        raise ServiceBadRequestError(f'variable {var_name!r} of dataset {ds_name!r} is not geo-spatial')
+        raise ServiceBadRequestError(f'Variable "{var_name}" of dataset "{ds_name}" is not geo-spatial')
 
     dim_names.remove('lon')
     dim_names.remove('lat')
@@ -67,9 +67,9 @@ def get_dataset_tile(ctx: ServiceContext,
             assert len(var_indexers) == var.ndim - 2
             array = var.sel(method='nearest', **var_indexers)
         else:
-            raise ServiceBadRequestError(f'Variable {var_name!r} of dataset {var_name!r} '
+            raise ServiceBadRequestError(f'Variable "{var_name}" of dataset "{var_name}" '
                                          'must be an N-D Dataset with N >= 2, '
-                                         f'but {var_name!r} is only {var.ndim}-D')
+                                         f'but "{var_name}" is only {var.ndim}-D')
 
         cmap_vmin = np.nanmin(array.values) if np.isnan(cmap_vmin) else cmap_vmin
         cmap_vmax = np.nanmax(array.values) if np.isnan(cmap_vmax) else cmap_vmax
@@ -129,7 +129,7 @@ def get_dataset_tile_grid(ctx: ServiceContext,
                                        get_dataset_tile_url(ctx, ds_name, var_name, base_url),
                                        client=format_name)
     else:
-        raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
+        raise ServiceBadRequestError(f'Unknown tile schema format "{format_name}"')
 
 
 # noinspection PyMethodMayBeStatic
@@ -141,7 +141,7 @@ def get_dataset_tile_url(ctx: ServiceContext, ds_name: str, var_name: str, base_
 def get_tile_grid(ctx: ServiceContext, ds_name: str, var_name: str, var: xr.DataArray):
     tile_grid = get_or_compute_tile_grid(ctx, ds_name, var)
     if tile_grid is None:
-        raise ServiceError(f'Failed computing tile grid for variable {var_name!r} of dataset {ds_name!r}')
+        raise ServiceError(f'Failed computing tile grid for variable "{var_name}" of dataset "{ds_name}"')
     return tile_grid
 
 

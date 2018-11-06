@@ -1,18 +1,24 @@
 import warnings
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, Dict, Any
 
+import affine
+import numpy as np
+import rasterio.features
+import shapely.geometry
 import shapely.geometry
 import xarray as xr
-import numpy as np
 
 from xcube_server.im import GeoExtent, TileGrid
 
+Bounds = Tuple[float, float, float, float]
+SplitBounds = Tuple[Bounds, Optional[Bounds]]
 
-def get_dataset_geometry(dataset: xr.Dataset) -> shapely.geometry.base.BaseGeometry:
-    return get_box_geometry(*get_dataset_bounds(dataset))
+
+def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray]) -> shapely.geometry.base.BaseGeometry:
+    return get_box_split_bounds_geometry(*get_dataset_bounds(dataset))
 
 
-def get_dataset_bounds(dataset: xr.Dataset) -> Tuple[float, float, float, float]:
+def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray]) -> Bounds:
     lon_var = dataset.coords.get("lon")
     lat_var = dataset.coords.get("lat")
     if lon_var is None:
@@ -49,13 +55,21 @@ def get_dataset_bounds(dataset: xr.Dataset) -> Tuple[float, float, float, float]
     return float(lon_min), float(lat_min), float(lon_max), float(lat_max)
 
 
-def get_box_geometry(lon_min: float, lat_min: float,
-                     lon_max: float, lat_max: float) -> shapely.geometry.base.BaseGeometry:
+def get_box_split_bounds(lon_min: float, lat_min: float,
+                         lon_max: float, lat_max: float) -> SplitBounds:
     if lon_max >= lon_min:
-        return shapely.geometry.box(lon_min, lat_min, lon_max, lat_max)
+        return (lon_min, lat_min, lon_max, lat_max), None
     else:
-        return shapely.geometry.MultiPolygon(polygons=[shapely.geometry.box(lon_min, lat_min, 180.0, lat_max),
-                                                       shapely.geometry.box(-180.0, lat_min, lon_max, lat_max)])
+        return (lon_min, lat_min, 180.0, lat_max), (-180.0, lat_min, lon_max, lat_max)
+
+
+def get_box_split_bounds_geometry(lon_min: float, lat_min: float,
+                                  lon_max: float, lat_max: float) -> shapely.geometry.base.BaseGeometry:
+    box_1, box_2 = get_box_split_bounds(lon_min, lat_min, lon_max, lat_max)
+    if box_2 is not None:
+        return shapely.geometry.MultiPolygon(polygons=[shapely.geometry.box(*box_1), shapely.geometry.box(*box_2)])
+    else:
+        return shapely.geometry.box(*box_1)
 
 
 def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
@@ -82,3 +96,43 @@ def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
         return TileGrid.create(width, height, 360, 360, geo_extent)
     except ValueError:
         return TileGrid(1, 1, 1, width, height, geo_extent)
+
+
+def get_geometry_mask(width: int, height: int,
+                      geometry: Union[shapely.geometry.base.BaseGeometry, Dict],
+                      lon_min: float, lat_min: float, res: float) -> np.ndarray:
+    # noinspection PyTypeChecker
+    transform = affine.Affine(res, 0.0, lon_min,
+                              0.0, -res, lat_min + res * height)
+    return rasterio.features.geometry_mask([geometry],
+                                           out_shape=(height, width),
+                                           transform=transform,
+                                           all_touched=True,
+                                           invert=True)
+
+
+GEOJSON_PRIMITIVE_GEOMETRY_TYPES = {"Point", "LineString", "Polygon", "MultiPoint", "MultiLineString", "MultiPolygon"}
+GEOJSON_MULTI_GEOMETRY_TYPE = "MultiGeometry"
+
+
+def is_geojson_geometry(obj: Any) -> bool:
+    if not isinstance(obj, dict) or "type" not in obj:
+        return False
+
+    if "type" not in obj:
+        return False
+
+    geometry_type = obj["type"]
+    if geometry_type in GEOJSON_PRIMITIVE_GEOMETRY_TYPES:
+        if "coordinates" not in obj:
+            return False
+        coordinates = obj["coordinates"]
+        return coordinates is None or isinstance(coordinates, list)
+
+    if geometry_type == GEOJSON_MULTI_GEOMETRY_TYPE:
+        if "geometries" not in obj:
+            return False
+        geometries = obj["geometries"]
+        return geometries is None or isinstance(geometries, list)
+
+    return False

@@ -14,12 +14,12 @@ class HandlersTest(AsyncHTTPTestCase):
         return application
 
     def assertResponseOK(self, response):
+        self.assertEqual(200, response.code, response.reason)
         self.assertEqual("OK", response.reason)
-        self.assertEqual(200, response.code)
 
     def assertBadRequestResponse(self, response, expected_reason="Bad Request"):
-        self.assertEqual(expected_reason, response.reason)
         self.assertEqual(400, response.code)
+        self.assertEqual(expected_reason, response.reason)
 
     def test_fetch_base(self):
         response = self.fetch(API_PREFIX + '/')
@@ -43,12 +43,12 @@ class HandlersTest(AsyncHTTPTestCase):
 
         response = self.fetch(API_PREFIX + '/wmts/1.0.0/kvp'
                                            '?REQUEST=GetCapabilities')
-        self.assertBadRequestResponse(response)
+        self.assertBadRequestResponse(response, 'Missing query parameter "service"')
 
         response = self.fetch(API_PREFIX + '/wmts/1.0.0/kvp'
                                            '?SERVICE=WMS'
                                            '&REQUEST=GetCapabilities')
-        self.assertBadRequestResponse(response, 'Value for "service" parameter must be "WMTS".')
+        self.assertBadRequestResponse(response, 'Value for "service" parameter must be "WMTS"')
 
     def test_fetch_wmts_kvp_tile(self):
         response = self.fetch(API_PREFIX + '/wmts/1.0.0/kvp'
@@ -75,7 +75,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                            '&TileMatrix=0'
                                            '&TileRow=0'
                                            '&TileCol=0')
-        self.assertBadRequestResponse(response, 'Value for "format" parameter must be "image/png".')
+        self.assertBadRequestResponse(response, 'Value for "format" parameter must be "image/png"')
 
         response = self.fetch(API_PREFIX + '/wmts/1.0.0/kvp'
                                            '?Service=WMTS'
@@ -88,7 +88,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                            '&TileMatrix=0'
                                            '&TileRow=0'
                                            '&TileCol=0')
-        self.assertBadRequestResponse(response, 'Value for "version" parameter must be "1.0.0".')
+        self.assertBadRequestResponse(response, 'Value for "version" parameter must be "1.0.0"')
 
         response = self.fetch(API_PREFIX + '/wmts/1.0.0/kvp'
                                            '?Service=WMTS'
@@ -101,7 +101,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                            '&TileMatrix=0'
                                            '&TileRow=0'
                                            '&TileCol=0')
-        self.assertBadRequestResponse(response, 'Value for "layer" parameter must be "<dataset>.<variable>".')
+        self.assertBadRequestResponse(response, 'Value for "layer" parameter must be "<dataset>.<variable>"')
 
     def test_fetch_wmts_capabilities(self):
         response = self.fetch(API_PREFIX + '/wmts/1.0.0/WMTSCapabilities.xml')
@@ -129,8 +129,7 @@ class HandlersTest(AsyncHTTPTestCase):
 
     def test_fetch_dataset_tile_grid_cesium_json(self):
         response = self.fetch(API_PREFIX + '/tilegrid/demo/conc_chl/cesium')
-        self.assertEqual("OK", response.reason)
-        self.assertEqual(200, response.code)
+        self.assertResponseOK(response)
 
     def test_fetch_ne2_tile(self):
         response = self.fetch(API_PREFIX + '/tile/ne2/0/0/0.jpg')
@@ -170,4 +169,32 @@ class HandlersTest(AsyncHTTPTestCase):
 
     def test_fetch_features_for_dataset(self):
         response = self.fetch(API_PREFIX + '/features/demo')
+        self.assertResponseOK(response)
+
+    def test_fetch_time_series_info(self):
+        response = self.fetch(API_PREFIX + '/ts')
+        self.assertResponseOK(response)
+
+    def test_fetch_time_series_point(self):
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point')
+        self.assertBadRequestResponse(response, 'Missing query parameter "lon"')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point?lon=2.1')
+        self.assertBadRequestResponse(response, 'Missing query parameter "lat"')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point?lon=120.5&lat=-12.4')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/point?lon=2.1&lat=51.1')
+        self.assertResponseOK(response)
+
+    def test_fetch_time_series_geometry(self):
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='')
+        self.assertBadRequestResponse(response, 'Missing GeoJSON geometry in request body')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type":"Point"}')
+        self.assertBadRequestResponse(response, 'Invalid GeoJSON geometry in request body')
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type": "Point", "coordinates": [1, 51]}')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/ts/demo/conc_chl/geometry', method="POST",
+                              body='{"type":"Polygon", "coordinates": [[[1, 51], [2, 51], [2, 52], [1, 51]]]}')
         self.assertResponseOK(response)

@@ -8,7 +8,7 @@ from shapely.errors import WKTReadingError
 from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
 from ..logtime import log_time
-from ..utils import get_dataset_geometry, get_box_geometry
+from ..utils import get_dataset_geometry, get_box_split_bounds_geometry
 
 _LOG = logging.getLogger('xcube')
 
@@ -36,14 +36,14 @@ def find_features(ctx: ServiceContext,
     query_geometry = None
     if box_coords:
         try:
-            query_geometry = get_box_geometry(*[float(s) for s in box_coords.split(",")])
+            query_geometry = get_box_split_bounds_geometry(*[float(s) for s in box_coords.split(",")])
         except (TypeError, ValueError) as e:
-            raise ServiceBadRequestError("Received invalid bounding box geometry.") from e
+            raise ServiceBadRequestError("Received invalid bounding box geometry") from e
     elif geom_wkt:
         try:
             query_geometry = shapely.wkt.loads(geom_wkt)
         except (TypeError, WKTReadingError) as e:
-            raise ServiceBadRequestError("Received invalid geometry WKT.") from e
+            raise ServiceBadRequestError("Received invalid geometry WKT") from e
     elif geojson_obj:
         try:
             if geojson_obj["type"] == "FeatureCollection":
@@ -53,7 +53,7 @@ def find_features(ctx: ServiceContext,
             else:
                 query_geometry = shapely.geometry.shape(geojson_obj)
         except (IndexError, ValueError, KeyError) as e:
-            raise ServiceBadRequestError("Received invalid GeoJSON object.") from e
+            raise ServiceBadRequestError("Received invalid GeoJSON object") from e
     return _find_features(ctx, query_geometry, query_expr, comb_op)
 
 

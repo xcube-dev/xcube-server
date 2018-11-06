@@ -76,7 +76,7 @@ class TilesControllerTest(unittest.TestCase):
         with self.assertRaises(ServiceBadRequestError) as cm:
             get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol2.json', 'http://bibo')
         self.assertEqual(400, cm.exception.status_code)
-        self.assertEqual("Unknown tile schema format 'ol2.json'", cm.exception.reason)
+        self.assertEqual('Unknown tile schema format "ol2.json"', cm.exception.reason)
 
     def test_get_ne2_tile_grid(self):
         ctx = ServiceContext()

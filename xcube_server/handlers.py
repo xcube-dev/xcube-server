@@ -21,16 +21,18 @@
 
 import json
 
+import tornado.escape
 from tornado.ioloop import IOLoop
 
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
 from .controllers.features import find_features, find_dataset_features
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
-from .controllers.time_series import get_time_series_info, get_time_series_for_point
-from .controllers.wmts import get_wmts_capabilities
+from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry
+from .controllers.wmts import get_wmts_capabilities_xml
 from .errors import ServiceBadRequestError
 from .service import ServiceRequestHandler
+from .utils import is_geojson_geometry
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -59,31 +61,30 @@ class WMTSKvpHandler(ServiceRequestHandler):
 
         service = self.params.get_query_argument('service')
         if service != "WMTS":
-            raise ServiceBadRequestError('Value for "service" parameter must be "WMTS".')
+            raise ServiceBadRequestError('Value for "service" parameter must be "WMTS"')
         request = self.params.get_query_argument('request')
         if request == "GetCapabilities":
             capabilities = await IOLoop.current().run_in_executor(None,
-                                                                  get_wmts_capabilities,
+                                                                  get_wmts_capabilities_xml,
                                                                   self.service_context,
-                                                                  'application/xml',
                                                                   self.base_url)
             self.set_header('Content-Type', 'application/xml')
             self.finish(capabilities)
         elif request == "GetTile":
             version = self.params.get_query_argument('version')
             if version != "1.0.0":
-                raise ServiceBadRequestError('Value for "version" parameter must be "1.0.0".')
+                raise ServiceBadRequestError('Value for "version" parameter must be "1.0.0"')
             layer = self.params.get_query_argument('layer')
             try:
                 ds_name, var_name = layer.split(".")
             except ValueError as e:
-                raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>".') from e
+                raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>"') from e
             # The following parameters are mandatory s prescribed by WMTS spec, but we don't need them
             # tileMatrixSet = self.params.get_query_argument_int('tilematrixset')
             # style = self.params.get_query_argument('style')
             mime_type = self.params.get_query_argument('format')
             if mime_type != "image/png":
-                raise ServiceBadRequestError('Value for "format" parameter must be "image/png".')
+                raise ServiceBadRequestError('Value for "format" parameter must be "image/png"')
             x = self.params.get_query_argument_int('tilecol')
             y = self.params.get_query_argument_int('tilerow')
             z = self.params.get_query_argument_int('tilematrix')
@@ -98,7 +99,7 @@ class WMTSKvpHandler(ServiceRequestHandler):
         elif request == "GetFeatureInfo":
             raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')
         else:
-            raise ServiceBadRequestError(f'Invalid request type "{request}".')
+            raise ServiceBadRequestError(f'Invalid request type "{request}"')
 
     def _convert_wmts_keys_to_lower_case(self):
         query_arguments = dict(self.request.query_arguments)
@@ -117,9 +118,8 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 
     async def get(self):
         capabilities = await IOLoop.current().run_in_executor(None,
-                                                              get_wmts_capabilities,
+                                                              get_wmts_capabilities_xml,
                                                               self.service_context,
-                                                              'application/xml',
                                                               self.base_url)
         self.set_header('Content-Type', 'application/xml')
         self.finish(capabilities)
@@ -232,7 +232,7 @@ class FindFeaturesHandler(ServiceRequestHandler):
         box_coords = self.params.get_query_argument("bbox", None)
         comb_op = self.params.get_query_argument("comb", "and")
         if geom_wkt and box_coords:
-            raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given.')
+            raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given')
         response = find_features(self.service_context,
                                  geom_wkt=geom_wkt, box_coords=box_coords,
                                  query_expr=query_expr, comb_op=comb_op)
@@ -287,10 +287,39 @@ class TimeSeriesInfoHandler(ServiceRequestHandler):
 class TimeSeriesForPointHandler(ServiceRequestHandler):
 
     async def get(self, ds_name: str, var_name: str):
+        lon = self.params.get_query_argument_float('lon')
+        lat = self.params.get_query_argument_float('lat')
+        start_date = self.params.get_query_argument_datetime('startDate', default=None)
+        end_date = self.params.get_query_argument_datetime('endDate', default=None)
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_point,
                                                           self.service_context,
                                                           ds_name, var_name,
-                                                          self.params)
+                                                          lon, lat,
+                                                          start_date, end_date)
+        self.set_header('Content-Type', 'application/json')
+        self.finish(response)
+
+
+# noinspection PyAbstractClass
+class TimeSeriesForGeometryHandler(ServiceRequestHandler):
+
+    async def post(self, ds_name: str, var_name: str):
+        if not self.request.body:
+            raise ServiceBadRequestError("Missing GeoJSON geometry in request body")
+
+        geometry = tornado.escape.json_decode(self.request.body)
+        if not is_geojson_geometry(geometry):
+            raise ServiceBadRequestError("Invalid GeoJSON geometry in request body")
+
+        start_date = self.params.get_query_argument_datetime('startDate', default=None)
+        end_date = self.params.get_query_argument_datetime('endDate', default=None)
+
+        response = await IOLoop.current().run_in_executor(None,
+                                                          get_time_series_for_geometry,
+                                                          self.service_context,
+                                                          ds_name, var_name,
+                                                          geometry,
+                                                          start_date, end_date)
         self.set_header('Content-Type', 'application/json')
         self.finish(response)

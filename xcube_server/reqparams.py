@@ -22,6 +22,8 @@
 from abc import abstractmethod, ABCMeta
 from typing import Optional
 
+import numpy as np
+
 from .errors import ServiceBadRequestError
 from .undefined import UNDEFINED
 
@@ -38,11 +40,11 @@ class RequestParams(metaclass=ABCMeta):
         :raise: ServiceBadRequestError
         """
         if value is None:
-            raise ServiceBadRequestError(f'{name!r} must be an integer, but none was given')
+            raise ServiceBadRequestError(f'Parameter "{name}" must be an integer, but none was given')
         try:
             return int(value)
         except ValueError as e:
-            raise ServiceBadRequestError(f'{name!r} must be an integer, but was {value!r}') from e
+            raise ServiceBadRequestError(f'Parameter "{name}" must be an integer, but was {value!r}') from e
 
     @classmethod
     def to_float(cls, name: str, value: str) -> float:
@@ -54,14 +56,32 @@ class RequestParams(metaclass=ABCMeta):
         :raise: ServiceBadRequestError
         """
         if value is None:
-            raise ServiceBadRequestError(f'{name!r} must be a number, but none was given')
+            raise ServiceBadRequestError(f'Parameter "{name}" must be a number, but none was given')
         try:
             return float(value)
         except ValueError as e:
-            raise ServiceBadRequestError(f'{name!r} must be a number, but was {value!r}') from e
+            raise ServiceBadRequestError(f'Parameter "{name}" must be a number, but was {value!r}') from e
+
+    @classmethod
+    def to_datetime(cls, name: str, value: str) -> np.datetime64:
+        """
+        Convert str value to date/time value.
+        :param name: Name of the value
+        :param value: The string value
+        :return: The date/time value
+        :raise: ServiceBadRequestError
+        """
+        if value is None:
+            raise ServiceBadRequestError(f'Parameter "{name}" must be a date/time, but none was given')
+        try:
+            return np.datetime64(value)
+        except ValueError as e:
+            raise ServiceBadRequestError(f'Parameter "{name}" must be a date/time, but was {value!r}') from e
 
     @abstractmethod
-    def get_query_argument(self, name: str, default: Optional[str] = UNDEFINED) -> Optional[str]:
+    def get_query_argument(self,
+                           name: str,
+                           default: Optional[str] = UNDEFINED) -> Optional[str]:
         """
         Get query argument.
         :param name: Query argument name
@@ -70,7 +90,9 @@ class RequestParams(metaclass=ABCMeta):
         :raise: ServiceBadRequestError
         """
 
-    def get_query_argument_int(self, name: str, default: Optional[int] = UNDEFINED) -> Optional[int]:
+    def get_query_argument_int(self,
+                               name: str,
+                               default: Optional[int] = UNDEFINED) -> Optional[int]:
         """
         Get query argument of type int.
         :param name: Query argument name
@@ -81,7 +103,9 @@ class RequestParams(metaclass=ABCMeta):
         value = self.get_query_argument(name, default=default)
         return self.to_int(name, value) if value is not None else default
 
-    def get_query_argument_float(self, name: str, default: Optional[float] = UNDEFINED) -> Optional[float]:
+    def get_query_argument_float(self,
+                                 name: str,
+                                 default: Optional[float] = UNDEFINED) -> Optional[float]:
         """
         Get query argument of type float.
         :param name: Query argument name
@@ -91,3 +115,17 @@ class RequestParams(metaclass=ABCMeta):
         """
         value = self.get_query_argument(name, default=default)
         return self.to_float(name, value) if value is not None else default
+
+    def get_query_argument_datetime(self,
+                                    name: str,
+                                    default: Optional[np.datetime64] = UNDEFINED) -> Optional[np.datetime64]:
+        """
+        Get query argument of type float.
+        :param name: Query argument name
+        :param default: Default value.
+        :return: float value
+        :raise: ServiceBadRequestError
+        """
+        value = self.get_query_argument(name, default=default)
+
+        return self.to_datetime(name, value) if value is not None else default
