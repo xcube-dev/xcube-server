@@ -222,6 +222,16 @@ class GetColorBarsHtmlHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
+class GetFeatureCollectionsHandler(ServiceRequestHandler):
+
+    # noinspection PyShadowingBuiltins
+    def get(self):
+        response = self.service_context.get_feature_collections()
+        self.set_header('Content-Type', "application/json")
+        self.write(json.dumps(response, indent=2))
+
+
+# noinspection PyAbstractClass
 class FindFeaturesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins

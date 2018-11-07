@@ -13,8 +13,10 @@ Datasets:
 
 Features:
   - Identifier: inside-cube
+    Title: Points inside the cube
     Path: "features/inside-cube.geojson"
   - Identifier: outside-cube
+    Title: Points outside the cube
     Path: "features/outside-cube.geojson"
 
 Styles:

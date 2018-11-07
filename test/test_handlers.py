@@ -21,6 +21,10 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertEqual(400, response.code)
         self.assertEqual(expected_reason, response.reason)
 
+    def assertResourceNotFoundResponse(self, response, expected_reason="Not Found"):
+        self.assertEqual(404, response.code)
+        self.assertEqual(expected_reason, response.reason)
+
     def test_fetch_base(self):
         response = self.fetch(API_PREFIX + '/')
         self.assertResponseOK(response)
@@ -163,13 +167,25 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(API_PREFIX + '/colorbars.html')
         self.assertResponseOK(response)
 
+    def test_fetch_feature_collections(self):
+        response = self.fetch(API_PREFIX + '/features')
+        self.assertResponseOK(response)
+
     def test_fetch_features(self):
+        response = self.fetch(API_PREFIX + '/features/all')
+        self.assertResponseOK(response)
         response = self.fetch(API_PREFIX + '/features/all?bbox=10,10,20,20')
         self.assertResponseOK(response)
 
     def test_fetch_features_for_dataset(self):
         response = self.fetch(API_PREFIX + '/features/all/demo')
         self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/features/inside-cube/demo')
+        self.assertResponseOK(response)
+        response = self.fetch(API_PREFIX + '/features/bibo/demo')
+        self.assertResourceNotFoundResponse(response, 'Feature collection "bibo" not found')
+        response = self.fetch(API_PREFIX + '/features/inside-cube/bibo')
+        self.assertResourceNotFoundResponse(response, 'Dataset "bibo" not found')
 
     def test_fetch_time_series_info(self):
         response = self.fetch(API_PREFIX + '/ts')

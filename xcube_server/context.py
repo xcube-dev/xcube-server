@@ -238,6 +238,14 @@ class ServiceContext:
 
         return ds
 
+    def get_feature_collections(self) -> List[Dict]:
+        features_configs = self._config.get("Features", [])
+        feature_collections = []
+        for features_config in features_configs:
+            feature_collections.append(dict(id=features_config.get("Identifier"),
+                                            title=features_config.get("Title")))
+        return feature_collections
+
     def get_feature_collection(self, collection_name: str = ALL_FEATURES) -> Dict:
         if ALL_FEATURES not in self._feature_collection_cache:
             features_configs = self._config.get("Features", [])
@@ -271,7 +279,7 @@ class ServiceContext:
                                                                 features=all_features)
 
         if collection_name not in self._feature_collection_cache:
-            raise ServiceResourceNotFoundError(f'Unknown feature collection "{collection_name}"')
+            raise ServiceResourceNotFoundError(f'Feature collection "{collection_name}" not found')
         return self._feature_collection_cache[collection_name]
 
     def get_dataset_and_coord_variable(self, ds_name: str, dim_name: str):

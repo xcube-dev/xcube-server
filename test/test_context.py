@@ -65,6 +65,14 @@ class ServiceContextTest(unittest.TestCase):
         cm = ctx.get_color_mapping('demo', '_')
         self.assertEqual(('jet', 0., 1.), cm)
 
+    def test_get_feature_collections(self):
+        ctx = new_test_service_context()
+        feature_collections = ctx.get_feature_collections()
+        self.assertIsInstance(feature_collections, list)
+        self.assertEqual([{'id': 'inside-cube', 'title': 'Points inside the cube'},
+                          {'id': 'outside-cube', 'title': 'Points outside the cube'}],
+                         feature_collections)
+
     def test_get_feature_collection(self):
         ctx = new_test_service_context()
         feature_collection = ctx.get_feature_collection()
@@ -90,4 +98,4 @@ class ServiceContextTest(unittest.TestCase):
 
         with self.assertRaises(ServiceResourceNotFoundError) as cm:
             ctx.get_feature_collection(collection_name="bibo")
-        self.assertEqual('HTTP 404: Unknown feature collection "bibo"', f"{cm.exception}")
+        self.assertEqual('HTTP 404: Feature collection "bibo" not found', f"{cm.exception}")

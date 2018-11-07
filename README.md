@@ -81,16 +81,19 @@ Test it:
     * [Get tile grid JSON for OL4](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/ol4)
     * [Get tile grid JSON for Cesium](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/cesium)
 * Feature service
-    * [Get features GeoJSON](http://localhost:8080/api/0.1.0.dev1/features)
-    * [Get dataset features GeoJSON](http://localhost:8080/api/0.1.0.dev1/features/local)
+    * [Get feature collections](http://localhost:8080/api/0.1.0.dev1/features)
+    * [Get all features](http://localhost:8080/api/0.1.0.dev1/features/all)
+    * [Get all features of collection "inside-cube"](http://localhost:8080/api/0.1.0.dev1/features/inside-cube)
+    * [Get all features for dataset "local"](http://localhost:8080/api/0.1.0.dev1/features/all/local)
+    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/api/0.1.0.dev1/features/inside-cube/local)
   * Time series service
     * [Get time series for single point](http://localhost:8080/api/0.1.0.dev1/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
 * List services
-    * [Get datasets JSON](http://localhost:8080/api/0.1.0.dev1/datasets)
-    * [Get dataset variables JSON](http://localhost:8080/api/0.1.0.dev1/variables/local)
-    * [Get dataset coordinates JSON](http://localhost:8080/api/0.1.0.dev1/coords/local/time)
-    * [Get color bars JSON](http://localhost:8080/api/0.1.0.dev1/colorbars), 
-      [Get color bars HTML](http://localhost:8080/api/0.1.0.dev1/colorbars.html)
+    * [Get datasets](http://localhost:8080/api/0.1.0.dev1/datasets)
+    * [Get dataset variables](http://localhost:8080/api/0.1.0.dev1/variables/local)
+    * [Get dataset coordinates](http://localhost:8080/api/0.1.0.dev1/coords/local/time)
+    * [Get color bars](http://localhost:8080/api/0.1.0.dev1/colorbars), 
+      [Get color bars (HTML)](http://localhost:8080/api/0.1.0.dev1/colorbars.html)
     * [Get time stamps per dataset](http://localhost:8080/api/0.1.0.dev1/ts)
 
 
