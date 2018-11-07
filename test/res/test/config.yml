@@ -12,8 +12,10 @@ Datasets:
     Style: default
 
 Features:
-  - Identifier: local
-    Path: "features/*.geojson"
+  - Identifier: inside-cube
+    Path: "features/inside-cube.geojson"
+  - Identifier: outside-cube
+    Path: "features/outside-cube.geojson"
 
 Styles:
   - Identifier: default

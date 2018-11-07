@@ -61,8 +61,8 @@ def new_application():
         (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/geometry'), TimeSeriesForGeometryHandler),
         (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/geometries'), TimeSeriesForGeometriesHandler),
         (API_PREFIX + url_pattern('/ts/{{ds_name}}/{{var_name}}/features'), TimeSeriesForFeaturesHandler),
-        (API_PREFIX + url_pattern('/features'), FindFeaturesHandler),
-        (API_PREFIX + url_pattern('/features/{{ds_name}}'), FindDatasetFeaturesHandler),
+        (API_PREFIX + url_pattern('/features/{{collection_name}}'), FindFeaturesHandler),
+        (API_PREFIX + url_pattern('/features/{{collection_name}}/{{ds_name}}'), FindDatasetFeaturesHandler),
     ])
     return application
 

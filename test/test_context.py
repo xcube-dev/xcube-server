@@ -68,6 +68,6 @@ class ServiceContextTest(unittest.TestCase):
     def test_feature_cache(self):
         ctx = new_test_service_context()
         features = ctx.get_features()
-        self.assertIsInstance(features, list)
-        self.assertEqual(6, len(features))
+        self.assertIsInstance(features, dict)
+        self.assertEqual(2, len(features))
         self.assertIs(features, ctx.get_features())

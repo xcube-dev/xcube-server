@@ -42,6 +42,7 @@ from .logtime import log_time
 from .reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
+ALL_FEATURES = "all"
 
 _LOG = logging.getLogger('xcube')
 
@@ -67,7 +68,7 @@ class ServiceContext:
                                         threshold=0.75)
         else:
             self.rgb_tile_cache = None
-        self.feature_cache = None
+        self._feature_collection_cache = dict()
 
     @property
     def config(self) -> Config:
@@ -237,27 +238,41 @@ class ServiceContext:
 
         return ds
 
-    def get_features(self) -> List[Dict]:
-        if self.feature_cache is None:
-            features_configs = self._config.get("Features")
-            if features_configs:
-                if len(features_configs) != 1:
-                    raise ServiceError("Currently, there can only be one feature source")
-                features_config = features_configs[0]
-                path = features_config.get("Path")
-                if not path:
-                    raise ServiceError("Missing 'Path' entry in feature source")
-                if not os.path.isabs(path):
-                    path = os.path.join(self.base_dir, path)
+    def get_features(self, collection_name: str = ALL_FEATURES) -> List[Dict]:
+        if ALL_FEATURES not in self._feature_collection_cache:
+            features_configs = self._config.get("Features", [])
+            all_features = []
+            feature_index = 0
+            for features_config in features_configs:
+                curr_collection_name = features_config.get("Identifier")
+                if not curr_collection_name:
+                    raise ServiceError("Missing 'Identifier' entry in 'Features'")
+                if curr_collection_name == ALL_FEATURES:
+                    raise ServiceError("Invalid 'Identifier' entry in 'Features'")
+                curr_collection_wc = features_config.get("Path")
+                if not curr_collection_wc:
+                    raise ServiceError("Missing 'Path' entry in 'Features'")
+                if not os.path.isabs(curr_collection_wc):
+                    curr_collection_wc = os.path.join(self.base_dir, curr_collection_wc)
+
                 features = []
-                files = glob.glob(path)
-                for file in files:
-                    with fiona.open(file) as fc:
-                        for feature in fc:
-                            feature["id"] = len(features)
+                collection_files = glob.glob(curr_collection_wc)
+                for collection_file in collection_files:
+                    with fiona.open(collection_file) as feature_collection:
+                        for feature in feature_collection:
+                            feature["id"] = str(feature_index)
                             features.append(feature)
-                self.feature_cache = features
-        return self.feature_cache
+                self._feature_collection_cache[curr_collection_name] = dict(type="FeatureCollection",
+                                                                            features=features)
+                all_features.extend(features)
+                feature_index += 1
+
+            self._feature_collection_cache[ALL_FEATURES] = dict(type="FeatureCollection",
+                                                                features=all_features)
+
+        if collection_name not in self._feature_collection_cache:
+            raise ServiceResourceNotFoundError(f'Unknown feature collection "{collection_name}"')
+        return self._feature_collection_cache[collection_name]
 
     def get_dataset_and_coord_variable(self, ds_name: str, dim_name: str):
         ds = self.get_dataset(ds_name)

@@ -225,7 +225,7 @@ class GetColorBarsHtmlHandler(ServiceRequestHandler):
 class FindFeaturesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self):
+    def get(self, collection_name: str):
         query_expr = self.params.get_query_argument("query", None)
         geom_wkt = self.params.get_query_argument("geom", None)
         box_coords = self.params.get_query_argument("bbox", None)
@@ -233,17 +233,19 @@ class FindFeaturesHandler(ServiceRequestHandler):
         if geom_wkt and box_coords:
             raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given')
         response = find_features(self.service_context,
+                                 collection_name,
                                  geom_wkt=geom_wkt, box_coords=box_coords,
                                  query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
     # noinspection PyShadowingBuiltins
-    def post(self):
+    def post(self, collection_name: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         geojson_obj = self.get_body_as_json_object()
         response = find_features(self.service_context,
+                                 collection_name,
                                  geojson_obj=geojson_obj,
                                  query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
@@ -254,11 +256,12 @@ class FindFeaturesHandler(ServiceRequestHandler):
 class FindDatasetFeaturesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self, ds_name: str):
+    def get(self, collection_name: str, ds_name: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         response = find_dataset_features(self.service_context,
-                                         ds_name, query_expr=query_expr, comb_op=comb_op)
+                                         collection_name, ds_name,
+                                         query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 

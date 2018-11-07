@@ -164,11 +164,11 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_features(self):
-        response = self.fetch(API_PREFIX + '/features?bbox=10,10,20,20')
+        response = self.fetch(API_PREFIX + '/features/all?bbox=10,10,20,20')
         self.assertResponseOK(response)
 
     def test_fetch_features_for_dataset(self):
-        response = self.fetch(API_PREFIX + '/features/demo')
+        response = self.fetch(API_PREFIX + '/features/all/demo')
         self.assertResponseOK(response)
 
     def test_fetch_time_series_info(self):
