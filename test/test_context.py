@@ -83,6 +83,8 @@ class ServiceContextTest(unittest.TestCase):
         self.assertIsInstance(feature_collection["features"], list)
         self.assertEqual(6, len(feature_collection["features"]))
         self.assertIs(feature_collection, ctx.get_feature_collection())
+        self.assertEqual([str(i) for i in range(6)],
+                         [f["id"] for f in feature_collection["features"] if "id" in f])
 
     def test_get_feature_collection_by_name(self):
         ctx = new_test_service_context()

@@ -268,12 +268,13 @@ class ServiceContext:
                 for collection_file in collection_files:
                     with fiona.open(collection_file) as feature_collection:
                         for feature in feature_collection:
+                            self._remove_feature_id(feature)
                             feature["id"] = str(feature_index)
+                            feature_index += 1
                             features.append(feature)
                 self._feature_collection_cache[curr_collection_name] = dict(type="FeatureCollection",
                                                                             features=features)
                 all_features.extend(features)
-                feature_index += 1
 
             self._feature_collection_cache[ALL_FEATURES] = dict(type="FeatureCollection",
                                                                 features=all_features)
@@ -281,6 +282,19 @@ class ServiceContext:
         if collection_name not in self._feature_collection_cache:
             raise ServiceResourceNotFoundError(f'Feature collection "{collection_name}" not found')
         return self._feature_collection_cache[collection_name]
+
+    @classmethod
+    def _remove_feature_id(cls, feature: Dict):
+        cls._remove_id(feature)
+        if "properties" in feature:
+            cls._remove_id(feature["properties"])
+
+    @classmethod
+    def _remove_id(cls, properties: Dict):
+        if "id" in properties:
+            del properties["id"]
+        if "ID" in properties:
+            del properties["ID"]
 
     def get_dataset_and_coord_variable(self, ds_name: str, dim_name: str):
         ds = self.get_dataset(ds_name)
