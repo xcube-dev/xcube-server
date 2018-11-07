@@ -5,9 +5,9 @@
 `xcube-server` is a light-weight web server that provides various services based on 
 xcube datasets:
 
+* Catalogue services to query for datasets and their variables and dimensions, and feature collections. 
 * Tile map service, with some OGC WMTS 1.0 compatibility 
-* Data services (TODO) to extract subsets like time-series and profiles for e.g. JS clients 
-* Catalogue services (TODO) to query for datasets and variables 
+* Dataset services to extract subsets like time-series and profiles for e.g. JS clients 
 
 xcube datasets are any datasets that 
 
