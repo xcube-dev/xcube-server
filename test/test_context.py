@@ -65,9 +65,29 @@ class ServiceContextTest(unittest.TestCase):
         cm = ctx.get_color_mapping('demo', '_')
         self.assertEqual(('jet', 0., 1.), cm)
 
-    def test_feature_cache(self):
+    def test_get_feature_collection(self):
         ctx = new_test_service_context()
-        features = ctx.get_features()
-        self.assertIsInstance(features, dict)
-        self.assertEqual(2, len(features))
-        self.assertIs(features, ctx.get_features())
+        feature_collection = ctx.get_feature_collection()
+        self.assertIsInstance(feature_collection, dict)
+        self.assertIn("type", feature_collection)
+        self.assertEqual("FeatureCollection", feature_collection["type"])
+        self.assertIn("features", feature_collection)
+        self.assertIsInstance(feature_collection["features"], list)
+        self.assertEqual(6, len(feature_collection["features"]))
+        self.assertIs(feature_collection, ctx.get_feature_collection())
+
+    def test_get_feature_collection_by_name(self):
+        ctx = new_test_service_context()
+        feature_collection = ctx.get_feature_collection(collection_name="inside-cube")
+        self.assertIsInstance(feature_collection, dict)
+        self.assertIn("type", feature_collection)
+        self.assertEqual("FeatureCollection", feature_collection["type"])
+        self.assertIn("features", feature_collection)
+        self.assertIsInstance(feature_collection["features"], list)
+        self.assertEqual(3, len(feature_collection["features"]))
+        self.assertIs(feature_collection, ctx.get_feature_collection(collection_name="inside-cube"))
+        self.assertIsNot(feature_collection, ctx.get_feature_collection(collection_name="outside-cube"))
+
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            ctx.get_feature_collection(collection_name="bibo")
+        self.assertEqual('HTTP 404: Unknown feature collection "bibo"', f"{cm.exception}")

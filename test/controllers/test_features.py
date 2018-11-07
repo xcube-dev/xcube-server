@@ -62,6 +62,8 @@ class FeaturesControllerTest(unittest.TestCase):
 
     def _assertFeatureCollection(self, feature_collection, expected_count, expected_ids):
         self.assertIsInstance(feature_collection, dict)
+        self.assertIn("type", feature_collection)
+        self.assertEqual("FeatureCollection", feature_collection["type"])
         self.assertIn("features", feature_collection)
         features = feature_collection["features"]
         self.assertIsInstance(features, list)

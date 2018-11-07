@@ -238,7 +238,7 @@ class ServiceContext:
 
         return ds
 
-    def get_features(self, collection_name: str = ALL_FEATURES) -> List[Dict]:
+    def get_feature_collection(self, collection_name: str = ALL_FEATURES) -> Dict:
         if ALL_FEATURES not in self._feature_collection_cache:
             features_configs = self._config.get("Features", [])
             all_features = []
