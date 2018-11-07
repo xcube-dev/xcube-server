@@ -25,8 +25,12 @@ Datasets:
     Style: default
 
 Features:
-  - Identifier: local
-    Path: "features/*.geojson"
+  - Identifier: inside-cube
+    Title: Points inside the cube
+    Path: "features/inside-cube.geojson"
+  - Identifier: outside-cube
+    Title: Points outside the cube
+    Path: "features/outside-cube.geojson"
 
 Styles:
   - Identifier: default
