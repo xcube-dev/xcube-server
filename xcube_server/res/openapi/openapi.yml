@@ -250,14 +250,28 @@ paths:
     get:
       tags:
         - features
+      summary: Get feature collections
+      operationId: getFeatureCollections
+      description: |
+        Gets a list of meta-information objects accociated
+        with the configured feature collections.
+      responses:
+        '200':
+          $ref: '#/components/responses/FeatureCollectionInfos'
+  '/features/{collection}':
+    get:
+      tags:
+        - features
       summary: Find features
       operationId: findFeatures
       description: |
-        Find features matching the given geometry and/or query expression.
+        Find all features in given collection matching the given geometry and/or query expression.
+        The collection named "all" represents all available features.
         Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
         Returns a FeatureCollection which may be empty.
 
       parameters:
+        - $ref: '#/components/parameters/collection'
         - $ref: '#/components/parameters/bounds'
         - $ref: '#/components/parameters/geom'
         - $ref: '#/components/parameters/expr'
@@ -273,11 +287,13 @@ paths:
       summary: Find features
       operationId: findFeaturesForGeoJSON
       description: |
-        Find features matching the query expression and/or the geometry passed as a GeoJSON request.
+        Find features in given collection matching the query expression and/or the geometry passed as a GeoJSON request.
+        The collection named "all" represents all available features.
         If a GeoJSON FeatureCollection object is passed, only the first feature's geometry is used.
         Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
         Returns a FeatureCollection which may be empty.
       parameters:
+        - $ref: '#/components/parameters/collection'
         - $ref: '#/components/parameters/expr'
         - $ref: '#/components/parameters/comb'
       requestBody:
@@ -285,24 +301,39 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/GeoJsonFeatureCollection'
-  '/features/{dataset}':
+
+  '/features/{collection}/{dataset}':
     get:
       tags:
         - features
       summary: Find features for dataset
-      operationId: findFeaturesForDataset
+      operationId: findFeatures
       description: |
-        Find features intersecting with the given dataset and/or matching the given query string.
+        Find all features in given collection matching the given geometry and/or query expression.
+        The collection named "all" represents all available features.
+        Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
         Returns a FeatureCollection which may be empty.
+
       parameters:
+        - $ref: '#/components/parameters/collection'
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/expr'
         - $ref: '#/components/parameters/comb'
       responses:
         '200':
           $ref: '#/components/responses/GeoJsonFeatureCollection'
+        '404':
+          description: Resource not found.
+
 components:
   parameters:
+    collection:
+      name: collection
+      in: path
+      description: Feature collection name.
+      required: true
+      schema:
+        type: string
     dataset:
       name: dataset
       in: path
@@ -421,19 +452,31 @@ components:
         type: string
       example: 2099-01-01
   schemas:
-    DatasetInfo:
+    FeatureCollectionInfo:
       type: object
+      required:
+        - name
+        - title
       properties:
         name:
           type: string
         title:
           type: string
         bbox:
-          type: array
-          minItems: 4
-          maxItems: 4
-          items:
-            type: number
+          $ref: '#/components/schemas/BoundingBox'
+    DatasetInfo:
+      type: object
+      required:
+        - name
+        - title
+        - variables
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        bbox:
+          $ref: '#/components/schemas/BoundingBox'
         variables:
           type: array
           items:
@@ -578,6 +621,13 @@ components:
           items:
             type: number
             format: float64
+    BoundingBox:
+      description: "Bounding box given as [lon_min, lat_min, lon_max, lat_max]"
+      type: array
+      minItems: 4
+      maxItems: 4
+      items:
+        type: number
     GeoJsonObject:
       description: "GeoJSON object according to RFC 7946 Section 3"
       type: object
@@ -587,11 +637,7 @@ components:
         type:
           type: string
         bbox:
-          type: array
-          minItems: 4
-          maxItems: 4
-          items:
-            type: number
+          $ref: '#/components/schemas/BoundingBox'
       additionalProperties: true
     GeoJsonGeometry:
       description: "GeoJSON geometry object according to RFC 7946 Section 3.1"
@@ -702,6 +748,14 @@ components:
           schema:
             $ref: '#/components/schemas/GeoJsonObject'
   responses:
+    FeatureCollectionInfos:
+      description: Meta-information for each Feature Collection
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/FeatureCollectionInfo'
     GeoJsonFeatureCollection:
       description: GeoJSON FeatureCollection
       content:

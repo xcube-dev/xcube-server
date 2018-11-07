@@ -17,17 +17,20 @@ GeoJsonFeature = Dict
 
 
 def find_dataset_features(ctx: ServiceContext,
+                          collection_name: str,
                           ds_name: str,
                           query_expr: Any = None,
                           comb_op: str = "and") -> GeoJsonFeatureCollection:
     dataset = ctx.get_dataset(ds_name)
     query_geometry = get_dataset_geometry(dataset)
     return _find_features(ctx,
+                          collection_name,
                           query_geometry=query_geometry,
                           query_expr=query_expr, comb_op=comb_op)
 
 
 def find_features(ctx: ServiceContext,
+                  collection_name: str,
                   box_coords: str = None,
                   geom_wkt: str = None,
                   query_expr: Any = None,
@@ -54,36 +57,38 @@ def find_features(ctx: ServiceContext,
                 query_geometry = shapely.geometry.shape(geojson_obj)
         except (IndexError, ValueError, KeyError) as e:
             raise ServiceBadRequestError("Received invalid GeoJSON object") from e
-    return _find_features(ctx, query_geometry, query_expr, comb_op)
+    return _find_features(ctx, collection_name, query_geometry, query_expr, comb_op)
 
 
 def _find_features(ctx: ServiceContext,
+                   collection_name: str,
                    query_geometry: shapely.geometry.base.BaseGeometry = None,
                    query_expr: Any = None,
                    comb_op: str = "and") -> GeoJsonFeatureCollection:
     with log_time() as cm:
-        features = __find_features(ctx, query_geometry, query_expr, comb_op)
+        features = __find_features(ctx, collection_name, query_geometry, query_expr, comb_op)
     _LOG.info(f"{len(features)} features found within {cm.duration} seconds")
-    return dict(type="FeatureCollection", features=features)
+    return features
 
 
 def __find_features(ctx: ServiceContext,
+                    collection_name: str,
                     query_geometry: shapely.geometry.base.BaseGeometry = None,
                     query_expr: Any = None,
-                    comb_op: str = "and") -> List[GeoJsonFeature]:
-    features = ctx.get_features()
-    matching_features = []
+                    comb_op: str = "and") -> GeoJsonFeatureCollection:
+    feature_collection = ctx.get_feature_collection(collection_name)
     if query_geometry is None:
         if query_expr is None:
-            return features
+            return feature_collection
         else:
             raise NotImplementedError()
     else:
+        matching_features = []
         if query_expr is None:
-            for feature in features:
+            for feature in feature_collection["features"]:
                 geometry = shapely.geometry.shape(feature["geometry"])
                 if geometry.intersects(query_geometry):
                     matching_features.append(feature)
         else:
             raise NotImplementedError()
-    return matching_features
+        return dict(type="FeatureCollection", features=matching_features)
