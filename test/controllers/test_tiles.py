@@ -50,7 +50,7 @@ class TilesControllerTest(unittest.TestCase):
         ctx = new_test_service_context()
         tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol4', 'http://bibo')
         self.assertEqual({
-            'url': f'http://bibo{API_PREFIX}/tile/demo/conc_chl/' + '{z}/{x}/{y}.png',
+            'url': self.base_url + '/tile/demo/conc_chl/{z}/{x}/{y}.png',
             'projection': 'EPSG:4326',
             'minZoom': 0,
             'maxZoom': 2,
@@ -62,7 +62,7 @@ class TilesControllerTest(unittest.TestCase):
 
         tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'cesium', 'http://bibo')
         self.assertEqual({
-            'url': f'http://bibo{API_PREFIX}/tile/demo/conc_chl/' + '{z}/{x}/{y}.png',
+            'url': self.base_url + '/tile/demo/conc_chl/{z}/{x}/{y}.png',
             'rectangle': dict(west=2.168404344971009e-19, south=50.0, east=5.0, north=52.5),
             'minimumLevel': 0,
             'maximumLevel': 2,
@@ -82,7 +82,7 @@ class TilesControllerTest(unittest.TestCase):
         ctx = ServiceContext()
         tile_grid = get_ne2_tile_grid(ctx, 'ol4', 'http://bibo')
         self.assertEqual({
-            'url': f'http://bibo{API_PREFIX}/tile/ne2/' + '{z}/{x}/{y}.jpg',
+            'url': self.base_url + '/tile/ne2/{z}/{x}/{y}.jpg',
             'projection': 'EPSG:4326',
             'minZoom': 0,
             'maxZoom': 2,
@@ -96,3 +96,7 @@ class TilesControllerTest(unittest.TestCase):
             get_ne2_tile_grid(ctx, 'cesium', 'http://bibo')
         self.assertEqual(400, cm.exception.status_code)
         self.assertEqual("Unknown tile schema format 'cesium'", cm.exception.reason)
+
+    @property
+    def base_url(self):
+        return f'http://bibo{API_PREFIX}'
