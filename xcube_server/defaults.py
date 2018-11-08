@@ -23,6 +23,7 @@ import os
 
 from . import __version__
 
+DEFAULT_NAME = 'xcube'
 DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
 DEFAULT_CONFIG_FILE = os.path.abspath('xcube_server.yml')
