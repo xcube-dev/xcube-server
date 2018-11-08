@@ -76,8 +76,8 @@ def new_service(args=None) -> Service:
 
     parser = argparse.ArgumentParser(description=__description__)
     parser.add_argument('--version', '-V', action='version', version=__version__)
-    parser.add_argument('--name', '-n', dest='name', metavar='ADDRESS',
-                        help='Service name.'
+    parser.add_argument('--name', '-n', dest='name', metavar='NAME',
+                        help='Service name. '
                              f'Defaults to {DEFAULT_NAME!r}.',
                         default=DEFAULT_ADDRESS)
     parser.add_argument('--address', '-a', dest='address', metavar='ADDRESS',
