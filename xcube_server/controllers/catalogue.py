@@ -30,7 +30,7 @@ def get_dataset_variables(ctx: ServiceContext, ds_name: str, client: str, base_u
         ol_tile_xyz_source_options = get_tile_source_options(tile_grid,
                                                              get_dataset_tile_url(ctx, ds_name, var_name, base_url),
                                                              client)
-        variables.append(dict(id=f'{ds_name}{var_name}',
+        variables.append(dict(id=f'{ds_name}.{var_name}',
                               name=var_name,
                               dims=list(var.dims),
                               shape=list(var.shape),
