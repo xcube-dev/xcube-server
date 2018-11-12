@@ -72,32 +72,35 @@ Test it:
 
 * Catalogue services
   * Datasets (Data Cubes):
-    * [Get datasets](http://localhost:8080/api/0.1.0.dev1/datasets)
-    * [Get dataset variables](http://localhost:8080/api/0.1.0.dev1/variables/local)
-    * [Get dataset coordinates](http://localhost:8080/api/0.1.0.dev1/coords/local/time)
-    * [Get time stamps per dataset](http://localhost:8080/api/0.1.0.dev1/ts)
+    * [Get datasets](http://localhost:8080/xcube/api/0.1.0.dev3/datasets)
+    * [Get dataset variables](http://localhost:8080/xcube/api/0.1.0.dev3/variables/local)
+    * [Get dataset coordinates](http://localhost:8080/xcube/api/0.1.0.dev3/coords/local/time)
+    * [Get time stamps per dataset](http://localhost:8080/xcube/api/0.1.0.dev3/ts)
   * Features:
-    * [Get feature collections](http://localhost:8080/api/0.1.0.dev1/features)
+    * [Get feature collections](http://localhost:8080/xcube/api/0.1.0.dev3/features)
   * Color bars:
-    * [Get color bars](http://localhost:8080/api/0.1.0.dev1/colorbars) 
-    * [Get color bars (HTML)](http://localhost:8080/api/0.1.0.dev1/colorbars.html)
+    * [Get color bars](http://localhost:8080/xcube/api/0.1.0.dev3/colorbars) 
+    * [Get color bars (HTML)](http://localhost:8080/xcube/api/0.1.0.dev3/colorbars.html)
 * Tile service
   * WMTS:
-    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/api/0.1.0.dev1/wmts/1.0.0/WMTSCapabilities.xml)
-    * [Get WMTS REST local tile (PNG)](http://localhost:8080/api/0.1.0.dev1/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/api/0.1.0.dev1/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev3/wmts/kvp?Service=WMTS&Request=GetCapabilities)
+    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev3/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev3/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev3/wmts/1.0.0/WMTSCapabilities.xml)
+    * [Get WMTS REST local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev3/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev3/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
   * Tile images
-    * [Get tile (PNG)](http://localhost:8080/api/0.1.0.dev1/tile/local/conc_chl/0/1/0.png)
+    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev3/tile/local/conc_chl/0/1/0.png)
   * Tile grid service
-    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/ol4)
-    * [Get tile grid for Cesium 1.x](http://localhost:8080/api/0.1.0.dev1/tilegrid/local/conc_chl/cesium)
+    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/xcube/api/0.1.0.dev3/tilegrid/local/conc_chl/ol4)
+    * [Get tile grid for Cesium 1.x](http://localhost:8080/xcube/api/0.1.0.dev3/tilegrid/local/conc_chl/cesium)
 * Feature service
-    * [Get all features](http://localhost:8080/api/0.1.0.dev1/features/all)
-    * [Get all features of collection "inside-cube"](http://localhost:8080/api/0.1.0.dev1/features/inside-cube)
-    * [Get all features for dataset "local"](http://localhost:8080/api/0.1.0.dev1/features/all/local)
-    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/api/0.1.0.dev1/features/inside-cube/local)
+    * [Get all features](http://localhost:8080/xcube/api/0.1.0.dev3/features/all)
+    * [Get all features of collection "inside-cube"](http://localhost:8080/xcube/api/0.1.0.dev3/features/inside-cube)
+    * [Get all features for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev3/features/all/local)
+    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev3/features/inside-cube/local)
 * Time series service
-    * [Get time series for single point](http://localhost:8080/api/0.1.0.dev1/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
+    * [Get time series for single point](http://localhost:8080/xcube/api/0.1.0.dev3/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
 
 
 ### Clients

@@ -49,7 +49,8 @@ _WMTS_KVP_KEYS = [
 ]
 
 _WMTS_KVP_LOWER_KEYS = [k.lower() for k in _WMTS_KVP_KEYS]
-
+_WMTS_VERSION = "1.0.0"
+_WMTS_TILE_FORMAT = "image/png"
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
@@ -63,37 +64,40 @@ class WMTSKvpHandler(ServiceRequestHandler):
             raise ServiceBadRequestError('Value for "service" parameter must be "WMTS"')
         request = self.params.get_query_argument('request')
         if request == "GetCapabilities":
+            version = self.params.get_query_argument("version", _WMTS_VERSION)
+            if version != _WMTS_VERSION:
+                raise ServiceBadRequestError(f'Value for "version" parameter must be "{_WMTS_VERSION}"')
             capabilities = await IOLoop.current().run_in_executor(None,
                                                                   get_wmts_capabilities_xml,
                                                                   self.service_context,
                                                                   self.base_url)
-            self.set_header('Content-Type', 'application/xml')
+            self.set_header("Content-Type", "application/xml")
             self.finish(capabilities)
         elif request == "GetTile":
-            version = self.params.get_query_argument('version')
-            if version != "1.0.0":
-                raise ServiceBadRequestError('Value for "version" parameter must be "1.0.0"')
-            layer = self.params.get_query_argument('layer')
+            version = self.params.get_query_argument("version", _WMTS_VERSION)
+            if version != _WMTS_VERSION:
+                raise ServiceBadRequestError(f'Value for "version" parameter must be "{_WMTS_VERSION}"')
+            layer = self.params.get_query_argument("layer")
             try:
                 ds_name, var_name = layer.split(".")
             except ValueError as e:
                 raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>"') from e
             # The following parameters are mandatory s prescribed by WMTS spec, but we don't need them
             # tileMatrixSet = self.params.get_query_argument_int('tilematrixset')
-            # style = self.params.get_query_argument('style')
-            mime_type = self.params.get_query_argument('format')
-            if mime_type != "image/png":
-                raise ServiceBadRequestError('Value for "format" parameter must be "image/png"')
-            x = self.params.get_query_argument_int('tilecol')
-            y = self.params.get_query_argument_int('tilerow')
-            z = self.params.get_query_argument_int('tilematrix')
+            # style = self.params.get_query_argument("style"
+            mime_type = self.params.get_query_argument("format", _WMTS_TILE_FORMAT).lower()
+            if mime_type not in (_WMTS_TILE_FORMAT, "png"):
+                raise ServiceBadRequestError(f'Value for "format" parameter must be "{_WMTS_TILE_FORMAT}"')
+            x = self.params.get_query_argument_int("tilecol")
+            y = self.params.get_query_argument_int("tilerow")
+            z = self.params.get_query_argument_int("tilematrix")
             tile = await IOLoop.current().run_in_executor(None,
                                                           get_dataset_tile,
                                                           self.service_context,
                                                           ds_name, var_name,
                                                           x, y, z,
                                                           self.params)
-            self.set_header('Content-Type', 'image/png')
+            self.set_header("Content-Type", "image/png")
             self.finish(tile)
         elif request == "GetFeatureInfo":
             raise ServiceBadRequestError('Request type "GetFeatureInfo" not yet implemented')

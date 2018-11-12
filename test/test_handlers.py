@@ -30,35 +30,39 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_wmts_kvp_capabilities(self):
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?SERVICE=WMTS'
+                                            '&VERSION=1.0.0'
                                             '&REQUEST=GetCapabilities')
         self.assertResponseOK(response)
 
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?service=WMTS'
+                                            '&version=1.0.0'
                                             '&request=GetCapabilities')
         self.assertResponseOK(response)
 
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?Service=WMTS'
+                                            '&Version=1.0.0'
                                             '&Request=GetCapabilities')
         self.assertResponseOK(response)
 
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
-                                            '?REQUEST=GetCapabilities')
+        response = self.fetch(self.prefix + '/wmts/kvp'
+                                            '?VERSION=1.0.0&REQUEST=GetCapabilities')
         self.assertBadRequestResponse(response, 'Missing query parameter "service"')
 
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?SERVICE=WMS'
+                                            'VERSION=1.0.0'
                                             '&REQUEST=GetCapabilities')
         self.assertBadRequestResponse(response, 'Value for "service" parameter must be "WMTS"')
 
     def test_fetch_wmts_kvp_tile(self):
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?Service=WMTS'
-                                            '&Request=GetTile'
                                             '&Version=1.0.0'
+                                            '&Request=GetTile'
                                             '&Format=image/png'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
@@ -68,10 +72,10 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&TileCol=0')
         self.assertResponseOK(response)
 
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?Service=WMTS'
-                                            '&Request=GetTile'
                                             '&Version=1.0.0'
+                                            '&Request=GetTile'
                                             '&Format=image/jpg'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
@@ -81,10 +85,10 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&TileCol=0')
         self.assertBadRequestResponse(response, 'Value for "format" parameter must be "image/png"')
 
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?Service=WMTS'
-                                            '&Request=GetTile'
                                             '&Version=1.1.0'
+                                            '&Request=GetTile'
                                             '&Format=image/png'
                                             '&Style=Default'
                                             '&Layer=demo.conc_chl'
@@ -94,7 +98,7 @@ class HandlersTest(AsyncHTTPTestCase):
                                             '&TileCol=0')
         self.assertBadRequestResponse(response, 'Value for "version" parameter must be "1.0.0"')
 
-        response = self.fetch(self.prefix + '/wmts/1.0.0/kvp'
+        response = self.fetch(self.prefix + '/wmts/kvp'
                                             '?Service=WMTS'
                                             '&Request=GetTile'
                                             '&Version=1.0.0'

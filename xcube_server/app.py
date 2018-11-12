@@ -45,7 +45,7 @@ def new_application(name: str=DEFAULT_NAME):
     application = Application([
         (prefix + '/res/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
         (prefix + url_pattern('/'), InfoHandler),
-        (prefix + url_pattern('/wmts/1.0.0/kvp'), WMTSKvpHandler),
+        (prefix + url_pattern('/wmts/kvp'), WMTSKvpHandler),
         (prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'), GetWMTSCapabilitiesXmlHandler),
         (prefix + url_pattern('/wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
          GetTileDatasetHandler),
@@ -79,7 +79,7 @@ def new_service(args=None) -> Service:
     parser.add_argument('--name', '-n', dest='name', metavar='NAME',
                         help='Service name. '
                              f'Defaults to {DEFAULT_NAME!r}.',
-                        default=DEFAULT_ADDRESS)
+                        default=DEFAULT_NAME)
     parser.add_argument('--address', '-a', dest='address', metavar='ADDRESS',
                         help='Server address. '
                              f'Defaults to {DEFAULT_ADDRESS!r}.',

@@ -62,7 +62,7 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         f"    </ows:ServiceProvider>\n"
     )
 
-    wmts_kvp_url = ctx.get_service_url(base_url, 'wmts/1.0.0/kvp?')
+    wmts_kvp_url = ctx.get_service_url(base_url, 'wmts/kvp?')
 
     operations_metadata_xml = (
         f"\n"
