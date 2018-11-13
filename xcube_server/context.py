@@ -36,7 +36,7 @@ from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, TRACE_PERF, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
-    FILE_TILE_CACHE_ENABLED, API_PREFIX
+    FILE_TILE_CACHE_ENABLED, API_PREFIX, DEFAULT_NAME
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .logtime import log_time
 from .reqparams import RequestParams
@@ -52,7 +52,11 @@ Config = Dict[str, Any]
 # noinspection PyMethodMayBeStatic
 class ServiceContext:
 
-    def __init__(self, base_dir=None, config: Config = None):
+    def __init__(self,
+                 name: str = DEFAULT_NAME,
+                 base_dir: str = None,
+                 config: Config = None):
+        self._name = name
         self.base_dir = os.path.abspath(base_dir or '')
         self._config = config or dict()
         self.dataset_cache = dict()  # contains tuples of form (ds, ds_descriptor, tile_grid_cache)
@@ -94,7 +98,7 @@ class ServiceContext:
         self._config = config
 
     def get_service_url(self, base_url, *path: str):
-        return base_url + API_PREFIX + '/' + '/'.join(path)
+        return base_url + '/' + self._name + API_PREFIX + '/' + '/'.join(path)
 
     def get_dataset_and_variable(self, ds_name: str, var_name: str):
         dataset = self.get_dataset(ds_name)

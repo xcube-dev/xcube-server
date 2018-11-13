@@ -41,7 +41,8 @@ from tornado.web import RequestHandler, Application
 from xcube_server.errors import ServiceBadRequestError
 from xcube_server.undefined import UNDEFINED
 from .context import ServiceContext, Config
-from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX
+from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
+    DEFAULT_NAME
 from .reqparams import RequestParams
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -56,6 +57,7 @@ class Service:
 
     def __init__(self,
                  application: Application,
+                 name: str = DEFAULT_NAME,
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
                  config_file: Optional[str] = None,
@@ -100,7 +102,9 @@ class Service:
                                  address=address,
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
-        self.context = ServiceContext(config=config, base_dir=os.path.dirname(self.config_file or os.path.abspath('')))
+        self.context = ServiceContext(name=name,
+                                      config=config,
+                                      base_dir=os.path.dirname(self.config_file or os.path.abspath('')))
         self._maybe_load_config()
 
         application.service_context = self.context

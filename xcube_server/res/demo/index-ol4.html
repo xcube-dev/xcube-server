@@ -50,7 +50,7 @@
         </div>
     </div>
     <script type="text/javascript">
-        var baseUrl = 'http://localhost:8080/api/0.1.0.dev1';
+        var baseUrl = 'http://localhost:8080/xcube/api/0.1.0.dev3';
         var datasetNames = [];
         var animationId = null;
         var frameRate = 0.5; // frames per second
@@ -104,6 +104,32 @@
                         );
                     }                   
                     map.addLayer(overlayGroup);
+                })
+                .then(() => {
+                    // Add feature layer
+                    var pointStyle = new ol.style.Circle({
+                        radius: 5,
+                        fill: new ol.style.Fill({color: 'yellow', opacity: 0.5}),
+                        stroke: new ol.style.Stroke({color: 'red', width: 2})
+                    });
+                    var styles = {
+                        'Point': new ol.style.Style({
+                           image: pointStyle
+                        })
+                    };
+                    var styleFunction = function(feature) {
+                        return styles[feature.getGeometry().getType()];
+                    };
+                    map.addLayer(new ol.layer.Vector({
+                        title: 'Stations',
+                        style: styleFunction,
+                        source: new ol.source.Vector({
+                            url: baseUrl + '/features/all',
+                            format: new ol.format.GeoJSON(),
+                            //features: (new ol.format.GeoJSON()).readFeatures(featureCollection),
+                            //projection: 'EPSG:4326',
+                        })
+                    }));
                 });
 
                 fetch(baseUrl + '/coords/' + datasetName + '/time')
@@ -115,30 +141,6 @@
             }
         });
 
-        // Add feature layer
-        var pointStyle = new ol.style.Circle({
-            radius: 5,
-            fill: new ol.style.Fill({color: 'yellow', opacity: 0.5}),
-            stroke: new ol.style.Stroke({color: 'red', width: 2})
-        });
-        var styles = {
-            'Point': new ol.style.Style({
-               image: pointStyle
-            })
-        };
-        var styleFunction = function(feature) {
-            return styles[feature.getGeometry().getType()];
-        };
-        map.addLayer(new ol.layer.Vector({
-            title: 'Stations',
-            style: styleFunction,
-            source: new ol.source.Vector({
-                url: baseUrl + '/features',
-                format: new ol.format.GeoJSON(),
-                //features: (new ol.format.GeoJSON()).readFeatures(featureCollection),
-                //projection: 'EPSG:4326',
-            })
-        }));
 
         function updateTimeInfo() {
             var info = document.getElementById('info');

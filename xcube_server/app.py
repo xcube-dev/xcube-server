@@ -102,6 +102,7 @@ def new_service(args=None) -> Service:
     args_obj = parser.parse_args(args)
 
     return Service(new_application(args_obj.name),
+                   name=args_obj.name,
                    log_to_stderr=args_obj.verbose,
                    port=args_obj.port,
                    address=args_obj.address,
