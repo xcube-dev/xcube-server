@@ -105,19 +105,26 @@ Test it:
 
 ### Clients
 
+There are example HTML pages for some tile server clients. They need to be run in 
+a web server. If you don't have one, you can use the Node `httpserver`:
+
+    $ npm install -g httpserver
+    
+After starting both the xcube-server and web server, e.g. 
+
+    $ httpserver -d
+
+you can run the client demos by following their links given below.
+    
 
 #### OpenLayers
 
-After starting the server, the [OpenLayers 4 Demo](http://localhost:8080/res/demo/index-ol4.html)
-should run without further actions.
-
-Here is how to use configure an OpenLayers tile layer from WMTS capabilities: 
-
-* https://openlayers.org/en/latest/examples/wmts-layer-from-capabilities.html
+[OpenLayers 4 Demo](http://localhost:8080/xcube_server/res/demo/index-ol4.html)
+[OpenLayers 4 Demo with WMTS](http://localhost:8080/xcube_server/res/demo/index-ol4-wmts.html)
 
 #### Cesium
 
-To run the [Cesium Demo](http://localhost:8080/res/demo/index-cesium.html) first
+To run the [Cesium Demo](http://localhost:8080/xcube_server/res/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-server` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
@@ -136,10 +143,10 @@ In code:
 * Bug/Performance: ServiceContext.dataset_cache uses dataset names as ID, but actually, caching of *open* datasets 
   should be based on *same* dataset sources, namely given the local file path or the remote URL
 * Feature: WMTS GetFeatureInfo
-* Feature: Add layer selector and time slider to OL demo client
+* Feature: Add time slider to OL demo client
 * Feature: Let users specify TileGrid in configuration
 * Bug/Performance: /xcube/wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
-  15 seconds for first call - investigate and e.g. cache.
+  due to ZARR data cube access on OTC, 15 seconds for first call - investigate and e.g. cache.
 * Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
   There may be different identifiers that have the same path!
 * Performance: After some period check if datasets haven't been used for a long time - close them and remove from cache.
