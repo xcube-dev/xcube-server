@@ -110,21 +110,21 @@ a web server. If you don't have one, you can use the Node `httpserver`:
 
     $ npm install -g httpserver
     
-After starting both the xcube-server and web server, e.g. 
+After starting both the xcube-server and web server, e.g. on port 9090
 
-    $ httpserver -d
+    $ httpserver -d -p 9090
 
 you can run the client demos by following their links given below.
     
 
 #### OpenLayers
 
-[OpenLayers 4 Demo](http://localhost:8080/xcube_server/res/demo/index-ol4.html)
-[OpenLayers 4 Demo with WMTS](http://localhost:8080/xcube_server/res/demo/index-ol4-wmts.html)
+[OpenLayers 4 Demo](http://localhost:9090/xcube_server/res/demo/index-ol4.html)
+[OpenLayers 4 Demo with WMTS](http://localhost:9090/xcube_server/res/demo/index-ol4-wmts.html)
 
 #### Cesium
 
-To run the [Cesium Demo](http://localhost:8080/xcube_server/res/demo/index-cesium.html) first
+To run the [Cesium Demo](http://localhost:9090/xcube_server/res/demo/index-cesium.html) first
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-server` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
