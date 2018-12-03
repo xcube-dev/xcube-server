@@ -27,7 +27,7 @@
       var map;
       var capabilities;
 
-      fetch('http://localhost:8080/xcube/api/0.1.0.dev3/wmts/1.0.0/WMTSCapabilities.xml').then(function(response) {
+      fetch('http://localhost:8080/xcube/api/0.1.0.dev4/wmts/1.0.0/WMTSCapabilities.xml').then(function(response) {
         return response.text();
       }).then(function(text) {
         capabilities = format.read(text);
