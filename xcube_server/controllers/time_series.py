@@ -44,7 +44,7 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
             time_data = dataset.variables['time'].data
             time_stamps = []
             for time in time_data:
-                time_stamps.append(Timestamp(time).strftime('%Y-%m-%dT%H:%M:%SZ'))
+                time_stamps.append(_to_isoformat(time))
             for variable in dataset.data_vars.variables:
                 variable_dict = {'name': '{0}.{1}'.format(descriptor['Identifier'], variable),
                                  'dates': time_stamps,
@@ -139,7 +139,7 @@ def _get_time_series_for_point(dataset: xr.Dataset,
         else:
             statistics['validCount'] = 1
             statistics['average'] = entry.item()
-        result = {'result': statistics, 'date': str(entry.time.data)}
+        result = {'result': statistics, 'date': _to_isoformat(entry.time.data)}
         time_series.append(result)
     return {'results': time_series}
 
@@ -195,7 +195,7 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         else:
             statistics['validCount'] = valid_count
             statistics['average'] = float(mean_ts_var.data)
-        result = {'result': statistics, 'date': str(mean_ts_var.time.data)}
+        result = {'result': statistics, 'date': _to_isoformat(mean_ts_var.time.data)}
         time_series.append(result)
 
     return {'results': time_series}
@@ -214,9 +214,16 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
         time_series.append(result["results"])
     return {'results': time_series}
 
+
 # def _clamp(x, x1, x2):
 #     if x < x1:
 #         return x1
 #     if x > x2:
 #         return x2
 #     return x
+
+
+# TODO (forman) - make time_round_freq a configuration parameter
+def _to_isoformat(time, time_round_freq='s'):
+    # All times are UTC (Z = Zulu Time Zone = UTC)
+    return Timestamp(time).round(time_round_freq).isoformat() + 'Z'
