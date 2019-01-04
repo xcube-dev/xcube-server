@@ -26,6 +26,7 @@ from setuptools import setup, find_packages
 
 # in alphabetical oder
 requirements = [
+    'cmocean',
     'cython',
     'fiona',
     'h5netcdf',
