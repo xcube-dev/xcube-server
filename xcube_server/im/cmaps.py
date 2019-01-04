@@ -23,18 +23,22 @@ import base64
 import io
 import logging
 from threading import Lock
+from typing import Any, Tuple
 
 import matplotlib
 import matplotlib.cm as cm
 import numpy as np
 from PIL import Image
-
+import cmocean              # needs to be kept, because it is used in line 126
+import cmocean.cm as ocm    # needs to be kept, because it is used in line 126
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
 
 # Have colormaps separated into categories:
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
+# colormaps for ocean:
+# (taken from https://matplotlib.org/cmocean/)
 
 _CMAPS = (('Perceptually Uniform Sequential',
            'For many applications, a perceptually uniform colormap is the best choice - '
@@ -75,7 +79,13 @@ _CMAPS = (('Perceptually Uniform Sequential',
             'brg', 'CMRmap', 'cubehelix',
             'gnuplot', 'gnuplot2', 'gist_ncar',
             'nipy_spectral', 'jet', 'rainbow',
-            'gist_rainbow', 'hsv', 'flag', 'prism')))
+            'gist_rainbow', 'hsv', 'flag', 'prism')),
+          ('Ocean',
+           'Colormaps for commonly-used oceanographic variables. ',
+           ('thermal', 'haline', 'solar', 'ice', 'gray',
+            'oxy', 'deep', 'dense', 'algae',
+            'matter', 'turbid', 'speed', 'amp', 'tempo',
+            'phase', 'balance', 'delta', 'curl')))
 
 _CBARS_LOADED = False
 _LOCK = Lock()
@@ -107,12 +117,22 @@ def ensure_cmaps_loaded():
             for cmap_category, cmap_description, cmap_names in _CMAPS:
                 cbar_list = []
                 for cmap_name in cmap_names:
-                    # noinspection PyBroadException
-                    try:
-                        cmap = cm.get_cmap(cmap_name)
-                    except Exception:
-                        _LOG.warning('detected invalid colormap "%s"' % cmap_name)
-                        continue
+                        # noinspection PyBroadException
+                    if cmap_category is not 'Ocean':
+                        try:
+                            cmap = cm.get_cmap(cmap_name)
+                        except Exception:
+                            _LOG.warning('detected invalid colormap "%s"' % cmap_name)
+                            continue
+
+                    else:
+                        # noinspection PyBroadException
+                        ocean_cmap = 'ocm.' + cmap_name
+                        try:
+                            cmap = eval(ocean_cmap)
+                        except Exception:
+                            _LOG.warning('detected invalid colormap "%s"' % cmap_name)
+                            continue
 
                     # Add extra colormaps with alpha gradient
                     # see http://matplotlib.org/api/colors_api.html
