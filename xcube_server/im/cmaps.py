@@ -23,10 +23,10 @@ import base64
 import io
 import logging
 from threading import Lock
-from typing import Any, Tuple
 
 import matplotlib
 import matplotlib.cm as cm
+import matplotlib.colors
 import numpy as np
 from PIL import Image
 import cmocean              # needs to be kept, because it is used in line 126
@@ -107,7 +107,7 @@ def get_cmaps():
 
 def ensure_cmaps_loaded():
     """
-    Loads all color maps from matplotlip and registers additional ones, if not done before.
+    Loads all color maps from matplotlib and registers additional ones, if not done before.
     """
     global _CBARS_LOADED, _CMAPS
     if not _CBARS_LOADED:
@@ -121,7 +121,7 @@ def ensure_cmaps_loaded():
                     if cmap_category is not 'Ocean':
                         try:
                             cmap = cm.get_cmap(cmap_name)
-                        except Exception:
+                        except ValueError:
                             _LOG.warning('detected invalid colormap "%s"' % cmap_name)
                             continue
 
@@ -130,13 +130,13 @@ def ensure_cmaps_loaded():
                         ocean_cmap = 'ocm.' + cmap_name
                         try:
                             cmap = eval(ocean_cmap)
-                        except Exception:
+                        except ValueError:
                             _LOG.warning('detected invalid colormap "%s"' % cmap_name)
                             continue
 
                     # Add extra colormaps with alpha gradient
                     # see http://matplotlib.org/api/colors_api.html
-                    if type(cmap) == matplotlib.colors.LinearSegmentedColormap:
+                    if matplotlib.colors.LinearSegmentedColormap == type(cmap):
                         new_name = cmap.name + '_alpha'
                         new_segmentdata = dict(cmap._segmentdata)
                         # let alpha increase from 0.0 to 0.5
