@@ -169,6 +169,17 @@ class GetTileDatasetHandler(ServiceRequestHandler):
         self.set_header('Content-Type', 'image/png')
         self.finish(tile)
 
+# noinspection PyAbstractClass,PyBroadException
+class GetLegendHandler(ServiceRequestHandler):
+
+    async def get(self, ds_name: str, var_name: str):
+        tile = await IOLoop.current().run_in_executor(None,
+                                                      get_legend,
+                                                      self.service_context,
+                                                      ds_name, var_name,
+                                                      self.params)
+        self.set_header('Content-Type', 'image/png')
+        self.finish(tile)
 
 # noinspection PyAbstractClass
 class GetTileGridDatasetHandler(ServiceRequestHandler):

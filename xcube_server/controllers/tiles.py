@@ -1,15 +1,17 @@
 import time
 from typing import Dict, Any
 
+import matplotlib.cm as cm
 import numpy as np
 import xarray as xr
+from PIL import Image
 
 from xcube_server.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from xcube_server.ne2 import NaturalEarth2Image
 from xcube_server.utils import compute_tile_grid
 from ..context import ServiceContext
 from ..defaults import TRACE_PERF
-from ..errors import ServiceBadRequestError, ServiceError
+from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
 from ..reqparams import RequestParams
 
 
@@ -115,6 +117,38 @@ def get_dataset_tile(ctx: ServiceContext,
         print('PERF: <<< Tile:', image_id, z, y, x, 'took', t2 - t1, 'seconds')
 
     return tile
+
+
+def get_legend(ctx: ServiceContext,
+               ds_name: str,
+               var_name: str,
+               params: RequestParams):
+    cmap_cbar = params.get_query_argument('cbar', default=None)
+    cmap_vmin = params.get_query_argument_float('vmin', default=None)
+    cmap_vmax = params.get_query_argument_float('vmax', default=None)
+    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None:
+        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_name, var_name)
+        cmap_cbar = cmap_cbar or default_cmap_cbar
+        cmap_vmin = cmap_vmin or default_cmap_vmin
+        cmap_vmax = cmap_vmax or default_cmap_vmax
+
+    try:
+        cmap = cm.get_cmap(cmap_cbar)
+    except ValueError:
+        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
+
+    gradient = np.linspace(cmap_vmin / (cmap_vmax - cmap_vmin), cmap_vmax / (cmap_vmax - cmap_vmin), 256)
+    gradient = np.vstack((gradient, gradient))
+    image_data = cmap(gradient, bytes=True)
+    image = Image.fromarray(image_data, 'RGBA')
+
+    # TODO (alicja): find matplotlib function that creates a legend
+
+    # ostream = io.FileIO('../cmaps/' + cmap_name + '.png', 'wb')
+    # image.save(ostream, format='PNG')
+    # ostream.close()
+
+    return image
 
 
 def get_dataset_tile_grid(ctx: ServiceContext,
