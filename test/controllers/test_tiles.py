@@ -81,7 +81,8 @@ class TilesControllerTest(unittest.TestCase):
 
     def test_get_legend(self):
         ctx = new_test_service_context()
-        # image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock())
+        image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock())
+        self.assertEqual("<class 'PIL.PngImagePlugin.PngImageFile'>", str(type(image)))
         # image.show()
         # image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(cbar = 'coolwarm'))
         # image.show()
