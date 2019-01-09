@@ -2,9 +2,10 @@ import unittest
 
 from test.helpers import new_test_service_context, RequestParamsMock
 from xcube_server.context import ServiceContext
-from xcube_server.controllers.tiles import get_dataset_tile, get_ne2_tile, get_dataset_tile_grid, get_ne2_tile_grid
+from xcube_server.controllers.tiles import get_dataset_tile, get_ne2_tile, get_dataset_tile_grid, get_ne2_tile_grid, \
+    get_legend
 from xcube_server.defaults import API_PREFIX
-from xcube_server.errors import ServiceBadRequestError
+from xcube_server.errors import ServiceBadRequestError, ServiceResourceNotFoundError
 
 
 class TilesControllerTest(unittest.TestCase):
@@ -77,6 +78,20 @@ class TilesControllerTest(unittest.TestCase):
             get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'ol2.json', 'http://bibo')
         self.assertEqual(400, cm.exception.status_code)
         self.assertEqual('Unknown tile schema format "ol2.json"', cm.exception.reason)
+
+    def test_get_legend(self):
+        ctx = new_test_service_context()
+        # image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock())
+        # image.show()
+        # image = get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(cbar = 'coolwarm'))
+        # image.show()
+        with self.assertRaises(ServiceResourceNotFoundError) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(cbar='sun-shine'))
+        self.assertEqual('color bar sun-shine not found', cm.exception.reason)
+
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(vmin='sun-shine'))
+        self.assertEqual("""Parameter "vmin" must be a number, but was 'sun-shine'""", cm.exception.reason)
 
     def test_get_ne2_tile_grid(self):
         ctx = ServiceContext()

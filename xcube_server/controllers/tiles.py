@@ -1,10 +1,15 @@
 import time
 from typing import Dict, Any
 
+import matplotlib
 import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import matplotlib.colors
+import matplotlib.colorbar
 import numpy as np
 import xarray as xr
 from PIL import Image
+import io
 
 from xcube_server.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from xcube_server.ne2 import NaturalEarth2Image
@@ -137,16 +142,21 @@ def get_legend(ctx: ServiceContext,
     except ValueError:
         raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
 
-    gradient = np.linspace(cmap_vmin / (cmap_vmax - cmap_vmin), cmap_vmax / (cmap_vmax - cmap_vmin), 256)
-    gradient = np.vstack((gradient, gradient))
-    image_data = cmap(gradient, bytes=True)
-    image = Image.fromarray(image_data, 'RGBA')
+    fig = plt.figure(figsize=(1, 5))
+    ax1 = fig.add_subplot(1, 1, 1)
 
-    # TODO (alicja): find matplotlib function that creates a legend
+    norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+    image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
+                                                    norm=norm, orientation='vertical')
+    image_legend.set_label(ctx.get_legend_lable(ds_name, var_name))
+    fig.patch.set_facecolor('white')
+    fig.patch.set_alpha(0.0)
+    fig.tight_layout()
 
-    # ostream = io.FileIO('../cmaps/' + cmap_name + '.png', 'wb')
-    # image.save(ostream, format='PNG')
-    # ostream.close()
+    buffer = io.BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    image = Image.open(buffer)
 
     return image
 
