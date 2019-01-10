@@ -144,7 +144,6 @@ def get_legend(ctx: ServiceContext,
 
     fig = plt.figure(figsize=(1, 5))
     ax1 = fig.add_subplot(1, 1, 1)
-
     norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
     image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
                                                     norm=norm, orientation='vertical')
@@ -155,11 +154,8 @@ def get_legend(ctx: ServiceContext,
 
     buffer = io.BytesIO()
     plt.savefig(buffer, format='png')
-    buffer.seek(0)
-    image = Image.open(buffer)
 
-    return image
-
+    return buffer.getvalue()
 
 def get_dataset_tile_grid(ctx: ServiceContext,
                           ds_name: str,
