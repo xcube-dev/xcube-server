@@ -73,19 +73,19 @@ _CMAPS = (('Perceptually Uniform Sequential',
            'choosing a set of discrete colors.',
            ('Accent', 'Dark2', 'Paired', 'Pastel1',
             'Pastel2', 'Set1', 'Set2', 'Set3')),
+          ('Ocean',
+           'Colormaps for commonly-used oceanographic variables. ',
+           ('thermal', 'haline', 'solar', 'ice', 'gray',
+            'oxy', 'deep', 'dense', 'algae',
+            'matter', 'turbid', 'speed', 'amp', 'tempo',
+            'phase', 'balance', 'delta', 'curl')),
           ('Miscellaneous',
            'Colormaps that don\'t fit into the categories above.',
            ('gist_earth', 'terrain', 'ocean', 'gist_stern',
             'brg', 'CMRmap', 'cubehelix',
             'gnuplot', 'gnuplot2', 'gist_ncar',
             'nipy_spectral', 'jet', 'rainbow',
-            'gist_rainbow', 'hsv', 'flag', 'prism')),
-          ('Ocean',
-           'Colormaps for commonly-used oceanographic variables. ',
-           ('thermal', 'haline', 'solar', 'ice', 'gray',
-            'oxy', 'deep', 'dense', 'algae',
-            'matter', 'turbid', 'speed', 'amp', 'tempo',
-            'phase', 'balance', 'delta', 'curl')))
+            'gist_rainbow', 'hsv', 'flag', 'prism')))
 
 _CBARS_LOADED = False
 _LOCK = Lock()
@@ -117,23 +117,15 @@ def ensure_cmaps_loaded():
             for cmap_category, cmap_description, cmap_names in _CMAPS:
                 cbar_list = []
                 for cmap_name in cmap_names:
-                        # noinspection PyBroadException
-                    if cmap_category is not 'Ocean':
-                        try:
+                    try:
+                        if cmap_category is 'Ocean':
+                            ocean_cmap_name = 'ocm.' + cmap_name    # name change
+                            cmap = eval(ocean_cmap_name)
+                        else:
                             cmap = cm.get_cmap(cmap_name)
-                        except ValueError:
-                            _LOG.warning('detected invalid colormap "%s"' % cmap_name)
-                            continue
-
-                    else:
-                        # noinspection PyBroadException
-                        ocean_cmap = 'ocm.' + cmap_name
-                        try:
-                            cmap = eval(ocean_cmap)
-                        except ValueError:
-                            _LOG.warning('detected invalid colormap "%s"' % cmap_name)
-                            continue
-
+                    except ValueError:
+                        _LOG.warning('detected invalid colormap "%s"' % cmap_name)
+                        continue
                     # Add extra colormaps with alpha gradient
                     # see http://matplotlib.org/api/colors_api.html
                     if matplotlib.colors.LinearSegmentedColormap == type(cmap):

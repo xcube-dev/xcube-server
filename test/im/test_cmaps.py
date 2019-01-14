@@ -25,8 +25,8 @@ class CmapsTest(TestCase):
         self.assertEqual(cmaps[2][0], 'Sequential 2')
         self.assertEqual(cmaps[3][0], 'Diverging')
         self.assertEqual(cmaps[4][0], 'Qualitative')
-        self.assertEqual(cmaps[5][0], 'Miscellaneous')
-        self.assertEqual(cmaps[6][0], 'Ocean')
+        self.assertEqual(cmaps[5][0], 'Ocean')
+        self.assertEqual(cmaps[6][0], 'Miscellaneous')
 
     def test_get_cmaps_category_descr(self):
         cmaps = get_cmaps()
@@ -48,7 +48,7 @@ class CmapsTest(TestCase):
 
     def test_cmocean_category(self):
         cmaps = get_cmaps()
-        category_tuple = cmaps[6][2]
+        category_tuple = cmaps[5][2]
         self.assertEqual(len(category_tuple), 18)
         self.assertEqual(category_tuple[0][0], 'thermal')
         self.assertEqual(category_tuple[0][1],
