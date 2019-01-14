@@ -248,7 +248,6 @@ class ServiceContext:
             ds = self.get_dataset(ds_name)
             units = ds[var_name].units
             return units
-            return unit
         raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
 
     def get_feature_collections(self) -> List[Dict]:

@@ -147,7 +147,8 @@ def get_legend(ctx: ServiceContext,
     norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
     image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
                                                     norm=norm, orientation='vertical')
-    image_legend.set_label(ctx.get_legend_lable(ds_name, var_name))
+    if ctx.get_legend_label(ds_name, var_name) != None:
+        image_legend.set_label(ctx.get_legend_label(ds_name, var_name))
     fig.patch.set_facecolor('white')
     fig.patch.set_alpha(0.0)
     fig.tight_layout()
