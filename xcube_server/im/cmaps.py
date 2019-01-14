@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import base64
 import io
 import logging
@@ -29,7 +28,6 @@ import matplotlib.cm as cm
 import matplotlib.colors
 import numpy as np
 from PIL import Image
-import cmocean              # needs to be kept, because it is used in line 126
 import cmocean.cm as ocm    # needs to be kept, because it is used in line 126
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -119,8 +117,7 @@ def ensure_cmaps_loaded():
                 for cmap_name in cmap_names:
                     try:
                         if cmap_category == 'Ocean':
-                            ocean_cmap_name = 'ocm.' + cmap_name    # name change
-                            cmap = eval(ocean_cmap_name)
+                            cmap = getattr(ocm, cmap_name)
                         else:
                             cmap = cm.get_cmap(cmap_name)
                     except ValueError:
