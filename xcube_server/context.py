@@ -246,7 +246,8 @@ class ServiceContext:
         dataset = self.get_dataset(ds_name)
         if var_name in dataset:
             ds = self.get_dataset(ds_name)
-            unit = ds[var_name].units
+            units = ds[var_name].units
+            return units
             return unit
         raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
 
