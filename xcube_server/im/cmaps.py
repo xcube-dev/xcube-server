@@ -118,7 +118,7 @@ def ensure_cmaps_loaded():
                 cbar_list = []
                 for cmap_name in cmap_names:
                     try:
-                        if cmap_category is 'Ocean':
+                        if cmap_category == 'Ocean':
                             ocean_cmap_name = 'ocm.' + cmap_name    # name change
                             cmap = eval(ocean_cmap_name)
                         else:
