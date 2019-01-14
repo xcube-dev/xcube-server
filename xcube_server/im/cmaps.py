@@ -128,7 +128,7 @@ def ensure_cmaps_loaded():
                         continue
                     # Add extra colormaps with alpha gradient
                     # see http://matplotlib.org/api/colors_api.html
-                    if matplotlib.colors.LinearSegmentedColormap == type(cmap):
+                    if type(cmap) == matplotlib.colors.LinearSegmentedColormap:
                         new_name = cmap.name + '_alpha'
                         new_segmentdata = dict(cmap._segmentdata)
                         # let alpha increase from 0.0 to 0.5
