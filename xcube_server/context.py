@@ -242,7 +242,7 @@ class ServiceContext:
 
         return ds
 
-    def get_legend_lable(self, ds_name: str, var_name: str):
+    def get_legend_label(self, ds_name: str, var_name: str):
         dataset = self.get_dataset(ds_name)
         if var_name in dataset:
             ds = self.get_dataset(ds_name)
