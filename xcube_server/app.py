@@ -56,7 +56,7 @@ def new_application(name: str=DEFAULT_NAME):
         (prefix + url_pattern('/datasets'), GetDatasetsJsonHandler),
         (prefix + url_pattern('/variables/{{ds_name}}'), GetVariablesJsonHandler),
         (prefix + url_pattern('/coords/{{ds_name}}/{{dim_name}}'), GetCoordinatesJsonHandler),
-        (prefix + url_pattern('/{{ds_name}}/{{var_name}}/legend.png'), GetLegendHandler),
+        (prefix + url_pattern('/legend/{{ds_name}}/{{var_name}}.png'), GetLegendHandler),
         (prefix + url_pattern('/colorbars'), GetColorBarsJsonHandler),
         (prefix + url_pattern('/colorbars.html'), GetColorBarsHtmlHandler),
         (prefix + url_pattern('/ts'), TimeSeriesInfoHandler),
