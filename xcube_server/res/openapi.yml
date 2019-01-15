@@ -80,7 +80,7 @@ paths:
     get:
       tags:
         - tile
-      summary: Get legend
+      summary: Get legend for layer
       operationId: getLegend
       parameters:
         - $ref: '#/components/parameters/dataset'
