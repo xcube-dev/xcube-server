@@ -3,12 +3,10 @@ from typing import Dict, Any
 
 import matplotlib
 import matplotlib.cm as cm
-import matplotlib.pyplot as plt
 import matplotlib.colors
 import matplotlib.colorbar
 import numpy as np
 import xarray as xr
-from PIL import Image
 import io
 import matplotlib.figure
 
@@ -153,7 +151,7 @@ def get_legend(ctx: ServiceContext,
                                                     norm=norm, orientation='vertical')
 
     image_legend_label = ctx.get_legend_label(ds_name, var_name)
-    if image_legend_label != None:
+    if image_legend_label is not None:
         image_legend.set_label(image_legend_label)
     # print('units not none')
     fig.patch.set_facecolor('white')
@@ -164,6 +162,7 @@ def get_legend(ctx: ServiceContext,
     fig.savefig(buffer, format='png')
 
     return buffer.getvalue()
+
 
 def get_dataset_tile_grid(ctx: ServiceContext,
                           ds_name: str,
