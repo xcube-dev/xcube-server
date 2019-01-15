@@ -10,11 +10,11 @@ import xarray as xr
 import io
 import matplotlib.figure
 
-from xcube_server.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
-from xcube_server.ne2 import NaturalEarth2Image
-from xcube_server.utils import compute_tile_grid
+from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
+from ..ne2 import NaturalEarth2Image
+from ..utils import compute_tile_grid
 from ..context import ServiceContext
-from ..defaults import TRACE_PERF, DEFAULT_CMAP_W, DEFAULT_CMAP_H
+from ..defaults import TRACE_PERF, DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
 from ..reqparams import RequestParams
 
@@ -137,8 +137,9 @@ def get_legend(ctx: ServiceContext,
         cmap_cbar = cmap_cbar or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
-        cmap_w = cmap_w or DEFAULT_CMAP_W
-        cmap_h = cmap_h or DEFAULT_CMAP_H
+        cmap_w = cmap_w or DEFAULT_CMAP_WIDTH
+        cmap_h = cmap_h or DEFAULT_CMAP_HEIGHT
+
     try:
         cmap = cm.get_cmap(cmap_cbar)
     except ValueError:

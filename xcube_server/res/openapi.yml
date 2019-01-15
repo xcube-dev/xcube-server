@@ -86,7 +86,7 @@ paths:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/variable'
       description: |
-        Get a legend of a given variable of a given dataset.
+        Get a legend for a layer of a given variable of a given dataset.
         The legend is returned as a png.
       responses:
         '200':
