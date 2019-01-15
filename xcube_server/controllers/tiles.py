@@ -10,12 +10,13 @@ import numpy as np
 import xarray as xr
 from PIL import Image
 import io
+import matplotlib.figure
 
 from xcube_server.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from xcube_server.ne2 import NaturalEarth2Image
 from xcube_server.utils import compute_tile_grid
 from ..context import ServiceContext
-from ..defaults import TRACE_PERF
+from ..defaults import TRACE_PERF, DEFAULT_CMAP_W, DEFAULT_CMAP_H
 from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
 from ..reqparams import RequestParams
 
@@ -131,30 +132,39 @@ def get_legend(ctx: ServiceContext,
     cmap_cbar = params.get_query_argument('cbar', default=None)
     cmap_vmin = params.get_query_argument_float('vmin', default=None)
     cmap_vmax = params.get_query_argument_float('vmax', default=None)
-    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None:
+    cmap_w = params.get_query_argument_float('width', default=None)
+    cmap_h = params.get_query_argument_float('height', default=None)
+    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
         default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_name, var_name)
         cmap_cbar = cmap_cbar or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
-
+        cmap_w = cmap_w or DEFAULT_CMAP_W
+        cmap_h = cmap_h or DEFAULT_CMAP_H
     try:
         cmap = cm.get_cmap(cmap_cbar)
     except ValueError:
         raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
 
-    fig = plt.figure(figsize=(1, 5))
+
+    if type(cmap_w) != int or type(cmap_h) != int:
+        raise ServiceBadRequestError(f"")
+
+    fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
     norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
     image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
                                                     norm=norm, orientation='vertical')
+
     if ctx.get_legend_label(ds_name, var_name) != None:
         image_legend.set_label(ctx.get_legend_label(ds_name, var_name))
+    # print('units not none')
     fig.patch.set_facecolor('white')
     fig.patch.set_alpha(0.0)
     fig.tight_layout()
 
     buffer = io.BytesIO()
-    plt.savefig(buffer, format='png')
+    fig.savefig(buffer, format='png')
 
     return buffer.getvalue()
 
