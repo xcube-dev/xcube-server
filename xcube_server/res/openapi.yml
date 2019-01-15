@@ -6,7 +6,7 @@ info:
   description: |
     A light-weight web server that provides
     various services based on xarray-enabled datasets.
-  version: "0.1.0.dev4"
+  version: "0.2.0.dev4"
   title: XCube Server API
   contact:
     email: bcdev@brockmann-consult.de
@@ -76,6 +76,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CoordinateVariable'
+  '/legend/{ds_name}/{var_name}.png':
+    get:
+      tags:
+        - tile
+      summary: Get legend
+      operationId: getLegend
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+      description: |
+        Get a legend of a given variable of a given dataset.
+        The legend is returned as a png.
+      responses:
+        '200':
+          description: Legend image.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
   '/colorbars':
     get:
       tags:

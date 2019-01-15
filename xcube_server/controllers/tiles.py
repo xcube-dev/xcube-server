@@ -132,8 +132,8 @@ def get_legend(ctx: ServiceContext,
     cmap_cbar = params.get_query_argument('cbar', default=None)
     cmap_vmin = params.get_query_argument_float('vmin', default=None)
     cmap_vmax = params.get_query_argument_float('vmax', default=None)
-    cmap_w = params.get_query_argument_float('width', default=None)
-    cmap_h = params.get_query_argument_float('height', default=None)
+    cmap_w = params.get_query_argument_int('width', default=None)
+    cmap_h = params.get_query_argument_int('height', default=None)
     if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
         default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_name, var_name)
         cmap_cbar = cmap_cbar or default_cmap_cbar
@@ -146,18 +146,15 @@ def get_legend(ctx: ServiceContext,
     except ValueError:
         raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
 
-
-    if type(cmap_w) != int or type(cmap_h) != int:
-        raise ServiceBadRequestError(f"")
-
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
     norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
     image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
                                                     norm=norm, orientation='vertical')
 
-    if ctx.get_legend_label(ds_name, var_name) != None:
-        image_legend.set_label(ctx.get_legend_label(ds_name, var_name))
+    image_legend_label = ctx.get_legend_label(ds_name, var_name)
+    if image_legend_label != None:
+        image_legend.set_label(image_legend_label)
     # print('units not none')
     fig.patch.set_facecolor('white')
     fig.patch.set_alpha(0.0)

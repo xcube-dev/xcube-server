@@ -92,6 +92,10 @@ class TilesControllerTest(unittest.TestCase):
             get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(vmin='sun-shine'))
         self.assertEqual("""Parameter "vmin" must be a number, but was 'sun-shine'""", cm.exception.reason)
 
+        with self.assertRaises(ServiceBadRequestError) as cm:
+            get_legend(ctx, 'demo', 'conc_chl', RequestParamsMock(width='sun-shine'))
+        self.assertEqual("""Parameter "width" must be an integer, but was 'sun-shine'""", cm.exception.reason)
+
     def test_get_ne2_tile_grid(self):
         ctx = ServiceContext()
         tile_grid = get_ne2_tile_grid(ctx, 'ol4', 'http://bibo')
