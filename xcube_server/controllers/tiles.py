@@ -154,7 +154,7 @@ def get_legend(ctx: ServiceContext,
     image_legend_label = ctx.get_legend_label(ds_name, var_name)
     if image_legend_label is not None:
         image_legend.set_label(image_legend_label)
-    # print('units not none')
+
     fig.patch.set_facecolor('white')
     fig.patch.set_alpha(0.0)
     fig.tight_layout()
