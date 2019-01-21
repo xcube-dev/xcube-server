@@ -133,12 +133,13 @@ def _get_time_series_for_point(dataset: xr.Dataset,
     time_series = []
     for entry in time_subset:
         statistics = {'totalCount': 1}
-        if np.isnan(entry.data):
+        item = entry.values.item()
+        if np.isnan(item):
             statistics['validCount'] = 0
             statistics['average'] = None
         else:
             statistics['validCount'] = 1
-            statistics['average'] = entry.item()
+            statistics['average'] = item
         result = {'result': statistics, 'date': _to_isoformat(entry.time.data)}
         time_series.append(result)
     return {'results': time_series}
