@@ -191,15 +191,15 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
 
         masked_var = variable_slice.where(mask)
         valid_count = len(np.where(np.isfinite(masked_var))[0])
-        mean_ts_var = masked_var.mean(["lat", "lon"])
+        mean_ts_var = variable_slice.mean(["lat", "lon"]).values.item()
 
         statistics = {'totalCount': total_count}
-        if np.isnan(mean_ts_var.data):
+        if np.isnan(mean_ts_var):
             statistics['validCount'] = 0
             statistics['average'] = None
         else:
             statistics['validCount'] = valid_count
-            statistics['average'] = float(mean_ts_var.data)
+            statistics['average'] = float(mean_ts_var)
         result = {'result': statistics, 'date': _to_isoformat(mean_ts_var.time.data)}
         time_series.append(result)
 
