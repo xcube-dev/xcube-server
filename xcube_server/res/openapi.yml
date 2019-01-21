@@ -1,7 +1,7 @@
 openapi: 3.0.0
 servers:
   - description: DCS4COP Development API
-    url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev4
+    url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev5
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/forman/xcube-server/1.0.0
 info:
@@ -78,7 +78,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CoordinateVariable'
-  '/legend/{ds_name}/{var_name}.png':
+  '/legend/{dataset}/{variable}.png':
     get:
       tags:
         - tile
@@ -250,7 +250,7 @@ paths:
         - time-series
       operationId: getTimeSeriesForPoint
       summary: Compute time-series for point
-      description: Computes a time series given a coordinate and a product.
+      description: Compute a time series given a coordinate and a product.
       parameters:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/variable'
@@ -275,7 +275,7 @@ paths:
         - time-series
       operationId: getTimeSeriesForGeometry
       summary: Compute time-series for geometry
-      description: Computes a time series given a GeoJSON geometry object.
+      description: Compute a time series given a GeoJSON geometry object.
       parameters:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/variable'
@@ -294,13 +294,38 @@ paths:
           description: Invalid query parameters
         '500':
           description: Unexpected error.
+  '/ts/{dataset}/{variable}/geometries':
+    post:
+      tags:
+        - time-series
+      operationId: getTimeSeriesForGeometries
+      summary: Compute time-series for geometries
+      description: Compute a time series given a GeoJSON geometry collection object.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      requestBody:
+        $ref: '#/components/requestBodies/GeoJsonGeometryCollection'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TimeSeries'
+        '400':
+          description: Invalid query parameters
+        '500':
+          description: Unexpected error.
   '/ts/{dataset}/{variable}/features':
     post:
       tags:
         - time-series
       operationId: getTimeSeriesForFeature
       summary: Compute time-series for feature collection
-      description: Compute a time series given a GeoJSON feature collection. object.
+      description: Compute a time series given a GeoJSON feature collection object.
       parameters:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/variable'
@@ -724,6 +749,22 @@ components:
           type:
             type: string
             enum: ["Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", "GeometryCollection"]
+    GeoJsonGeometryCollection:
+      description: "GeoJSON geometry collection object according to RFC 7946 Section 3.1.8"
+      allOf:
+      - $ref: '#/components/schemas/GeoJsonGeometry'
+      - type: object
+        required:
+          - type
+          - geometries
+        properties:
+          type:
+            type: string
+            enum: ["GeometryCollection"]
+          geometries:
+            type: array
+            items:
+              $ref: '#/components/schemas/GeoJsonGeometry'
     GeoJsonFeature:
       description: "GeoJSON feature collection according to RFC 7946 Section 3.2"
       allOf:
@@ -827,6 +868,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/GeoJsonGeometry'
+    GeoJsonGeometryCollection:
+      description: GeoJSON Geometry Collection
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/GeoJsonGeometryCollection'
     GeoJsonFeature:
       description: GeoJSON Feature
       content:

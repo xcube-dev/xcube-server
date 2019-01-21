@@ -21,6 +21,7 @@
 
 from typing import Dict, List
 
+import math
 import numpy as np
 import shapely.geometry
 import xarray as xr
@@ -133,12 +134,13 @@ def _get_time_series_for_point(dataset: xr.Dataset,
     time_series = []
     for entry in time_subset:
         statistics = {'totalCount': 1}
-        if np.isnan(entry.data):
+        item = entry.values.item()
+        if np.isnan(item):
             statistics['validCount'] = 0
             statistics['average'] = None
         else:
             statistics['validCount'] = 1
-            statistics['average'] = entry.item()
+            statistics['average'] = item
         result = {'result': statistics, 'date': _to_isoformat(entry.time.data)}
         time_series.append(result)
     return {'results': time_series}
@@ -166,18 +168,21 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
     height = len(dataset.lat)
     res = (ds_lat_max - ds_lat_min) / height
 
-    # TODO by forman: we may improve performance for hi-res cubes by extracting a spatial subset first
-    # g_lon_min, g_lat_min, g_lon_max, g_lat_max = actual_geometry.bounds
-    # x1 = _clamp(int(math.floor((g_lon_min - ds_lon_min) / res)), 0, width - 1)
-    # x2 = _clamp(int(math.ceil((g_lon_max - ds_lon_min) / res)), 0, width - 1)
-    # y1 = _clamp(int(math.floor((g_lat_min - ds_lat_min) / res)), 0, height - 1)
-    # y2 = _clamp(int(math.ceil((g_lat_max - ds_lat_min) / res)), 0, height - 1)
-    # ds_subset = dataset.isel(lon=slice(x1, x2), lat=slice(y1, y2))
-    # ds_subset = ds_subset.sel(time=slice(start_date, end_date))
+    g_lon_min, g_lat_min, g_lon_max, g_lat_max = actual_geometry.bounds
+    x1 = _clamp(int(math.floor((g_lon_min - ds_lon_min) / res)), 0, width - 1)
+    x2 = _clamp(int(math.ceil((g_lon_max - ds_lon_min) / res)) + 1, 0, width - 1)
+    y1 = _clamp(int(math.floor((ds_lat_max - g_lat_max) / res)), 0, height - 1)
+    y2 = _clamp(int(math.ceil((ds_lat_max - g_lat_min) / res)) + 1, 0, height - 1)
+    ds_subset = dataset.isel(lon=slice(x1, x2), lat=slice(y1, y2))
+    ds_subset = ds_subset.sel(time=slice(start_date, end_date))
+    subset_ds_lon_min, subset_ds_lat_min, subset_ds_lon_max, subset_ds_lat_max = get_dataset_bounds(ds_subset)
+    subset_variable = ds_subset[variable.name]
+    subset_width = len(ds_subset.lon)
+    subset_height = len(ds_subset.lat)
 
-    mask = get_geometry_mask(width, height, actual_geometry, ds_lon_min, ds_lat_min, res)
+    mask = get_geometry_mask(subset_width, subset_height, actual_geometry, subset_ds_lon_min, subset_ds_lat_min, res)
     total_count = np.count_nonzero(mask)
-    variable = variable.sel(time=slice(start_date, end_date))
+    variable = subset_variable.sel(time=slice(start_date, end_date))
     num_times = len(variable.time)
 
     time_series = []
@@ -185,16 +190,16 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         variable_slice = variable.isel(time=time_index)
 
         masked_var = variable_slice.where(mask)
-        valid_count = np.count_nonzero(np.where(np.isnan(masked_var), 0, 1))
-        mean_ts_var = masked_var.mean(["lat", "lon"])
+        valid_count = len(np.where(np.isfinite(masked_var))[0])
+        mean_ts_var = variable_slice.mean(["lat", "lon"]).values.item()
 
         statistics = {'totalCount': total_count}
-        if np.isnan(mean_ts_var.data):
+        if np.isnan(mean_ts_var):
             statistics['validCount'] = 0
             statistics['average'] = None
         else:
             statistics['validCount'] = valid_count
-            statistics['average'] = float(mean_ts_var.data)
+            statistics['average'] = float(mean_ts_var)
         result = {'result': statistics, 'date': _to_isoformat(mean_ts_var.time.data)}
         time_series.append(result)
 
@@ -215,12 +220,12 @@ def _get_time_series_for_geometries(dataset: xr.Dataset,
     return {'results': time_series}
 
 
-# def _clamp(x, x1, x2):
-#     if x < x1:
-#         return x1
-#     if x > x2:
-#         return x2
-#     return x
+def _clamp(x, x1, x2):
+    if x < x1:
+        return x1
+    if x > x2:
+        return x2
+    return x
 
 
 # TODO (forman) - make time_round_freq a configuration parameter
