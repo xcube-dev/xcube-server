@@ -26,7 +26,7 @@ from tornado.ioloop import IOLoop
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
 from .controllers.features import find_features, find_dataset_features
-from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid
+from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
 from .controllers.wmts import get_wmts_capabilities_xml
@@ -51,6 +51,7 @@ _WMTS_KVP_KEYS = [
 _WMTS_KVP_LOWER_KEYS = [k.lower() for k in _WMTS_KVP_KEYS]
 _WMTS_VERSION = "1.0.0"
 _WMTS_TILE_FORMAT = "image/png"
+
 
 # noinspection PyAbstractClass
 class WMTSKvpHandler(ServiceRequestHandler):
@@ -165,6 +166,19 @@ class GetTileDatasetHandler(ServiceRequestHandler):
                                                       self.service_context,
                                                       ds_name, var_name,
                                                       x, y, z,
+                                                      self.params)
+        self.set_header('Content-Type', 'image/png')
+        self.finish(tile)
+
+
+# noinspection PyAbstractClass,PyBroadException
+class GetLegendHandler(ServiceRequestHandler):
+
+    async def get(self, ds_name: str, var_name: str):
+        tile = await IOLoop.current().run_in_executor(None,
+                                                      get_legend,
+                                                      self.service_context,
+                                                      ds_name, var_name,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')
         self.finish(tile)

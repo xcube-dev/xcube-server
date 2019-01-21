@@ -242,6 +242,14 @@ class ServiceContext:
 
         return ds
 
+    def get_legend_label(self, ds_name: str, var_name: str):
+        dataset = self.get_dataset(ds_name)
+        if var_name in dataset:
+            ds = self.get_dataset(ds_name)
+            units = ds[var_name].units
+            return units
+        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
+
     def get_feature_collections(self) -> List[Dict]:
         features_configs = self._config.get("Features", [])
         feature_collections = []

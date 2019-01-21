@@ -1,15 +1,21 @@
 import time
 from typing import Dict, Any
 
+import matplotlib
+import matplotlib.cm as cm
+import matplotlib.colors
+import matplotlib.colorbar
 import numpy as np
 import xarray as xr
+import io
+import matplotlib.figure
 
-from xcube_server.im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
-from xcube_server.ne2 import NaturalEarth2Image
-from xcube_server.utils import compute_tile_grid
+from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
+from ..ne2 import NaturalEarth2Image
+from ..utils import compute_tile_grid
 from ..context import ServiceContext
-from ..defaults import TRACE_PERF
-from ..errors import ServiceBadRequestError, ServiceError
+from ..defaults import TRACE_PERF, DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
+from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
 from ..reqparams import RequestParams
 
 
@@ -115,6 +121,48 @@ def get_dataset_tile(ctx: ServiceContext,
         print('PERF: <<< Tile:', image_id, z, y, x, 'took', t2 - t1, 'seconds')
 
     return tile
+
+
+def get_legend(ctx: ServiceContext,
+               ds_name: str,
+               var_name: str,
+               params: RequestParams):
+    cmap_cbar = params.get_query_argument('cbar', default=None)
+    cmap_vmin = params.get_query_argument_float('vmin', default=None)
+    cmap_vmax = params.get_query_argument_float('vmax', default=None)
+    cmap_w = params.get_query_argument_int('width', default=None)
+    cmap_h = params.get_query_argument_int('height', default=None)
+    if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
+        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_name, var_name)
+        cmap_cbar = cmap_cbar or default_cmap_cbar
+        cmap_vmin = cmap_vmin or default_cmap_vmin
+        cmap_vmax = cmap_vmax or default_cmap_vmax
+        cmap_w = cmap_w or DEFAULT_CMAP_WIDTH
+        cmap_h = cmap_h or DEFAULT_CMAP_HEIGHT
+
+    try:
+        cmap = cm.get_cmap(cmap_cbar)
+    except ValueError:
+        raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
+
+    fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
+    ax1 = fig.add_subplot(1, 1, 1)
+    norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+    image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
+                                                    norm=norm, orientation='vertical')
+
+    image_legend_label = ctx.get_legend_label(ds_name, var_name)
+    if image_legend_label is not None:
+        image_legend.set_label(image_legend_label)
+
+    fig.patch.set_facecolor('white')
+    fig.patch.set_alpha(0.0)
+    fig.tight_layout()
+
+    buffer = io.BytesIO()
+    fig.savefig(buffer, format='png')
+
+    return buffer.getvalue()
 
 
 def get_dataset_tile_grid(ctx: ServiceContext,

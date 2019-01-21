@@ -11,6 +11,24 @@ Datasets:
     Args: ["@demo@", "1W"]
     Style: default
 
+  - Identifier: olci
+    Title: "An OLCI cube"
+    FileSystem: "local"
+    Path: "/home/tonio-bc/EOData/Cubes/dcs4cop_xcube_OLCI_201701.zarr"
+    Format: zarr
+
+#  - Identifier: olci_rechunked
+#    Title: "An OLCI cube"
+#    FileSystem: "local"
+#    Path: "/home/tonio-bc/EOData/Cubes/dcs4cop_xcube_OLCI_201701_rechunked.zarr"
+#    Format: zarr
+
+#  - Identifier: olci_rechunked_2
+#    Title: "An OLCI cube"
+#    FileSystem: "local"
+#    Path: "/home/tonio-bc/EOData/Cubes/dcs4cop_xcube_OLCI_201701_rechunked.zarr"
+#    Format: zarr
+
 Features:
   - Identifier: inside-cube
     Title: Points inside the cube

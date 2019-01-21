@@ -7,6 +7,38 @@ Datasets:
     #Format: zarr
     Style: default
 
+  - Identifier: olci
+    Title: "An OLCI cube"
+    FileSystem: "local"
+#    Path: "cube.nc"
+    Path: "/home/tonio-bc/EOData/Cubes/dcs4cop_xcube_OLCI_201701.zarr"
+    Format: zarr
+#    Style: default
+
+  - Identifier: olci_rechunked
+    Title: "An OLCI cube"
+    FileSystem: "local"
+#    Path: "cube.nc"
+    Path: "/home/tonio-bc/EOData/Cubes/dcs4cop_xcube_OLCI_201701_rechunked.zarr"
+    Format: zarr
+#    Style: default
+
+  - Identifier: olci_rechunked_2
+    Title: "An OLCI cube"
+    FileSystem: "local"
+#    Path: "cube.nc"
+    Path: "/home/tonio-bc/EOData/Cubes/dcs4cop_xcube_OLCI_201701_rechunked.zarr"
+    Format: zarr
+#    Style: default
+
+  - Identifier: sst
+    Title: "An SST cube"
+    FileSystem: "local"
+#    Path: "cube.nc"
+    Path: "/home/tonio-bc/EOData/Cubes/dcs4cop_xcube_CMEMS_SST_201701.zarr"
+    Format: zarr
+#    Style: default
+
   - Identifier: remote
     Title: "Remote HIGHROC OLCI L2C cube for region SNS"
     Endpoint: "http://obs.eu-de.otc.t-systems.com"

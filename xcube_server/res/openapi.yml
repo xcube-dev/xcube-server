@@ -1,5 +1,7 @@
 openapi: 3.0.0
 servers:
+  - description: DCS4COP Development API
+    url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev5
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/forman/xcube-server/1.0.0
 info:
@@ -76,6 +78,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CoordinateVariable'
+  '/legend/{ds_name}/{var_name}.png':
+    get:
+      tags:
+        - tile
+      summary: Get legend for layer
+      operationId: getLegend
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+      description: |
+        Get a legend for a layer given by a variable of a dataset.
+        The legend is returned as a png.
+      responses:
+        '200':
+          description: Legend image.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
   '/colorbars':
     get:
       tags:
