@@ -78,7 +78,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CoordinateVariable'
-  '/legend/{ds_name}/{var_name}.png':
+  '/legend/{dataset}/{variable}.png':
     get:
       tags:
         - tile
