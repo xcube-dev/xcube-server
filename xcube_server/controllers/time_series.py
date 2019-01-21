@@ -190,7 +190,7 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         variable_slice = variable.isel(time=time_index)
 
         masked_var = variable_slice.where(mask)
-        valid_count = np.count_nonzero(np.where(np.isnan(masked_var), 0, 1))
+        valid_count = len(np.where(np.isfinite(masked_var))[0])
         mean_ts_var = masked_var.mean(["lat", "lon"])
 
         statistics = {'totalCount': total_count}
