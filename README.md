@@ -90,12 +90,12 @@ Test it:
     * [Get WMTS REST local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
     * [Get WMTS REST remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
   * Tile images
-    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/legend/local/conc_chl.png)
-  * Tile legend  
-    * [Get legend for layer (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/tile/local/conc_chl/0/1/0.png)
-  * Tile grid service
+    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/tile/local/conc_chl/0/1/0.png)
+  * Tile grids
     * [Get tile grid for OpenLayers 4.x](http://localhost:8080/xcube/api/0.1.0.dev5/tilegrid/local/conc_chl/ol4)
     * [Get tile grid for Cesium 1.x](http://localhost:8080/xcube/api/0.1.0.dev5/tilegrid/local/conc_chl/cesium)
+  * Legend images
+    * [Get legend for layer (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/legend/local/conc_chl.png)
 * Feature service
     * [Get all features](http://localhost:8080/xcube/api/0.1.0.dev5/features/all)
     * [Get all features of collection "inside-cube"](http://localhost:8080/xcube/api/0.1.0.dev5/features/inside-cube)
