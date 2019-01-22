@@ -200,7 +200,7 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         else:
             statistics['validCount'] = valid_count
             statistics['average'] = float(mean_ts_var)
-        result = {'result': statistics, 'date': _to_isoformat(mean_ts_var.time.data)}
+        result = {'result': statistics, 'date': _to_isoformat(variable_slice.time.data)}
         time_series.append(result)
 
     return {'results': time_series}
