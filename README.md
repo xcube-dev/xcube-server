@@ -6,7 +6,7 @@
 xcube datasets:
 
 * Catalogue services to query for datasets and their variables and dimensions, and feature collections. 
-* Tile map service, with some OGC WMTS 1.0 compatibility 
+* Tile map service, with some OGC WMTS 1.0 compatibility (REST and KVP APIs)
 * Dataset services to extract subsets like time-series and profiles for e.g. JS clients 
 
 xcube datasets are any datasets that 
