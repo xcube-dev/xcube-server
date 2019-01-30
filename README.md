@@ -33,7 +33,11 @@ The following operations are supported:
 * **GetCapabilities**: `/xcube/wmts/1.0.0/WMTSCapabilities.xml`
 * **GetTile**: `/xcube/wmts/1.0.0/tile/{DatasetName}/{VarName}/{TileMatrix}/{TileCol}/{TileRow}.png`
 * **GetFeatureInfo**: *in progress*
- 
+
+## Explore API of existing xcube-servers
+
+To explore the API of existing xcube-servers go to the [SwaggerHub of bcdev](https://app.swaggerhub.com/apis/bcdev/xcube-server/0.1.0.dev5).
+The SwaggerHub allows to choose the xcube-server project and therefore the datasets which are used for the exploration. 
 
 ## Run the demo
 
