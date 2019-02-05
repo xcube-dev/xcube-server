@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/dcs4cop/xcube-server.svg?branch=master)](https://travis-ci.com/dcs4cop/xcube-server)
+
 # xcube Server
 
 ## Objective
