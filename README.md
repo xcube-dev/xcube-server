@@ -11,6 +11,8 @@ xcube datasets:
 * Tile map service, with some OGC WMTS 1.0 compatibility (REST and KVP APIs)
 * Dataset services to extract subsets like time-series and profiles for e.g. JS clients 
 
+Find its API description [here](https://app.swaggerhub.com/apis-docs/bcdev/xcube-server). 
+
 xcube datasets are any datasets that 
 
 * that comply to [Unidata's CDM](https://www.unidata.ucar.edu/software/thredds/v4.3/netcdf-java/CDM/) and to the [CF Conventions](http://cfconventions.org/); 
