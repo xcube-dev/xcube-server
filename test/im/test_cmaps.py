@@ -19,13 +19,14 @@ class CmapsTest(TestCase):
 
     def test_get_cmaps_categories(self):
         cmaps = get_cmaps()
-        self.assertGreaterEqual(len(cmaps), 6)
+        self.assertGreaterEqual(len(cmaps), 7)
         self.assertEqual(cmaps[0][0], 'Perceptually Uniform Sequential')
         self.assertEqual(cmaps[1][0], 'Sequential 1')
         self.assertEqual(cmaps[2][0], 'Sequential 2')
         self.assertEqual(cmaps[3][0], 'Diverging')
         self.assertEqual(cmaps[4][0], 'Qualitative')
-        self.assertEqual(cmaps[5][0], 'Miscellaneous')
+        self.assertEqual(cmaps[5][0], 'Ocean')
+        self.assertEqual(cmaps[6][0], 'Miscellaneous')
 
     def test_get_cmaps_category_descr(self):
         cmaps = get_cmaps()
@@ -44,6 +45,18 @@ class CmapsTest(TestCase):
         self.assertEqual(category_tuple[1][0], 'inferno')
         self.assertEqual(category_tuple[2][0], 'plasma')
         self.assertEqual(category_tuple[3][0], 'magma')
+
+    def test_cmocean_category(self):
+        cmaps = get_cmaps()
+        category_tuple = cmaps[5][2]
+        self.assertEqual(len(category_tuple), 18)
+        self.assertEqual(category_tuple[0][0], 'thermal')
+        self.assertEqual(category_tuple[0][1],
+                         'iVBORw0KGgoAAAANSUhEUgAAAQAAAAACCAYAAAC3zQLZAAAA2klEQVR4nO2S6xHDMAiDP+FROkL3Xy30RwBju52g8V0OIcnyKxqvtwsD5SfAUPZNE6M4VR2hJTdQeBX6UhlY8xgDY8V24A15pMuIXcQHJo4qwOQYIHlojpT6zWnzqDxRo+/+zFZbR7H2Tx3WvMPf1qDvq+17zz/m7TV97YxHbefEW27ve+7Oe9xZZu3cdXCdr17XokurfvYOcmTXxHJkE2P32ei8eVxww1WJecRlBxZr/cndj+T5MKULbzqm5pnY56MFjnkmPH7cb7xXzvR49RRO3njGM57xt+MDC391Pt11tkYAAAAASUVORK5CYII=')
+
+        self.assertEqual(category_tuple[1][0], 'haline')
+        self.assertEqual(category_tuple[2][0], 'solar')
+        self.assertEqual(category_tuple[3][0], 'ice')
 
 
 def main():

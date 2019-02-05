@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import base64
 import io
 import logging
@@ -26,15 +25,18 @@ from threading import Lock
 
 import matplotlib
 import matplotlib.cm as cm
+import matplotlib.colors
 import numpy as np
 from PIL import Image
-
+import cmocean.cm as ocm    # needs to be kept, because it is used in line 126
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
 
 # Have colormaps separated into categories:
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
+# colormaps for ocean:
+# (taken from https://matplotlib.org/cmocean/)
 
 _CMAPS = (('Perceptually Uniform Sequential',
            'For many applications, a perceptually uniform colormap is the best choice - '
@@ -69,6 +71,12 @@ _CMAPS = (('Perceptually Uniform Sequential',
            'choosing a set of discrete colors.',
            ('Accent', 'Dark2', 'Paired', 'Pastel1',
             'Pastel2', 'Set1', 'Set2', 'Set3')),
+          ('Ocean',
+           'Colormaps for commonly-used oceanographic variables. ',
+           ('thermal', 'haline', 'solar', 'ice', 'gray',
+            'oxy', 'deep', 'dense', 'algae',
+            'matter', 'turbid', 'speed', 'amp', 'tempo',
+            'phase', 'balance', 'delta', 'curl')),
           ('Miscellaneous',
            'Colormaps that don\'t fit into the categories above.',
            ('gist_earth', 'terrain', 'ocean', 'gist_stern',
@@ -97,7 +105,7 @@ def get_cmaps():
 
 def ensure_cmaps_loaded():
     """
-    Loads all color maps from matplotlip and registers additional ones, if not done before.
+    Loads all color maps from matplotlib and registers additional ones, if not done before.
     """
     global _CBARS_LOADED, _CMAPS
     if not _CBARS_LOADED:
@@ -107,13 +115,14 @@ def ensure_cmaps_loaded():
             for cmap_category, cmap_description, cmap_names in _CMAPS:
                 cbar_list = []
                 for cmap_name in cmap_names:
-                    # noinspection PyBroadException
                     try:
-                        cmap = cm.get_cmap(cmap_name)
-                    except Exception:
+                        if cmap_category == 'Ocean':
+                            cmap = getattr(ocm, cmap_name)
+                        else:
+                            cmap = cm.get_cmap(cmap_name)
+                    except ValueError:
                         _LOG.warning('detected invalid colormap "%s"' % cmap_name)
                         continue
-
                     # Add extra colormaps with alpha gradient
                     # see http://matplotlib.org/api/colors_api.html
                     if type(cmap) == matplotlib.colors.LinearSegmentedColormap:
