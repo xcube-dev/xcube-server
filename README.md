@@ -1,4 +1,6 @@
 [![Build Status](https://travis-ci.com/dcs4cop/xcube-server.svg?branch=master)](https://travis-ci.com/dcs4cop/xcube-server)
+[![codecov](https://codecov.io/gh/dcs4cop/xcube-server/branch/master/graph/badge.svg)](https://codecov.io/gh/dcs4cop/xcube-server)
+
 
 # xcube Server
 
