@@ -3,53 +3,71 @@ from typing import Dict
 
 import numpy as np
 
-from xcube_server.controllers.tiles import get_tile_source_options, get_dataset_tile_url, get_or_compute_tile_grid
 from ..context import ServiceContext
+from ..controllers.tiles import get_tile_source_options, get_dataset_tile_url, get_or_compute_tile_grid
 from ..errors import ServiceBadRequestError
 from ..im.cmaps import get_cmaps
+from ..utils import get_dataset_bounds
 
 
-def get_datasets(ctx: ServiceContext) -> Dict:
+def get_datasets(ctx: ServiceContext, deep=False, client=None, base_url: str = None) -> Dict:
     dataset_descriptors = ctx.get_dataset_descriptors()
-    datasets = list()
+
+    dataset_dicts = list()
     for dataset_descriptor in dataset_descriptors:
-        datasets.append(dict(name=dataset_descriptor['Identifier'],
-                             title=dataset_descriptor['Title']))
-    return dict(datasets=datasets)
+        ds_id = dataset_descriptor['Identifier']
+        ds_title = dataset_descriptor['Title']
+        dataset_dicts.append(dict(id=ds_id, title=ds_title))
+
+    if deep:
+        for dataset_dict in dataset_dicts:
+            ds_id = dataset_dict["id"]
+            dataset_dict.update(get_dataset(ctx, ds_id, client, base_url))
+
+    return dict(datasets=dataset_dicts)
 
 
-def get_dataset_variables(ctx: ServiceContext, ds_name: str, client: str, base_url: str) -> Dict:
-    ds = ctx.get_dataset(ds_name)
-    variables = list()
+def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = None) -> Dict:
+    dataset_descriptor = ctx.get_dataset_descriptor(ds_id)
+
+    ds_id = dataset_descriptor['Identifier']
+    ds_title = dataset_descriptor['Title']
+    dataset_dict = dict(id=ds_id, title=ds_title)
+
+    ds = ctx.get_dataset(ds_id)
+    dataset_dict["bbox"] = list(get_dataset_bounds(ds))
+
+    variable_dicts = []
     for var_name in ds.data_vars:
         var = ds.data_vars[var_name]
-        if 'time' not in var.dims or 'lat' not in var.dims or 'lon' not in var.dims:
+        dims = var.dims
+        if len(dims) < 3 or dims[0] != 'time' or dims[-2] != 'lat' or dims[-1] != 'lon':
             continue
-        attrs = var.attrs
-        tile_grid = get_or_compute_tile_grid(ctx, ds_name, var)
-        ol_tile_xyz_source_options = get_tile_source_options(tile_grid,
-                                                             get_dataset_tile_url(ctx, ds_name, var_name, base_url),
-                                                             client)
-        variables.append(dict(id=f'{ds_name}.{var_name}',
-                              name=var_name,
-                              dims=list(var.dims),
-                              shape=list(var.shape),
-                              dtype=str(var.dtype),
-                              units=attrs.get('units', ''),
-                              title=attrs.get('title', attrs.get('long_name', var_name)),
-                              tileSourceOptions=ol_tile_xyz_source_options))
-    attrs = ds.attrs
-    return dict(name=ds_name,
-                title=attrs.get('title', ''),
-                bbox=[attrs.get('geospatial_lon_min', -180),
-                      attrs.get('geospatial_lat_min', -90),
-                      attrs.get('geospatial_lon_max', +180),
-                      attrs.get('geospatial_lat_max', +90)],
-                variables=variables)
+
+        variable_dict = dict(id=f'{ds_id}.{var_name}',
+                             name=var_name,
+                             dims=list(dims),
+                             shape=list(var.shape),
+                             dtype=str(var.dtype),
+                             units=var.attrs.get('units', ''),
+                             title=var.attrs.get('title', var.attrs.get('long_name', var_name)))
+
+        if client is not None:
+            tile_grid = get_or_compute_tile_grid(ctx, ds_id, var)
+            tile_xyz_source_options = get_tile_source_options(tile_grid,
+                                                              get_dataset_tile_url(ctx, ds_id, var_name,
+                                                                                   base_url),
+                                                              client=client)
+            variable_dict["tileSourceOptions"] = tile_xyz_source_options
+        variable_dicts.append(variable_dict)
+
+    dataset_dict["variables"] = variable_dicts
+
+    return dataset_dict
 
 
-def get_dataset_coordinates(ctx: ServiceContext, ds_name: str, dim_name: str) -> Dict:
-    ds, var = ctx.get_dataset_and_coord_variable(ds_name, dim_name)
+def get_dataset_coordinates(ctx: ServiceContext, ds_id: str, dim_name: str) -> Dict:
+    ds, var = ctx.get_dataset_and_coord_variable(ds_id, dim_name)
     values = list()
     if np.issubdtype(var.dtype, np.floating):
         converter = float

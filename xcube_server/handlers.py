@@ -24,7 +24,7 @@ import json
 from tornado.ioloop import IOLoop
 
 from . import __version__, __description__
-from .controllers.catalogue import get_datasets, get_dataset_variables, get_dataset_coordinates, get_color_bars
+from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
 from .controllers.features import find_features, find_dataset_features
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
@@ -80,7 +80,7 @@ class WMTSKvpHandler(ServiceRequestHandler):
                 raise ServiceBadRequestError(f'Value for "version" parameter must be "{_WMTS_VERSION}"')
             layer = self.params.get_query_argument("layer")
             try:
-                ds_name, var_name = layer.split(".")
+                ds_id, var_name = layer.split(".")
             except ValueError as e:
                 raise ServiceBadRequestError('Value for "layer" parameter must be "<dataset>.<variable>"') from e
             # The following parameters are mandatory s prescribed by WMTS spec, but we don't need them
@@ -95,7 +95,7 @@ class WMTSKvpHandler(ServiceRequestHandler):
             tile = await IOLoop.current().run_in_executor(None,
                                                           get_dataset_tile,
                                                           self.service_context,
-                                                          ds_name, var_name,
+                                                          ds_id, var_name,
                                                           x, y, z,
                                                           self.params)
             self.set_header("Content-Type", "image/png")
@@ -133,17 +133,18 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 class GetDatasetsJsonHandler(ServiceRequestHandler):
 
     def get(self):
-        response = get_datasets(self.service_context)
+        deep = bool(int(self.params.get_query_argument('deep', '0')))
+        tile_client = self.params.get_query_argument('tiles', None)
+        response = get_datasets(self.service_context, deep=deep, client=tile_client, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
 
-# noinspection PyAbstractClass
-class GetVariablesJsonHandler(ServiceRequestHandler):
+class GetDatasetJsonHandler(ServiceRequestHandler):
 
-    def get(self, ds_name: str):
-        client = self.params.get_query_argument('client', 'ol4')
-        response = get_dataset_variables(self.service_context, ds_name, client, self.base_url)
+    def get(self, ds_id: str):
+        tile_client = self.params.get_query_argument('tiles', None)
+        response = get_dataset(self.service_context, ds_id, client=tile_client, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
@@ -151,8 +152,8 @@ class GetVariablesJsonHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class GetCoordinatesJsonHandler(ServiceRequestHandler):
 
-    def get(self, ds_name: str, dim_name: str):
-        response = get_dataset_coordinates(self.service_context, ds_name, dim_name)
+    def get(self, ds_id: str, dim_name: str):
+        response = get_dataset_coordinates(self.service_context, ds_id, dim_name)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
@@ -160,11 +161,11 @@ class GetCoordinatesJsonHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass,PyBroadException
 class GetTileDatasetHandler(ServiceRequestHandler):
 
-    async def get(self, ds_name: str, var_name: str, z: str, x: str, y: str):
+    async def get(self, ds_id: str, var_name: str, z: str, x: str, y: str):
         tile = await IOLoop.current().run_in_executor(None,
                                                       get_dataset_tile,
                                                       self.service_context,
-                                                      ds_name, var_name,
+                                                      ds_id, var_name,
                                                       x, y, z,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')
@@ -174,11 +175,11 @@ class GetTileDatasetHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass,PyBroadException
 class GetLegendHandler(ServiceRequestHandler):
 
-    async def get(self, ds_name: str, var_name: str):
+    async def get(self, ds_id: str, var_name: str):
         tile = await IOLoop.current().run_in_executor(None,
                                                       get_legend,
                                                       self.service_context,
-                                                      ds_name, var_name,
+                                                      ds_id, var_name,
                                                       self.params)
         self.set_header('Content-Type', 'image/png')
         self.finish(tile)
@@ -187,9 +188,9 @@ class GetLegendHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class GetTileGridDatasetHandler(ServiceRequestHandler):
 
-    def get(self, ds_name: str, var_name: str, format_name: str):
+    def get(self, ds_id: str, var_name: str, format_name: str):
         response = get_dataset_tile_grid(self.service_context,
-                                         ds_name, var_name,
+                                         ds_id, var_name,
                                          format_name, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
@@ -284,11 +285,11 @@ class FindFeaturesHandler(ServiceRequestHandler):
 class FindDatasetFeaturesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
-    def get(self, collection_name: str, ds_name: str):
+    def get(self, collection_name: str, ds_id: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         response = find_dataset_features(self.service_context,
-                                         collection_name, ds_name,
+                                         collection_name, ds_id,
                                          query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
@@ -316,7 +317,7 @@ class TimeSeriesInfoHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class TimeSeriesForPointHandler(ServiceRequestHandler):
 
-    async def get(self, ds_name: str, var_name: str):
+    async def get(self, ds_id: str, var_name: str):
         lon = self.params.get_query_argument_float('lon')
         lat = self.params.get_query_argument_float('lat')
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
@@ -325,7 +326,7 @@ class TimeSeriesForPointHandler(ServiceRequestHandler):
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_point,
                                                           self.service_context,
-                                                          ds_name, var_name,
+                                                          ds_id, var_name,
                                                           lon, lat,
                                                           start_date, end_date)
         self.set_header('Content-Type', 'application/json')
@@ -335,7 +336,7 @@ class TimeSeriesForPointHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class TimeSeriesForGeometryHandler(ServiceRequestHandler):
 
-    async def post(self, ds_name: str, var_name: str):
+    async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         geometry = self.get_body_as_json_object("GeoJSON geometry")
@@ -343,7 +344,7 @@ class TimeSeriesForGeometryHandler(ServiceRequestHandler):
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_geometry,
                                                           self.service_context,
-                                                          ds_name, var_name,
+                                                          ds_id, var_name,
                                                           geometry,
                                                           start_date, end_date)
         self.set_header('Content-Type', 'application/json')
@@ -353,7 +354,7 @@ class TimeSeriesForGeometryHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class TimeSeriesForGeometriesHandler(ServiceRequestHandler):
 
-    async def post(self, ds_name: str, var_name: str):
+    async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         geometry_collection = self.get_body_as_json_object("GeoJSON geometry collection")
@@ -361,7 +362,7 @@ class TimeSeriesForGeometriesHandler(ServiceRequestHandler):
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_geometry_collection,
                                                           self.service_context,
-                                                          ds_name, var_name,
+                                                          ds_id, var_name,
                                                           geometry_collection,
                                                           start_date, end_date)
         self.set_header('Content-Type', 'application/json')
@@ -371,7 +372,7 @@ class TimeSeriesForGeometriesHandler(ServiceRequestHandler):
 # noinspection PyAbstractClass
 class TimeSeriesForFeaturesHandler(ServiceRequestHandler):
 
-    async def post(self, ds_name: str, var_name: str):
+    async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
         end_date = self.params.get_query_argument_datetime('endDate', default=None)
         feature_collection = self.get_body_as_json_object("GeoJSON feature collection")
@@ -379,7 +380,7 @@ class TimeSeriesForFeaturesHandler(ServiceRequestHandler):
         response = await IOLoop.current().run_in_executor(None,
                                                           get_time_series_for_feature_collection,
                                                           self.service_context,
-                                                          ds_name, var_name,
+                                                          ds_id, var_name,
                                                           feature_collection,
                                                           start_date, end_date)
         self.set_header('Content-Type', 'application/json')

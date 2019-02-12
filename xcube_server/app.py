@@ -31,10 +31,10 @@ from xcube_server.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, D
     DEFAULT_CONFIG_FILE, API_PREFIX
 from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
     GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
-    GetDatasetsJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler, GetVariablesJsonHandler, \
+    GetDatasetsJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler, \
     GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler, WMTSKvpHandler, \
     TimeSeriesForGeometryHandler, TimeSeriesForFeaturesHandler, TimeSeriesForGeometriesHandler, \
-    GetFeatureCollectionsHandler, GetLegendHandler
+    GetFeatureCollectionsHandler, GetLegendHandler, GetDatasetJsonHandler
 from xcube_server.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -47,26 +47,26 @@ def new_application(name: str=DEFAULT_NAME):
         (prefix + url_pattern('/'), InfoHandler),
         (prefix + url_pattern('/wmts/kvp'), WMTSKvpHandler),
         (prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'), GetWMTSCapabilitiesXmlHandler),
-        (prefix + url_pattern('/wmts/1.0.0/tile/{{ds_name}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
+        (prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
          GetTileDatasetHandler),
-        (prefix + url_pattern('/tile/{{ds_name}}/{{var_name}}/{{z}}/{{x}}/{{y}}.png'), GetTileDatasetHandler),
+        (prefix + url_pattern('/tile/{{ds_id}}/{{var_name}}/{{z}}/{{x}}/{{y}}.png'), GetTileDatasetHandler),
         (prefix + url_pattern('/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), GetTileNE2Handler),
-        (prefix + url_pattern('/tilegrid/{{ds_name}}/{{var_name}}/{{format_name}}'), GetTileGridDatasetHandler),
+        (prefix + url_pattern('/tilegrid/{{ds_id}}/{{var_name}}/{{format_name}}'), GetTileGridDatasetHandler),
         (prefix + url_pattern('/tilegrid/ne2/{{format_name}}'), GetTileGridNE2Handler),
         (prefix + url_pattern('/datasets'), GetDatasetsJsonHandler),
-        (prefix + url_pattern('/variables/{{ds_name}}'), GetVariablesJsonHandler),
-        (prefix + url_pattern('/coords/{{ds_name}}/{{dim_name}}'), GetCoordinatesJsonHandler),
-        (prefix + url_pattern('/legend/{{ds_name}}/{{var_name}}.png'), GetLegendHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}'), GetDatasetJsonHandler),
+        (prefix + url_pattern('/coords/{{ds_id}}/{{dim_name}}'), GetCoordinatesJsonHandler),
+        (prefix + url_pattern('/legend/{{ds_id}}/{{var_name}}.png'), GetLegendHandler),
         (prefix + url_pattern('/colorbars'), GetColorBarsJsonHandler),
         (prefix + url_pattern('/colorbars.html'), GetColorBarsHtmlHandler),
         (prefix + url_pattern('/ts'), TimeSeriesInfoHandler),
-        (prefix + url_pattern('/ts/{{ds_name}}/{{var_name}}/point'), TimeSeriesForPointHandler),
-        (prefix + url_pattern('/ts/{{ds_name}}/{{var_name}}/geometry'), TimeSeriesForGeometryHandler),
-        (prefix + url_pattern('/ts/{{ds_name}}/{{var_name}}/geometries'), TimeSeriesForGeometriesHandler),
-        (prefix + url_pattern('/ts/{{ds_name}}/{{var_name}}/features'), TimeSeriesForFeaturesHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/point'), TimeSeriesForPointHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometry'), TimeSeriesForGeometryHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'), TimeSeriesForGeometriesHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/features'), TimeSeriesForFeaturesHandler),
         (prefix + url_pattern('/features'), GetFeatureCollectionsHandler),
         (prefix + url_pattern('/features/{{collection_name}}'), FindFeaturesHandler),
-        (prefix + url_pattern('/features/{{collection_name}}/{{ds_name}}'), FindDatasetFeaturesHandler),
+        (prefix + url_pattern('/features/{{collection_name}}/{{ds_id}}'), FindDatasetFeaturesHandler),
     ])
     return application
 

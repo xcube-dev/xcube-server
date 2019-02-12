@@ -112,17 +112,17 @@ class ServiceContext:
             raise ServiceConfigError(f"No datasets configured")
         return dataset_descriptors
 
-    def get_dataset_descriptor(self, ds_name: str) -> Dict[str, str]:
+    def get_dataset_descriptor(self, ds_id: str) -> Dict[str, str]:
         dataset_descriptors = self.get_dataset_descriptors()
         if not dataset_descriptors:
             raise ServiceConfigError(f"No datasets configured")
-        dataset_descriptor = self.find_dataset_descriptor(dataset_descriptors, ds_name)
+        dataset_descriptor = self.find_dataset_descriptor(dataset_descriptors, ds_id)
         if dataset_descriptor is None:
-            raise ServiceResourceNotFoundError(f'Dataset "{ds_name}" not found')
+            raise ServiceResourceNotFoundError(f'Dataset "{ds_id}" not found')
         return dataset_descriptor
 
-    def get_color_mapping(self, ds_name: str, var_name: str):
-        dataset_descriptor = self.get_dataset_descriptor(ds_name)
+    def get_color_mapping(self, ds_id: str, var_name: str):
+        dataset_descriptor = self.get_dataset_descriptor(ds_id)
         style_name = dataset_descriptor.get('Style', 'default')
         styles = self.config.get('Styles')
         if styles:
@@ -140,18 +140,18 @@ class ServiceContext:
                         cmap_cbar = color_mapping.get('ColorBar', DEFAULT_CMAP_CBAR)
                         cmap_vmin, cmap_vmax = color_mapping.get('ValueRange', (DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX))
                         return cmap_cbar, cmap_vmin, cmap_vmax
-        _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_name!r} undefined: using defaults')
+        _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
         return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
 
-    def get_dataset(self, ds_name: str) -> xr.Dataset:
-        if ds_name in self.dataset_cache:
-            ds, _, _ = self.dataset_cache[ds_name]
+    def get_dataset(self, ds_id: str) -> xr.Dataset:
+        if ds_id in self.dataset_cache:
+            ds, _, _ = self.dataset_cache[ds_id]
         else:
-            dataset_descriptor = self.get_dataset_descriptor(ds_name)
+            dataset_descriptor = self.get_dataset_descriptor(ds_id)
 
             path = dataset_descriptor.get('Path')
             if not path:
-                raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_name}")
+                raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
 
             t1 = time.clock()
 
@@ -159,7 +159,7 @@ class ServiceContext:
             if fs_type == 'obs':
                 data_format = dataset_descriptor.get('Format', 'zarr')
                 if data_format != 'zarr':
-                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
+                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
                 client_kwargs = {}
                 if 'Endpoint' in dataset_descriptor:
                     client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
@@ -181,7 +181,7 @@ class ServiceContext:
                     with log_time(f"opened local zarr dataset {path}"):
                         ds = xr.open_zarr(path)
                 else:
-                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_name!r}")
+                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
             elif fs_type == 'computed':
                 if not os.path.isabs(path):
                     path = os.path.join(self.base_dir, path)
@@ -193,17 +193,17 @@ class ServiceContext:
                 try:
                     exec(python_code, global_env, local_env)
                 except Exception as e:
-                    raise ServiceError(f"Failed to compute dataset {ds_name!r} from {path!r}: {e}") from e
+                    raise ServiceError(f"Failed to compute dataset {ds_id!r} from {path!r}: {e}") from e
 
                 callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
                 callable_args = dataset_descriptor.get('Args', [])
 
                 callable_obj = local_env.get(callable_name)
                 if callable_obj is None:
-                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_name!r}: "
+                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                              f"no callable named {callable_name!r} found in {path!r}")
                 elif not callable(callable_obj):
-                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_name!r}: "
+                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                              f"object {callable_name!r} in {path!r} is not callable")
 
                 args = list()
@@ -212,7 +212,7 @@ class ServiceContext:
                             and arg_value.startswith('@') and arg_value.endswith('@'):
                         ref_ds_name = arg_value[1:-1]
                         if not self.get_dataset_descriptor(ref_ds_name):
-                            raise ServiceConfigError(f"Invalid dataset descriptor {ds_name!r}: "
+                            raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                                      f"argument {arg_value!r} of callable {callable_name!r} "
                                                      f"must reference another dataset")
                         args.append(self.get_dataset(ref_ds_name))
@@ -220,25 +220,25 @@ class ServiceContext:
                         args.append(arg_value)
 
                 try:
-                    with log_time(f"created computed dataset {ds_name}"):
+                    with log_time(f"created computed dataset {ds_id}"):
                         ds = callable_obj(*args)
                 except Exception as e:
-                    raise ServiceError(f"Failed to compute dataset {ds_name!r} "
+                    raise ServiceError(f"Failed to compute dataset {ds_id!r} "
                                        f"from function {callable_name!r} in {path!r}: {e}") from e
                 if not isinstance(ds, xr.Dataset):
-                    raise ServiceError(f"Failed to compute dataset {ds_name!r} "
+                    raise ServiceError(f"Failed to compute dataset {ds_id!r} "
                                        f"from function {callable_name!r} in {path!r}: "
                                        f"expected an xarray.Dataset but got a {type(ds)}")
             else:
-                raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_name!r}")
+                raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
 
             tile_grid_cache = dict()
-            self.dataset_cache[ds_name] = ds, dataset_descriptor, tile_grid_cache
+            self.dataset_cache[ds_id] = ds, dataset_descriptor, tile_grid_cache
 
             t2 = time.clock()
 
             if TRACE_PERF:
-                print(f'PERF: opening {ds_name!r} took {t2-t1} seconds')
+                print(f'PERF: opening {ds_id!r} took {t2-t1} seconds')
 
         return ds
 
