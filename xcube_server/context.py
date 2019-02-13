@@ -42,7 +42,7 @@ from .logtime import log_time
 from .reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
-ALL_FEATURES = "all"
+ALL_PLACES = "all"
 
 _LOG = logging.getLogger('xcube')
 
@@ -72,7 +72,8 @@ class ServiceContext:
                                         threshold=0.75)
         else:
             self.rgb_tile_cache = None
-        self._feature_collection_cache = dict()
+        self._place_group_cache = dict()
+        self._feature_index = 0
 
     @property
     def config(self) -> Config:
@@ -112,7 +113,7 @@ class ServiceContext:
             raise ServiceConfigError(f"No datasets configured")
         return dataset_descriptors
 
-    def get_dataset_descriptor(self, ds_id: str) -> Dict[str, str]:
+    def get_dataset_descriptor(self, ds_id: str) -> Dict[str, Any]:
         dataset_descriptors = self.get_dataset_descriptors()
         if not dataset_descriptors:
             raise ServiceConfigError(f"No datasets configured")
@@ -238,7 +239,7 @@ class ServiceContext:
             t2 = time.clock()
 
             if TRACE_PERF:
-                print(f'PERF: opening {ds_id!r} took {t2-t1} seconds')
+                print(f'PERF: opening {ds_id!r} took {t2 - t1} seconds')
 
         return ds
 
@@ -250,50 +251,102 @@ class ServiceContext:
             return units
         raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
 
-    def get_feature_collections(self) -> List[Dict]:
-        features_configs = self._config.get("Features", [])
-        feature_collections = []
-        for features_config in features_configs:
-            feature_collections.append(dict(id=features_config.get("Identifier"),
-                                            title=features_config.get("Title")))
-        return feature_collections
+    def get_place_groups(self) -> List[Dict]:
+        place_group_configs = self._config.get("PlaceGroups", [])
+        place_groups = []
+        for features_config in place_group_configs:
+            place_groups.append(dict(id=features_config.get("Identifier"),
+                                     title=features_config.get("Title")))
+        return place_groups
 
-    def get_feature_collection(self, collection_name: str = ALL_FEATURES) -> Dict:
-        if ALL_FEATURES not in self._feature_collection_cache:
-            features_configs = self._config.get("Features", [])
+    def get_dataset_place_groups(self, ds_id: str) -> List[Dict]:
+        dataset_descriptor = self.get_dataset_descriptor(ds_id)
+        place_group_configs = dataset_descriptor.get("PlaceGroups")
+        if not place_group_configs:
+            return []
+
+        place_group_id_prefix = f"DS-{ds_id}-"
+
+        place_groups = []
+        for k, v in self._place_group_cache.items():
+            if k.startswith(place_group_id_prefix):
+                place_groups.append(v)
+        if place_groups:
+            return place_groups
+
+        place_groups = self._load_place_groups(place_group_configs)
+        for place_group in place_groups:
+            self._place_group_cache[place_group_id_prefix + place_group["id"]] = place_group
+
+        return place_groups
+
+    def get_place_group(self, place_group_id: str = ALL_PLACES) -> Dict:
+        if ALL_PLACES not in self._place_group_cache:
+            place_group_configs = self._config.get("PlaceGroups", [])
+            place_groups = self._load_place_groups(place_group_configs)
+
             all_features = []
-            feature_index = 0
-            for features_config in features_configs:
-                curr_collection_name = features_config.get("Identifier")
-                if not curr_collection_name:
-                    raise ServiceError("Missing 'Identifier' entry in 'Features'")
-                if curr_collection_name == ALL_FEATURES:
-                    raise ServiceError("Invalid 'Identifier' entry in 'Features'")
-                curr_collection_wc = features_config.get("Path")
-                if not curr_collection_wc:
-                    raise ServiceError("Missing 'Path' entry in 'Features'")
-                if not os.path.isabs(curr_collection_wc):
-                    curr_collection_wc = os.path.join(self.base_dir, curr_collection_wc)
+            for place_group in place_groups:
+                all_features.extend(place_group["features"])
+                self._place_group_cache[place_group["id"]] = place_group
 
-                features = []
-                collection_files = glob.glob(curr_collection_wc)
-                for collection_file in collection_files:
-                    with fiona.open(collection_file) as feature_collection:
-                        for feature in feature_collection:
-                            self._remove_feature_id(feature)
-                            feature["id"] = str(feature_index)
-                            feature_index += 1
-                            features.append(feature)
-                self._feature_collection_cache[curr_collection_name] = dict(type="FeatureCollection",
-                                                                            features=features)
-                all_features.extend(features)
+            self._place_group_cache[ALL_PLACES] = dict(type="FeatureCollection", features=all_features)
 
-            self._feature_collection_cache[ALL_FEATURES] = dict(type="FeatureCollection",
-                                                                features=all_features)
+        if place_group_id not in self._place_group_cache:
+            raise ServiceResourceNotFoundError(f'Place group "{place_group_id}" not found')
 
-        if collection_name not in self._feature_collection_cache:
-            raise ServiceResourceNotFoundError(f'Feature collection "{collection_name}" not found')
-        return self._feature_collection_cache[collection_name]
+        return self._place_group_cache[place_group_id]
+
+    def _load_place_groups(self, place_group_configs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        place_groups = []
+        for place_group_config in place_group_configs:
+            place_group = self._load_place_group(place_group_config)
+            place_groups.append(place_group)
+        return place_groups
+
+    def _load_place_group(self, place_group_config: Dict[str, Any]) -> Dict[str, Any]:
+        ref_id = place_group_config.get("PlaceGroupRef")
+        if ref_id:
+            # Trigger loading of all global "PlaceGroup" entries
+            self.get_place_group()
+            if len(place_group_config) > 1:
+                raise ServiceError("'PlaceGroupRef' if present, must be the only entry in a 'PlaceGroups' item")
+            if ref_id not in self._place_group_cache:
+                raise ServiceError("Invalid 'PlaceGroupRef' entry in a 'PlaceGroups' item")
+            return self._place_group_cache[ref_id]
+
+        place_group_id = place_group_config.get("Identifier")
+        if not place_group_id:
+            raise ServiceError("Missing 'Identifier' entry in a 'PlaceGroups' item")
+        if place_group_id == ALL_PLACES:
+            raise ServiceError("Invalid 'Identifier' entry in a 'PlaceGroups' item")
+
+        place_group_title = place_group_config.get("Title", place_group_id)
+
+        place_path_wc = place_group_config.get("Path")
+        if not place_path_wc:
+            raise ServiceError("Missing 'Path' entry in a 'PlaceGroups' item")
+        if not os.path.isabs(place_path_wc):
+            place_path_wc = os.path.join(self.base_dir, place_path_wc)
+
+        features = []
+        collection_files = glob.glob(place_path_wc)
+        for collection_file in collection_files:
+            with fiona.open(collection_file) as feature_collection:
+                for feature in feature_collection:
+                    self._remove_feature_id(feature)
+                    feature["id"] = str(self._feature_index)
+                    self._feature_index += 1
+                    features.append(feature)
+
+        place_group = dict(type="FeatureCollection", features=features, id=place_group_id, title=place_group_title)
+
+        sub_place_group_configs = place_group_config.get("Places")
+        if sub_place_group_configs:
+            sub_place_groups = self._load_place_groups(sub_place_group_configs)
+            place_group["placeGroups"] = sub_place_groups
+
+        return place_group
 
     @classmethod
     def _remove_feature_id(cls, feature: Dict):

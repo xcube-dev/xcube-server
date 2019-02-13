@@ -31,10 +31,10 @@ from xcube_server.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, D
     DEFAULT_CONFIG_FILE, API_PREFIX
 from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
     GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
-    GetDatasetsJsonHandler, FindFeaturesHandler, FindDatasetFeaturesHandler, \
+    GetDatasetsJsonHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
     GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler, WMTSKvpHandler, \
     TimeSeriesForGeometryHandler, TimeSeriesForFeaturesHandler, TimeSeriesForGeometriesHandler, \
-    GetFeatureCollectionsHandler, GetLegendHandler, GetDatasetJsonHandler
+    GetPlaceGroupsHandler, GetLegendHandler, GetDatasetJsonHandler
 from xcube_server.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
@@ -63,10 +63,10 @@ def new_application(name: str=DEFAULT_NAME):
         (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/point'), TimeSeriesForPointHandler),
         (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometry'), TimeSeriesForGeometryHandler),
         (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'), TimeSeriesForGeometriesHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/features'), TimeSeriesForFeaturesHandler),
-        (prefix + url_pattern('/features'), GetFeatureCollectionsHandler),
-        (prefix + url_pattern('/features/{{collection_name}}'), FindFeaturesHandler),
-        (prefix + url_pattern('/features/{{collection_name}}/{{ds_id}}'), FindDatasetFeaturesHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/places'), TimeSeriesForFeaturesHandler),
+        (prefix + url_pattern('/places'), GetPlaceGroupsHandler),
+        (prefix + url_pattern('/places/{{collection_name}}'), FindPlacesHandler),
+        (prefix + url_pattern('/places/{{collection_name}}/{{ds_id}}'), FindDatasetPlacesHandler),
     ])
     return application
 

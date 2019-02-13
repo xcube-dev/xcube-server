@@ -78,6 +78,10 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
 
     dataset_dict["variables"] = variable_dicts
 
+    place_groups = ctx.get_dataset_place_groups(ds_id)
+    if place_groups:
+        dataset_dict["placeGroups"] = place_groups
+
     return dataset_dict
 
 

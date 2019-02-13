@@ -1,31 +1,31 @@
 Datasets:
   - Identifier: local
     Title: "Local HIGHROC OLCI L2C cube for region SNS"
+    BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: "local"
     Path: "cube.nc"
     #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
     #Format: zarr
     Style: default
-    Places:
-      - Identifier: cube-box
-        BBox: [0, 50, 2, 52]
-        Places:
-        - RefId: inside-cube
-      - RefId: outside-cube
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
+
 #    # CyanoAlert Places
-#    BoundingBox: [0, 50, 2, 52]
-#    Places:
+#    BoundingBox: [0, 50, 5, 52.5]
+#    PlaceGroups:
 #      - Identifier: region
-#        Path: "features/germany.geojson"
+#        Path: "places/germany.geojson"
 #        Places:
 #        - Identifier: lakes
-#          Path: "features/germany/lakes.geojson"
+#          Path: "places/germany/lakes.geojson"
 #          Places:
 #          -  Identifier: stations
-#             Path: "features/germany/lakes/${LAKE_ID}-stations.geojson"
+#             Path: "places/germany/lakes/${LAKE_ID}-stations.geojson"
 
 #  - Identifier: remote
 #    Title: "Remote HIGHROC OLCI L2C cube for region SNS"
+#    BoundingBox: [0.0, 50, 5.0, 52.5]
 #    Endpoint: "http://obs.eu-de.otc.t-systems.com"
 #    Path: "dcs4cop-obs-01/OLCI-SNS-RAW-CUBE-2.zarr"
 #    FileSystem: "obs"
@@ -34,28 +34,24 @@ Datasets:
 
   - Identifier: computed
     Title: "Computed HIGHROC OLCI weekly L3 cube for region SNS"
+    BoundingBox: [0.0, 50, 5.0, 52.5]
     FileSystem: "computed"
     Path: "resample_in_time.py"
     Function: "compute_dataset"
     #Args: ["@remote@", "1W"]
     Args: ["@local@", "1W"]
     Style: default
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
 
-Features:
+PlaceGroups:
   - Identifier: inside-cube
     Title: Points inside the cube
-    Path: "features/inside-cube.geojson"
+    Path: "places/inside-cube.geojson"
   - Identifier: outside-cube
     Title: Points outside the cube
-    Path: "features/outside-cube.geojson"
-
-Places:
-  - Identifier: inside-cube
-    Title: Points inside the cube
-    Path: "features/inside-cube.geojson"
-  - Identifier: outside-cube
-    Title: Points outside the cube
-    Path: "features/outside-cube.geojson"
+    Path: "places/outside-cube.geojson"
 
 Styles:
   - Identifier: default

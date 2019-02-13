@@ -151,9 +151,9 @@ class GeoJSON:
     def get_feature_collection_features(cls, obj: Any) -> Optional[List[Dict]]:
         type_name = cls.get_type_name(obj)
         if type_name == cls.FEATURE_COLLECTION_TYPE:
-            if "features" not in obj:
+            if "places" not in obj:
                 return None
-            features = obj["features"]
+            features = obj["places"]
             if features is None:
                 return []
             if isinstance(features, list):

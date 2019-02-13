@@ -25,7 +25,7 @@ from tornado.ioloop import IOLoop
 
 from . import __version__, __description__
 from .controllers.catalogue import get_datasets, get_dataset_coordinates, get_color_bars, get_dataset
-from .controllers.features import find_features, find_dataset_features
+from .controllers.places import find_places, find_dataset_places
 from .controllers.tiles import get_dataset_tile, get_dataset_tile_grid, get_ne2_tile, get_ne2_tile_grid, get_legend
 from .controllers.time_series import get_time_series_info, get_time_series_for_point, get_time_series_for_geometry, \
     get_time_series_for_geometry_collection, get_time_series_for_feature_collection
@@ -241,17 +241,17 @@ class GetColorBarsHtmlHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetFeatureCollectionsHandler(ServiceRequestHandler):
+class GetPlaceGroupsHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
     def get(self):
-        response = self.service_context.get_feature_collections()
+        response = self.service_context.get_place_groups()
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass
-class FindFeaturesHandler(ServiceRequestHandler):
+class FindPlacesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
     def get(self, collection_name: str):
@@ -261,10 +261,10 @@ class FindFeaturesHandler(ServiceRequestHandler):
         comb_op = self.params.get_query_argument("comb", "and")
         if geom_wkt and box_coords:
             raise ServiceBadRequestError('Only one of "geom" and "bbox" may be given')
-        response = find_features(self.service_context,
-                                 collection_name,
-                                 geom_wkt=geom_wkt, box_coords=box_coords,
-                                 query_expr=query_expr, comb_op=comb_op)
+        response = find_places(self.service_context,
+                               collection_name,
+                               geom_wkt=geom_wkt, box_coords=box_coords,
+                               query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
@@ -273,24 +273,24 @@ class FindFeaturesHandler(ServiceRequestHandler):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
         geojson_obj = self.get_body_as_json_object()
-        response = find_features(self.service_context,
-                                 collection_name,
-                                 geojson_obj=geojson_obj,
-                                 query_expr=query_expr, comb_op=comb_op)
+        response = find_places(self.service_context,
+                               collection_name,
+                               geojson_obj=geojson_obj,
+                               query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass
-class FindDatasetFeaturesHandler(ServiceRequestHandler):
+class FindDatasetPlacesHandler(ServiceRequestHandler):
 
     # noinspection PyShadowingBuiltins
     def get(self, collection_name: str, ds_id: str):
         query_expr = self.params.get_query_argument("query", None)
         comb_op = self.params.get_query_argument("comb", "and")
-        response = find_dataset_features(self.service_context,
-                                         collection_name, ds_id,
-                                         query_expr=query_expr, comb_op=comb_op)
+        response = find_dataset_places(self.service_context,
+                                       collection_name, ds_id,
+                                       query_expr=query_expr, comb_op=comb_op)
         self.set_header('Content-Type', "application/json")
         self.write(json.dumps(response, indent=2))
 

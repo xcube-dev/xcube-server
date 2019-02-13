@@ -22,8 +22,8 @@ tags:
     description: Tiles API
   - name: time-series
     description: Time-series API
-  - name: features
-    description: Features API
+  - name: places
+    description: Places API
 paths:
   '/datasets':
     get:
@@ -345,10 +345,10 @@ paths:
         '500':
           description: Unexpected error.
 
-  '/features':
+  '/places':
     get:
       tags:
-        - features
+        - places
       summary: Get feature collections
       operationId: getFeatureCollections
       description: |
@@ -357,17 +357,17 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/FeatureCollectionInfos'
-  '/features/{collection}':
+  '/places/{collection}':
     get:
       tags:
-        - features
-      summary: Find features
-      operationId: findFeatures
+        - places
+      summary: Find places
+      operationId: findPlaces
       description: |
-        Find all features in given collection matching the given geometry and/or query expression.
-        The collection named "all" represents all available features.
+        Find all places in given collection matching the given geometry and/or query expression.
+        The collection named "all" represents all available places.
         Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
-        Returns a FeatureCollection which may be empty.
+        Returns a GeoJSON FeatureCollection which may be empty.
 
       parameters:
         - $ref: '#/components/parameters/collection'
@@ -382,15 +382,15 @@ paths:
           description: Resource not found.
     post:
       tags:
-        - features
-      summary: Find features
-      operationId: findFeaturesForGeoJSON
+        - places
+      summary: Find places
+      operationId: findPlacesForGeoJSON
       description: |
-        Find features in given collection matching the query expression and/or the geometry passed as a GeoJSON request.
-        The collection named "all" represents all available features.
+        Find places in given collection matching the query expression and/or the geometry passed as a GeoJSON request.
+        The collection named "all" represents all available places.
         If a GeoJSON FeatureCollection object is passed, only the first feature's geometry is used.
         Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
-        Returns a FeatureCollection which may be empty.
+        Returns a GeoJSON FeatureCollection which may be empty.
       parameters:
         - $ref: '#/components/parameters/collection'
         - $ref: '#/components/parameters/expr'
@@ -401,15 +401,15 @@ paths:
         '200':
           $ref: '#/components/responses/GeoJsonFeatureCollection'
 
-  '/features/{collection}/{dataset}':
+  '/places/{collection}/{dataset}':
     get:
       tags:
-        - features
-      summary: Find features for dataset
-      operationId: findFeatures
+        - places
+      summary: Find places for dataset
+      operationId: findPlacesForDataset
       description: |
-        Find all features in given collection matching the given geometry and/or query expression.
-        The collection named "all" represents all available features.
+        Find all places in given collection matching the given geometry and/or query expression.
+        The collection named "all" represents all available places.
         Only one of "bounds" or "geom" parameters may be given to specify the query geometry.
         Returns a FeatureCollection which may be empty.
 
@@ -429,7 +429,7 @@ components:
     collection:
       name: collection
       in: path
-      description: Feature collection name.
+      description: Place collection name.
       required: true
       schema:
         type: string
@@ -786,7 +786,7 @@ components:
       - type: object
         required:
           - type
-          - features
+          - places
         properties:
           type:
             type: string
