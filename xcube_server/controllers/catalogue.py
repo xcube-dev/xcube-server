@@ -16,8 +16,23 @@ def get_datasets(ctx: ServiceContext, deep=False, client=None, base_url: str = N
     dataset_dicts = list()
     for dataset_descriptor in dataset_descriptors:
         ds_id = dataset_descriptor['Identifier']
-        ds_title = dataset_descriptor['Title']
-        dataset_dicts.append(dict(id=ds_id, title=ds_title))
+        dataset_dict = dict(id=ds_id)
+
+        if 'Title' in dataset_descriptor:
+            ds_title = dataset_descriptor['Title']
+            if ds_title and isinstance(ds_title, str):
+                dataset_dict['title'] = ds_title
+            else:
+                dataset_dict['title'] = ds_id
+
+        if 'BoundingBox' in dataset_descriptor:
+            ds_bbox = dataset_descriptor['BoundingBox']
+            if ds_bbox \
+                    and len(ds_bbox) == 4 \
+                    and all(map(lambda c: isinstance(c, float) or isinstance(c, int), ds_bbox)):
+                dataset_dict['bbox'] = ds_bbox
+
+        dataset_dicts.append(dataset_dict)
 
     if deep:
         for dataset_dict in dataset_dicts:

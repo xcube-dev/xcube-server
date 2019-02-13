@@ -6,6 +6,23 @@ Datasets:
     #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
     #Format: zarr
     Style: default
+    Places:
+      - Identifier: cube-box
+        BBox: [0, 50, 2, 52]
+        Places:
+        - RefId: inside-cube
+      - RefId: outside-cube
+#    # CyanoAlert Places
+#    BoundingBox: [0, 50, 2, 52]
+#    Places:
+#      - Identifier: region
+#        Path: "features/germany.geojson"
+#        Places:
+#        - Identifier: lakes
+#          Path: "features/germany/lakes.geojson"
+#          Places:
+#          -  Identifier: stations
+#             Path: "features/germany/lakes/${LAKE_ID}-stations.geojson"
 
 #  - Identifier: remote
 #    Title: "Remote HIGHROC OLCI L2C cube for region SNS"
@@ -25,6 +42,14 @@ Datasets:
     Style: default
 
 Features:
+  - Identifier: inside-cube
+    Title: Points inside the cube
+    Path: "features/inside-cube.geojson"
+  - Identifier: outside-cube
+    Title: Points outside the cube
+    Path: "features/outside-cube.geojson"
+
+Places:
   - Identifier: inside-cube
     Title: Points inside the cube
     Path: "features/inside-cube.geojson"
