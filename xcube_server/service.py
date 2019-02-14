@@ -214,7 +214,11 @@ class ServiceRequestHandler(RequestHandler):
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
-        self.set_header('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS')
+        self.set_header('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS')
+
+    def options(self):
+        self.set_status(204)
+        self.finish()
 
     def get_body_as_json_object(self, name="JSON object"):
         """ Get the body argument as JSON object. """
