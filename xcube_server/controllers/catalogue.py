@@ -83,6 +83,7 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
         variable_dicts.append(variable_dict)
 
     dataset_dict["variables"] = variable_dicts
+    dataset_dict["times"] = get_dataset_coordinates(ctx, ds_id, "time")
 
     place_groups = ctx.get_dataset_place_groups(ds_id)
     if place_groups:
