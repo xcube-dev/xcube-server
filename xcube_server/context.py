@@ -329,6 +329,8 @@ class ServiceContext:
         if not os.path.isabs(place_path_wc):
             place_path_wc = os.path.join(self.base_dir, place_path_wc)
 
+        propertyMapping = place_group_config.get("PropertyMapping")
+
         features = []
         collection_files = glob.glob(place_path_wc)
         for collection_file in collection_files:
@@ -339,7 +341,11 @@ class ServiceContext:
                     self._feature_index += 1
                     features.append(feature)
 
-        place_group = dict(type="FeatureCollection", features=features, id=place_group_id, title=place_group_title)
+        place_group = dict(type="FeatureCollection",
+                           features=features,
+                           id=place_group_id,
+                           title=place_group_title,
+                           propertyMapping=propertyMapping)
 
         sub_place_group_configs = place_group_config.get("Places")
         if sub_place_group_configs:
