@@ -330,11 +330,12 @@ class ServiceContext:
             place_path_wc = os.path.join(self.base_dir, place_path_wc)
 
         propertyMapping = place_group_config.get("PropertyMapping")
+        characterEncoding = place_group_config.get("CharacterEncoding", "utf-8")
 
         features = []
         collection_files = glob.glob(place_path_wc)
         for collection_file in collection_files:
-            with fiona.open(collection_file) as feature_collection:
+            with fiona.open(collection_file, encoding=characterEncoding) as feature_collection:
                 for feature in feature_collection:
                     self._remove_feature_id(feature)
                     feature["id"] = str(self._feature_index)

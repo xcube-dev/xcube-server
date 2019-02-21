@@ -49,7 +49,9 @@ Datasets:
 PlaceGroups:
   - Identifier: Sweden_SE_Lakes
     Title: "Svenska Sj\u00f6arna"
-    Path: "places/Sweden-Lakes.geojson"
+    # Path: "places/Sweden-Lakes.geojson"
+    Path: "C:\\Users\\Norman\\PycharmProjects\\cyanoalert-regions\\input\\L2_Sweden\\L2C_LakesSE\\Selected_Monitoring_Lakes_wgs84.shp"
+    CharacterEncoding: utf-8
     PropertyMapping:
       label: "SJONAMN"
       infoUrl: "URL_VISS"
