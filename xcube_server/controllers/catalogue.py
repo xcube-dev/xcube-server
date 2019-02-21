@@ -83,7 +83,9 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
         variable_dicts.append(variable_dict)
 
     dataset_dict["variables"] = variable_dicts
-    dataset_dict["times"] = get_dataset_coordinates(ctx, ds_id, "time")
+
+    dim_names = ds.data_vars[list(ds.data_vars)[0]].dims if len(ds.data_vars) > 0 else ds.dims.keys()
+    dataset_dict["dimensions"] = [get_dataset_coordinates(ctx, ds_id, dim_name) for dim_name in dim_names]
 
     place_groups = ctx.get_dataset_place_groups(ds_id)
     if place_groups:
@@ -104,8 +106,9 @@ def get_dataset_coordinates(ctx: ServiceContext, ds_id: str, dim_name: str) -> D
     for value in var.values:
         values.append(converter(value))
     return dict(name=dim_name,
+                size=len(values),
                 dtype=str(var.dtype),
-                values=values)
+                coordinates=values)
 
 
 # noinspection PyUnusedLocal
