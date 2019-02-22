@@ -1,22 +1,22 @@
+import io
 import time
 from typing import Dict, Any
 
 import matplotlib
 import matplotlib.cm as cm
-import matplotlib.colors
 import matplotlib.colorbar
+import matplotlib.colors
+import matplotlib.figure
 import numpy as np
 import xarray as xr
-import io
-import matplotlib.figure
 
-from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
-from ..ne2 import NaturalEarth2Image
-from ..utils import compute_tile_grid
 from ..context import ServiceContext
 from ..defaults import TRACE_PERF, DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
+from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
+from ..ne2 import NaturalEarth2Image
 from ..reqparams import RequestParams
+from ..utils import compute_tile_grid
 
 
 def get_dataset_tile(ctx: ServiceContext,
@@ -168,24 +168,22 @@ def get_legend(ctx: ServiceContext,
 def get_dataset_tile_grid(ctx: ServiceContext,
                           ds_id: str,
                           var_name: str,
-                          format_name: str,
+                          tile_client: str,
                           base_url: str) -> Dict[str, Any]:
     dataset, variable = ctx.get_dataset_and_variable(ds_id, var_name)
     tile_grid = get_tile_grid(ctx, ds_id, var_name, variable)
-    if format_name == 'ol4' or format_name == 'cesium':
+    if tile_client == 'ol4' or tile_client == 'cesium':
         return get_tile_source_options(tile_grid,
                                        get_dataset_tile_url(ctx, ds_id, var_name, base_url),
-                                       client=format_name)
+                                       client=tile_client)
     else:
-        raise ServiceBadRequestError(f'Unknown tile schema format "{format_name}"')
+        raise ServiceBadRequestError(f'Unknown tile client "{tile_client}"')
 
 
-# noinspection PyMethodMayBeStatic
 def get_dataset_tile_url(ctx: ServiceContext, ds_id: str, var_name: str, base_url: str):
-    return ctx.get_service_url(base_url, 'tile', ds_id, var_name, '{z}/{x}/{y}.png')
+    return ctx.get_service_url(base_url, 'datasets', ds_id, 'vars', var_name, 'tiles', '{z}/{x}/{y}.png')
 
 
-# noinspection PyMethodMayBeStatic
 def get_tile_grid(ctx: ServiceContext, ds_id: str, var_name: str, var: xr.DataArray):
     tile_grid = get_or_compute_tile_grid(ctx, ds_id, var)
     if tile_grid is None:
@@ -201,13 +199,17 @@ def get_ne2_tile(ctx: ServiceContext, x: str, y: str, z: str, params: RequestPar
     return NaturalEarth2Image.get_pyramid().get_tile(x, y, z)
 
 
-def get_ne2_tile_grid(ctx: ServiceContext, format_name: str, base_url: str):
-    if format_name == 'ol4':
+def get_ne2_tile_grid(ctx: ServiceContext, tile_client: str, base_url: str):
+    if tile_client == 'ol4':
         return get_tile_source_options(NaturalEarth2Image.get_pyramid().tile_grid,
-                                       ctx.get_service_url(base_url, 'tile', 'ne2', '{z}/{x}/{y}.jpg'),
-                                       client='ol4')
+                                       get_ne2_tile_url(ctx, base_url),
+                                       client=tile_client)
     else:
-        raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
+        raise ServiceBadRequestError(f'Unknown tile client {tile_client!r}')
+
+
+def get_ne2_tile_url(ctx: ServiceContext, base_url: str):
+    return ctx.get_service_url(base_url, 'ne2', 'tiles', '{z}/{x}/{y}.jpg')
 
 
 def get_or_compute_tile_grid(ctx: ServiceContext, ds_id: str, var: xr.DataArray):

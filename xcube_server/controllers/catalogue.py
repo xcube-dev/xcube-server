@@ -10,7 +10,7 @@ from ..im.cmaps import get_cmaps
 from ..utils import get_dataset_bounds
 
 
-def get_datasets(ctx: ServiceContext, deep=False, client=None, base_url: str = None) -> Dict:
+def get_datasets(ctx: ServiceContext, details=False, client=None, base_url: str = None) -> Dict:
     dataset_descriptors = ctx.get_dataset_descriptors()
 
     dataset_dicts = list()
@@ -34,7 +34,7 @@ def get_datasets(ctx: ServiceContext, deep=False, client=None, base_url: str = N
 
         dataset_dicts.append(dataset_dict)
 
-    if deep:
+    if details:
         for dataset_dict in dataset_dicts:
             ds_id = dataset_dict["id"]
             dataset_dict.update(get_dataset(ctx, ds_id, client, base_url))

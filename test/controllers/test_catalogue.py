@@ -1,11 +1,41 @@
 import unittest
 
+from test.helpers import new_test_service_context
 from xcube_server.context import ServiceContext
-from xcube_server.controllers.catalogue import get_color_bars
+from xcube_server.controllers.catalogue import get_datasets, get_color_bars
 from xcube_server.errors import ServiceBadRequestError
 
 
 class CatalogueControllerTest(unittest.TestCase):
+    def test_datasets(self):
+        ctx = new_test_service_context()
+
+        response = get_datasets(ctx)
+        self.assertIsInstance(response, dict)
+        self.assertIn("datasets", response)
+        self.assertIsInstance(response["datasets"], list)
+        self.assertEqual(2, len(response["datasets"]))
+        dataset = response["datasets"][0]
+        self.assertIsInstance(dataset, dict)
+        self.assertIn("id", dataset)
+        self.assertIn("title", dataset)
+        self.assertNotIn("variables", dataset)
+        self.assertNotIn("dimensions", dataset)
+
+    def test_dataset_with_details(self):
+        ctx = new_test_service_context()
+
+        response = get_datasets(ctx, details=True, base_url="http://test")
+        self.assertIsInstance(response, dict)
+        self.assertIn("datasets", response)
+        self.assertIsInstance(response["datasets"], list)
+        self.assertEqual(2, len(response["datasets"]))
+        dataset = response["datasets"][0]
+        self.assertIsInstance(dataset, dict)
+        self.assertIn("id", dataset)
+        self.assertIn("title", dataset)
+        self.assertIn("variables", dataset)
+        self.assertIn("dimensions", dataset)
 
     def test_get_colorbars(self):
         ctx = ServiceContext()

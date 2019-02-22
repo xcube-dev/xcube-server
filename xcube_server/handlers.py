@@ -130,17 +130,17 @@ class GetWMTSCapabilitiesXmlHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetDatasetsJsonHandler(ServiceRequestHandler):
+class GetDatasetsHandler(ServiceRequestHandler):
 
     def get(self):
-        deep = bool(int(self.params.get_query_argument('deep', '0')))
+        details = bool(int(self.params.get_query_argument('details', '0')))
         tile_client = self.params.get_query_argument('tiles', None)
-        response = get_datasets(self.service_context, deep=deep, client=tile_client, base_url=self.base_url)
+        response = get_datasets(self.service_context, details=details, client=tile_client, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
 
-class GetDatasetJsonHandler(ServiceRequestHandler):
+class GetDatasetHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str):
         tile_client = self.params.get_query_argument('tiles', None)
@@ -150,7 +150,7 @@ class GetDatasetJsonHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetCoordinatesJsonHandler(ServiceRequestHandler):
+class GetDatasetCoordsHandler(ServiceRequestHandler):
 
     def get(self, ds_id: str, dim_name: str):
         response = get_dataset_coordinates(self.service_context, ds_id, dim_name)
@@ -159,7 +159,7 @@ class GetCoordinatesJsonHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass,PyBroadException
-class GetTileDatasetHandler(ServiceRequestHandler):
+class GetDatasetVarTileHandler(ServiceRequestHandler):
 
     async def get(self, ds_id: str, var_name: str, z: str, x: str, y: str):
         tile = await IOLoop.current().run_in_executor(None,
@@ -173,7 +173,7 @@ class GetTileDatasetHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass,PyBroadException
-class GetLegendHandler(ServiceRequestHandler):
+class GetDatasetVarLegendHandler(ServiceRequestHandler):
 
     async def get(self, ds_id: str, var_name: str):
         tile = await IOLoop.current().run_in_executor(None,
@@ -186,18 +186,19 @@ class GetLegendHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetTileGridDatasetHandler(ServiceRequestHandler):
+class GetDatasetVarTileGridHandler(ServiceRequestHandler):
 
-    def get(self, ds_id: str, var_name: str, format_name: str):
+    def get(self, ds_id: str, var_name: str):
+        tile_client = self.params.get_query_argument('tiles', "ol4")
         response = get_dataset_tile_grid(self.service_context,
                                          ds_id, var_name,
-                                         format_name, self.base_url)
+                                         tile_client, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
 
 # noinspection PyAbstractClass
-class GetTileNE2Handler(ServiceRequestHandler):
+class GetNE2TileHandler(ServiceRequestHandler):
 
     async def get(self, z: str, x: str, y: str):
         response = await IOLoop.current().run_in_executor(None,
@@ -210,10 +211,11 @@ class GetTileNE2Handler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class GetTileGridNE2Handler(ServiceRequestHandler):
+class GetNE2TileGridHandler(ServiceRequestHandler):
 
-    def get(self, format_name: str):
-        response = get_ne2_tile_grid(self.service_context, format_name, self.base_url)
+    def get(self):
+        tile_client = self.params.get_query_argument('tiles', "ol4")
+        response = get_ne2_tile_grid(self.service_context, tile_client, self.base_url)
         self.set_header('Content-Type', 'application/json')
         self.write(json.dumps(response, indent=2))
 
@@ -306,7 +308,7 @@ class InfoHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class TimeSeriesInfoHandler(ServiceRequestHandler):
+class GetTimeSeriesInfoHandler(ServiceRequestHandler):
 
     async def get(self):
         response = await IOLoop.current().run_in_executor(None, get_time_series_info, self.service_context)
@@ -315,7 +317,7 @@ class TimeSeriesInfoHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class TimeSeriesForPointHandler(ServiceRequestHandler):
+class GetTimeSeriesForPointHandler(ServiceRequestHandler):
 
     async def get(self, ds_id: str, var_name: str):
         lon = self.params.get_query_argument_float('lon')
@@ -334,7 +336,7 @@ class TimeSeriesForPointHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class TimeSeriesForGeometryHandler(ServiceRequestHandler):
+class GetTimeSeriesForGeometryHandler(ServiceRequestHandler):
 
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
@@ -352,7 +354,7 @@ class TimeSeriesForGeometryHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class TimeSeriesForGeometriesHandler(ServiceRequestHandler):
+class GetTimeSeriesForGeometriesHandler(ServiceRequestHandler):
 
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)
@@ -370,7 +372,7 @@ class TimeSeriesForGeometriesHandler(ServiceRequestHandler):
 
 
 # noinspection PyAbstractClass
-class TimeSeriesForFeaturesHandler(ServiceRequestHandler):
+class GetTimeSeriesForFeaturesHandler(ServiceRequestHandler):
 
     async def post(self, ds_id: str, var_name: str):
         start_date = self.params.get_query_argument_datetime('startDate', default=None)

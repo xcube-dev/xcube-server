@@ -1,9 +1,11 @@
 openapi: 3.0.0
+
 servers:
   - description: DCS4COP Development API
-    url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev5
+    url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev6
   - description: SwaggerHub API Auto Mocking
     url: https://virtserver.swaggerhub.com/forman/xcube-server/1.0.0
+
 info:
   description: |
     A light-weight web server that provides
@@ -15,7 +17,10 @@ info:
   license:
     name: MIT
     url: 'https://opensource.org/licenses/MIT'
+
 tags:
+  - name: wmts
+    description: WMTS 1.0.0 API
   - name: catalogue
     description: Catalogue API
   - name: tiles
@@ -24,7 +29,83 @@ tags:
     description: Time-series API
   - name: places
     description: Places API
+
 paths:
+
+  ########################################################################################
+  # WMTS 1.0
+  ########################################################################################
+
+  '/wmts/1.0.0/WMTSCapabilities.xml':
+    get:
+      tags:
+        - wmts
+      summary: Get WMTS capabilities
+      operationId: getWMTSCapabilities
+      responses:
+        default:
+          description: WMTS capabilities XML doc
+          content:
+            application/xml:
+              schema:
+                type: string
+
+  '/wmts/1.0.0/tile/{dataset}/{variable}/{z}/{y}/{x}.png':
+    get:
+      tags:
+        - wmts
+      summary: Get tile
+      operationId: getTile
+      description: |
+        Get an image tile for a variable of a given dataset
+        at resolution level z and spatial tile coordinate x, y.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/z'
+        - $ref: '#/components/parameters/y'
+        - $ref: '#/components/parameters/x'
+      responses:
+        '200':
+          description: Image tile.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
+
+  '/wmts/kvp':
+    get:
+      tags:
+        - wmts
+      summary: Key-value pair API
+      operationId: getTile
+      description: |
+        Get an image tile for a variable of a given dataset
+        at resolution level z and spatial tile coordinate x, y.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/z'
+        - $ref: '#/components/parameters/y'
+        - $ref: '#/components/parameters/x'
+      responses:
+        '200':
+          description: Image tile.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
+
+  ########################################################################################
+  # Catalogue
+  ########################################################################################
+
   '/datasets':
     get:
       tags:
@@ -33,6 +114,11 @@ paths:
       operationId: getDatasets
       description: |
         Get a list of all available datasets.
+        If "details" is set, all returned objects are fully loaded, including their dimensions, variables,
+        and place groups. This will take considerably more time.
+      parameters:
+        - $ref: '#/components/parameters/datasetDetails'
+        - $ref: '#/components/parameters/tileClient'
       responses:
         '200':
           description: Dataset list.
@@ -40,17 +126,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatasetsRefs'
-  '/variables/{dataset}':
+
+  '/datasets/{dataset}':
     get:
       tags:
         - catalogue
-      summary: Get variables for dataset
-      operationId: getVariables
+      summary: Get dataset details
+      operationId: getDataset
       parameters:
         - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/tileClient'
       description: |
-        Get a dataset information object that
-        also contains descriptions of all variables.
+        Get full dataset information including dimensions, variables, and place groups.
       responses:
         '200':
           description: Dataset information object.
@@ -58,12 +145,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatasetInfo'
-  '/coords/{dataset}/{dim}':
+
+  '/datasets/{dataset}/coords/{dim}':
     get:
       tags:
         - catalogue
       summary: Get coordinates
-      operationId: getCoordinates
+      operationId: getDatasetCoordinates
       parameters:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/dim'
@@ -78,18 +166,72 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CoordinateVariable'
-  '/legend/{dataset}/{variable}.png':
+
+  ########################################################################################
+  # Tiles
+  ########################################################################################
+
+  'datasets/{dataset}/vars/{variable}/tiles/{z}/{x}/{y}.png':
     get:
       tags:
-        - tile
-      summary: Get legend for layer
-      operationId: getLegend
+        - tiles
+      summary: Get tile
+      operationId: getDatasetVariableTile
+      description: |
+        Get an image tile for a variable of a given dataset
+        at resolution level z and spatial tile coordinate x, y.
       parameters:
         - $ref: '#/components/parameters/dataset'
         - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/z'
+        - $ref: '#/components/parameters/x'
+        - $ref: '#/components/parameters/y'
+      responses:
+        '200':
+          description: Image tile.
+          content:
+            'image/png':
+                  schema:
+                    type: string
+                    format: binary
+        '404':
+          description: Resource not found.
+
+  'datasets/{dataset}/vars/{variable}/tilegrid':
+    get:
+      tags:
+        - tiles
+      summary: Get tiling schema for OL4
+      operationId: getDatasetVariableTileGrid
       description: |
-        Get a legend for a layer given by a variable of a dataset.
-        The legend is returned as a png.
+        Get a tile grid description compatible with
+        JS tile clients such as OpenLayers or Cesium.
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
+        - $ref: '#/components/parameters/tileClient'
+      responses:
+        '200':
+          description: Tile schema for OL4.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OL4TileSchema'
+        '404':
+          description: Resource not found.
+
+  'datasets/{dataset}/vars/{variable}/legend.png':
+    get:
+      tags:
+        - tiles
+      summary: Get legend for layer
+      description: |
+        Get a legend image for a layer given by a variable of a dataset.
+        The legend is returned as a PNG image.
+      operationId: getDatasetVariableLegend
+      parameters:
+        - $ref: '#/components/parameters/dataset'
+        - $ref: '#/components/parameters/variable'
       responses:
         '200':
           description: Legend image.
@@ -100,6 +242,11 @@ paths:
                     format: binary
         '404':
           description: Resource not found.
+
+  ########################################################################################
+  # Color Bars
+  ########################################################################################
+
   '/colorbars':
     get:
       tags:
@@ -123,111 +270,12 @@ paths:
                     type: object
         '404':
           description: Resource not found.
-  '/wmts/1.0.0/WMTSCapabilities.xml':
-    get:
-      tags:
-        - tiles
-      summary: Get WMTS capabilities
-      operationId: getWMTSCapabilities
-      responses:
-        default:
-          description: WMTS capabilities XML doc
-          content:
-            application/xml:
-              schema:
-                type: string
-  '/wmts/1.0.0/tile/{dataset}/{variable}/{z}/{y}/{x}.png':
-    get:
-      tags:
-        - tiles
-      summary: Get tile
-      operationId: getTile
-      description: |
-        Get an image tile for a variable of a given dataset
-        at resolution level z and spatial tile coordinate x, y.
-      parameters:
-        - $ref: '#/components/parameters/dataset'
-        - $ref: '#/components/parameters/variable'
-        - $ref: '#/components/parameters/z'
-        - $ref: '#/components/parameters/y'
-        - $ref: '#/components/parameters/x'
-      responses:
-        '200':
-          description: Image tile.
-          content:
-            'image/png':
-                  schema:
-                    type: string
-                    format: binary
-        '404':
-          description: Resource not found.
-  '/tile/{dataset}/{variable}/{z}/{x}/{y}.png':
-    get:
-      tags:
-        - tiles
-      summary: Get tile
-      operationId: getTile
-      description: |
-        Get an image tile for a variable of a given dataset
-        at resolution level z and spatial tile coordinate x, y.
-      parameters:
-        - $ref: '#/components/parameters/dataset'
-        - $ref: '#/components/parameters/variable'
-        - $ref: '#/components/parameters/z'
-        - $ref: '#/components/parameters/x'
-        - $ref: '#/components/parameters/y'
-      responses:
-        '200':
-          description: Image tile.
-          content:
-            'image/png':
-                  schema:
-                    type: string
-                    format: binary
-        '404':
-          description: Resource not found.
-  '/tilegrid/{dataset}/{variable}/ol4':
-    get:
-      tags:
-        - tiles
-      summary: Get tiling schema for OL4
-      operationId: getOL4TileSchema
-      description: |
-        Get a tile grid description compatible with
-        an OpenLayers v4.x ol.source.XYZ layer source.
-      parameters:
-        - $ref: '#/components/parameters/dataset'
-        - $ref: '#/components/parameters/variable'
-      responses:
-        '200':
-          description: Tile schema for OL4.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OL4TileSchema'
-        '404':
-          description: Resource not found.
-  '/tilegrid/{dataset}/{variable}/cesium':
-    get:
-      tags:
-        - tiles
-      summary: Get tile grid for Cesium
-      operationId: getCesiumTileGrid
-      description: |
-        Get a tile grid description compatible with
-        a Cesium v1.x XYZ image tile provider.
-      parameters:
-        - $ref: '#/components/parameters/dataset'
-        - $ref: '#/components/parameters/variable'
-      responses:
-        '200':
-          description: Cesium Tile Grid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CesiumTileGrid'
-        '404':
-          description: Resource not found.
+
+
+  ########################################################################################
+  # Time-Series (PRELIMINARY & UNSTABLE - will be revised soon)
+  ########################################################################################
+
   '/ts':
     get:
       tags:
@@ -244,6 +292,7 @@ paths:
                 $ref: '#/components/schemas/TimeSeriesInfo'
         '500':
           description: Unexpected error.
+
   '/ts/{dataset}/{variable}/point':
     get:
       tags:
@@ -269,6 +318,7 @@ paths:
           description: Invalid query parameters
         '500':
           description: Unexpected error.
+
   '/ts/{dataset}/{variable}/geometry':
     post:
       tags:
@@ -294,6 +344,7 @@ paths:
           description: Invalid query parameters
         '500':
           description: Unexpected error.
+
   '/ts/{dataset}/{variable}/geometries':
     post:
       tags:
@@ -319,6 +370,7 @@ paths:
           description: Invalid query parameters
         '500':
           description: Unexpected error.
+
   '/ts/{dataset}/{variable}/features':
     post:
       tags:
@@ -345,18 +397,22 @@ paths:
         '500':
           description: Unexpected error.
 
+  ########################################################################################
+  # Places (PRELIMINARY & UNSTABLE - will be revised soon)
+  ########################################################################################
+
   '/places':
     get:
       tags:
         - places
-      summary: Get feature collections
-      operationId: getFeatureCollections
+      summary: Get all place groups
+      operationId: getPlaceGroups
       description: |
-        Gets a list of meta-information objects accociated
-        with the configured feature collections.
+        Gets a list of references to all available place groups.
       responses:
         '200':
-          $ref: '#/components/responses/FeatureCollectionInfos'
+          $ref: '#/components/responses/PlaceGroupInfos'
+
   '/places/{collection}':
     get:
       tags:
@@ -545,13 +601,31 @@ components:
     endDate:
       name: endDate
       in: query
-      description: aximum date of the time series, following schema yyyy-MM-dd (inclusive).
+      description: maximum date of the time series, following schema yyyy-MM-dd (inclusive).
       required: false
       schema:
         type: string
       example: 2099-01-01
+    datasetDetails:
+      name: details
+      in: query
+      description: Wheather to load also the details of a dataset, which usually takes more time.
+      required: false
+      schema:
+        type: boolean
+      example: 1
+    tileClient:
+      name: tiles
+      in: query
+      description: |
+          Controls, how the tile grid is described w.r.t. the target tile client.
+          May be "ol4" for OpenLayers 4.x or "cesium" for the Cesium 3D Globe client.
+      required: false
+      schema:
+        type: string
+      example: ol4
   schemas:
-    FeatureCollectionInfo:
+    PlaceGroupInfo:
       type: object
       required:
         - name
@@ -563,12 +637,25 @@ components:
           type: string
         bbox:
           $ref: '#/components/schemas/BoundingBox'
+    PlaceGroups:
+      type: array
+      required:
+        - name
+        - title
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        bbox:
+          $ref: '#/components/schemas/GeoJsonFeatureCollection'
     DatasetInfo:
       type: object
       required:
         - name
         - title
         - variables
+        - dimensions
       properties:
         name:
           type: string
@@ -580,6 +667,14 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VariableInfo'
+        dimensions:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariableInfo'
+        placeGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaceGroups'
     VariableInfo:
       type: object
       required:
@@ -609,6 +704,27 @@ components:
             type: number
         tileSourceOptions:
           $ref: '#/components/schemas/OL4TileSchema'
+    DimensionInfo:
+      type: object
+      required:
+        - name
+        - size
+        - units
+        - dtype
+        - coordinates
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        dtype:
+          type: string
+        units:
+          type: string
+        coordinates:
+          type: array
+          items:
+            type: number
     DatasetsRefs:
       type: object
       properties:
@@ -786,7 +902,7 @@ components:
       - type: object
         required:
           - type
-          - places
+          - features
         properties:
           type:
             type: string
@@ -887,14 +1003,14 @@ components:
           schema:
             $ref: '#/components/schemas/GeoJsonFeatureCollection'
   responses:
-    FeatureCollectionInfos:
-      description: Meta-information for each Feature Collection
+    PlaceGroupInfos:
+      description: Meta-information for each place group
       content:
         application/json:
           schema:
             type: array
             items:
-              $ref: '#/components/schemas/FeatureCollectionInfo'
+              $ref: '#/components/schemas/PlaceGroupInfo'
     GeoJsonFeatureCollection:
       description: GeoJSON FeatureCollection
       content:

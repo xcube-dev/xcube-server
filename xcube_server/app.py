@@ -28,44 +28,82 @@ from tornado.web import Application, StaticFileHandler
 from xcube_server import __version__, __description__
 from xcube_server.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
     DEFAULT_CONFIG_FILE, API_PREFIX
-from xcube_server.handlers import GetTileNE2Handler, GetTileDatasetHandler, InfoHandler, GetTileGridNE2Handler, \
-    GetTileGridDatasetHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
-    GetDatasetsJsonHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
-    GetCoordinatesJsonHandler, TimeSeriesInfoHandler, TimeSeriesForPointHandler, WMTSKvpHandler, \
-    TimeSeriesForGeometryHandler, TimeSeriesForFeaturesHandler, TimeSeriesForGeometriesHandler, \
-    GetPlaceGroupsHandler, GetLegendHandler, GetDatasetJsonHandler
+from xcube_server.handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
+    GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
+    GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
+    GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
+    GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
+    GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler
 from xcube_server.service import url_pattern, Service
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 
-def new_application(name: str=DEFAULT_NAME):
+def new_application(name: str = DEFAULT_NAME):
     prefix = f"/{name}{API_PREFIX}"
     application = Application([
-        (prefix + '/res/(.*)', StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
-        (prefix + url_pattern('/'), InfoHandler),
-        (prefix + url_pattern('/wmts/kvp'), WMTSKvpHandler),
-        (prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'), GetWMTSCapabilitiesXmlHandler),
+        (prefix + '/res/(.*)',
+         StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), 'res')}),
+        (prefix + url_pattern('/'),
+         InfoHandler),
+
+        (prefix + url_pattern('/wmts/1.0.0/WMTSCapabilities.xml'),
+         GetWMTSCapabilitiesXmlHandler),
         (prefix + url_pattern('/wmts/1.0.0/tile/{{ds_id}}/{{var_name}}/{{z}}/{{y}}/{{x}}.png'),
-         GetTileDatasetHandler),
-        (prefix + url_pattern('/tile/{{ds_id}}/{{var_name}}/{{z}}/{{x}}/{{y}}.png'), GetTileDatasetHandler),
-        (prefix + url_pattern('/tile/ne2/{{z}}/{{x}}/{{y}}.jpg'), GetTileNE2Handler),
-        (prefix + url_pattern('/tilegrid/{{ds_id}}/{{var_name}}/{{format_name}}'), GetTileGridDatasetHandler),
-        (prefix + url_pattern('/tilegrid/ne2/{{format_name}}'), GetTileGridNE2Handler),
-        (prefix + url_pattern('/datasets'), GetDatasetsJsonHandler),
-        (prefix + url_pattern('/datasets/{{ds_id}}'), GetDatasetJsonHandler),
-        (prefix + url_pattern('/coords/{{ds_id}}/{{dim_name}}'), GetCoordinatesJsonHandler),
-        (prefix + url_pattern('/legend/{{ds_id}}/{{var_name}}.png'), GetLegendHandler),
-        (prefix + url_pattern('/colorbars'), GetColorBarsJsonHandler),
-        (prefix + url_pattern('/colorbars.html'), GetColorBarsHtmlHandler),
-        (prefix + url_pattern('/ts'), TimeSeriesInfoHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/point'), TimeSeriesForPointHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometry'), TimeSeriesForGeometryHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'), TimeSeriesForGeometriesHandler),
-        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/places'), TimeSeriesForFeaturesHandler),
-        (prefix + url_pattern('/places'), GetPlaceGroupsHandler),
-        (prefix + url_pattern('/places/{{collection_name}}'), FindPlacesHandler),
-        (prefix + url_pattern('/places/{{collection_name}}/{{ds_id}}'), FindDatasetPlacesHandler),
+         GetDatasetVarTileHandler),
+        (prefix + url_pattern('/wmts/kvp'),
+         WMTSKvpHandler),
+
+        # Natural Earth 2 tiles for testing
+
+        (prefix + url_pattern('/datasets'),
+         GetDatasetsHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}'),
+         GetDatasetHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/coords/{{dim_name}}'),
+         GetDatasetCoordsHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/legend.png'),
+         GetDatasetVarLegendHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tiles/{{z}}/{{x}}/{{y}}.png'),
+         GetDatasetVarTileHandler),
+        (prefix + url_pattern('/datasets/{{ds_id}}/vars/{{var_name}}/tilegrid'),
+         GetDatasetVarTileGridHandler),
+
+        # Natural Earth 2 tiles for testing
+
+        (prefix + url_pattern('/ne2/tilegrid'),
+         GetNE2TileGridHandler),
+        (prefix + url_pattern('/ne2/tiles/{{z}}/{{x}}/{{y}}.jpg'),
+         GetNE2TileHandler),
+
+        # Color Bars API
+
+        (prefix + url_pattern('/colorbars'),
+         GetColorBarsJsonHandler),
+        (prefix + url_pattern('/colorbars.html'),
+         GetColorBarsHtmlHandler),
+
+        # Places API (PRELIMINARY & UNSTABLE - will be revised soon)
+
+        (prefix + url_pattern('/places'),
+         GetPlaceGroupsHandler),
+        (prefix + url_pattern('/places/{{collection_name}}'),
+         FindPlacesHandler),
+        (prefix + url_pattern('/places/{{collection_name}}/{{ds_id}}'),
+         FindDatasetPlacesHandler),
+
+        # Time-series API (for VITO's DCS4COP viewer only, PRELIMINARY & UNSTABLE - will be revised soon)
+
+        (prefix + url_pattern('/ts'),
+         GetTimeSeriesInfoHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/point'),
+         GetTimeSeriesForPointHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometry'),
+         GetTimeSeriesForGeometryHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/geometries'),
+         GetTimeSeriesForGeometriesHandler),
+        (prefix + url_pattern('/ts/{{ds_id}}/{{var_name}}/places'),
+         GetTimeSeriesForFeaturesHandler),
     ])
     return application
 

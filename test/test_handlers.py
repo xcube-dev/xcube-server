@@ -123,32 +123,14 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
         self.assertResponseOK(response)
 
-    def test_fetch_dataset_tile(self):
-        response = self.fetch(self.prefix + '/tile/demo/conc_chl/0/0/0.png')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_tile_with_params(self):
-        response = self.fetch(self.prefix + '/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_tile_grid_ol4_json(self):
-        response = self.fetch(self.prefix + '/tilegrid/demo/conc_chl/ol4')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_tile_grid_cesium_json(self):
-        response = self.fetch(self.prefix + '/tilegrid/demo/conc_chl/cesium')
-        self.assertResponseOK(response)
-
-    def test_fetch_ne2_tile(self):
-        response = self.fetch(self.prefix + '/tile/ne2/0/0/0.jpg')
-        self.assertResponseOK(response)
-
-    def test_fetch_ne2_tile_grid(self):
-        response = self.fetch(self.prefix + '/tilegrid/ne2/ol4')
-        self.assertResponseOK(response)
-
     def test_fetch_datasets_json(self):
         response = self.fetch(self.prefix + '/datasets')
+        self.assertResponseOK(response)
+
+    def test_fetch_datasets_details_json(self):
+        response = self.fetch(self.prefix + '/datasets?details=1')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/datasets?details=1&tiles=cesium')
         self.assertResponseOK(response)
 
     def test_fetch_dataset_json(self):
@@ -160,7 +142,31 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_coords_json(self):
-        response = self.fetch(self.prefix + '/coords/demo/time')
+        response = self.fetch(self.prefix + '/datasets/demo/coords/time')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile_with_params(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png?time=current&cbar=jet')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile_grid_ol4_json(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tilegrid?tiles=ol4')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile_grid_cesium_json(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tilegrid?tiles=cesium')
+        self.assertResponseOK(response)
+
+    def test_fetch_ne2_tile(self):
+        response = self.fetch(self.prefix + '/ne2/tiles/0/0/0.jpg')
+        self.assertResponseOK(response)
+
+    def test_fetch_ne2_tile_grid(self):
+        response = self.fetch(self.prefix + '/ne2/tilegrid?tiles=ol4')
         self.assertResponseOK(response)
 
     def test_fetch_color_bars_json(self):
