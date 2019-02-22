@@ -27,6 +27,7 @@ DEFAULT_NAME = 'xcube'
 DEFAULT_ADDRESS = 'localhost'
 DEFAULT_PORT = 8080
 DEFAULT_CONFIG_FILE = os.path.abspath('xcube_server.yml')
+DEFAULT_TILE_CACHE_SIZE = "512M"
 DEFAULT_UPDATE_PERIOD = 2.
 DEFAULT_LOG_PREFIX = os.path.abspath('xcube_server.log')
 

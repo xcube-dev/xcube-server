@@ -27,7 +27,7 @@ from tornado.web import Application, StaticFileHandler
 
 from xcube_server import __version__, __description__
 from xcube_server.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
-    DEFAULT_CONFIG_FILE, API_PREFIX
+    DEFAULT_CONFIG_FILE, DEFAULT_TILE_CACHE_SIZE, API_PREFIX
 from xcube_server.handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
     GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
@@ -134,6 +134,11 @@ def new_service(args=None) -> Service:
     parser.add_argument('--config', '-c', dest='config_file', metavar='CONFIG_FILE', default=None,
                         help='Configuration file. '
                              f'Defaults to {DEFAULT_CONFIG_FILE!r}.')
+    parser.add_argument('--tilecache', '-t', dest='tile_cache', metavar='TILE_CACHE', default=DEFAULT_TILE_CACHE_SIZE,
+                        help=f'In-memory tile cache size in bytes. '
+                             f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
+                             f'Defaults to {DEFAULT_TILE_CACHE_SIZE!r}. '
+                             f'The special value {"OFF"!r} disables tile caching.')
     parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',
                         help="if given, logging will be delegated to the console (stderr)")
 
@@ -145,6 +150,7 @@ def new_service(args=None) -> Service:
                    port=args_obj.port,
                    address=args_obj.address,
                    config_file=args_obj.config_file,
+                   tile_cache_size=args_obj.tile_cache,
                    update_period=args_obj.update_period)
 
 
