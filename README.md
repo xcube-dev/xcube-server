@@ -42,7 +42,7 @@ The following operations are supported:
 
 ## Explore API of existing xcube-servers
 
-To explore the API of existing xcube-servers go to the [SwaggerHub of bcdev](https://app.swaggerhub.com/apis/bcdev/xcube-server/0.1.0.dev5).
+To explore the API of existing xcube-servers go to the [SwaggerHub of bcdev](https://app.swaggerhub.com/apis/bcdev/xcube-server/0.1.0.dev6).
 The SwaggerHub allows to choose the xcube-server project and therefore the datasets which are used for the exploration. 
 
 ## Run the demo
@@ -80,39 +80,33 @@ or shorter
 
 Test it:
 
-* Catalogue services
-  * Datasets (Data Cubes):
-    * [Get datasets](http://localhost:8080/xcube/api/0.1.0.dev5/datasets)
-    * [Get dataset variables](http://localhost:8080/xcube/api/0.1.0.dev5/variables/local)
-    * [Get dataset coordinates](http://localhost:8080/xcube/api/0.1.0.dev5/coords/local/time)
-    * [Get time stamps per dataset](http://localhost:8080/xcube/api/0.1.0.dev5/ts)
-  * Features:
-    * [Get feature collections](http://localhost:8080/xcube/api/0.1.0.dev5/features)
-  * Color bars:
-    * [Get color bars](http://localhost:8080/xcube/api/0.1.0.dev5/colorbars) 
-    * [Get color bars (HTML)](http://localhost:8080/xcube/api/0.1.0.dev5/colorbars.html)
-* Tile service
-  * WMTS:
-    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/kvp?Service=WMTS&Request=GetCapabilities)
-    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
-    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
-    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/1.0.0/WMTSCapabilities.xml)
-    * [Get WMTS REST local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
-    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
-  * Tile images
-    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/tile/local/conc_chl/0/1/0.png)
-  * Tile grids
-    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/xcube/api/0.1.0.dev5/tilegrid/local/conc_chl/ol4)
-    * [Get tile grid for Cesium 1.x](http://localhost:8080/xcube/api/0.1.0.dev5/tilegrid/local/conc_chl/cesium)
-  * Legend images
-    * [Get legend for layer (PNG)](http://localhost:8080/xcube/api/0.1.0.dev5/legend/local/conc_chl.png)
-* Feature service
-    * [Get all features](http://localhost:8080/xcube/api/0.1.0.dev5/features/all)
-    * [Get all features of collection "inside-cube"](http://localhost:8080/xcube/api/0.1.0.dev5/features/inside-cube)
-    * [Get all features for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev5/features/all/local)
-    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev5/features/inside-cube/local)
-* Time series service
-    * [Get time series for single point](http://localhost:8080/xcube/api/0.1.0.dev5/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
+* Datasets (Data Cubes):
+    * [Get datasets](http://localhost:8080/xcube/api/0.1.0.dev6/datasets)
+    * [Get dataset details](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local)
+    * [Get dataset coordinates](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/coords/time)
+* Color bars:
+    * [Get color bars](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars)
+    * [Get color bars (HTML)](http://localhost:8080/xcube/api/0.1.0.dev6/colorbars.html)
+* WMTS:
+    * [Get WMTS KVP Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetCapabilities)
+    * [Get WMTS KVP local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=local.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS KVP remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/kvp?Service=WMTS&Request=GetTile&Version=1.0.0&Layer=remote.conc_chl&TileMatrix=0&TileRow=0&TileCol=0&Format=image/png)
+    * [Get WMTS REST Capabilities (XML)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/WMTSCapabilities.xml)
+    * [Get WMTS REST local tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/local/conc_chl/0/0/1.png)
+    * [Get WMTS REST remote tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/wmts/1.0.0/tile/remote/conc_chl/0/0/1.png)
+* Tiles
+    * [Get tile (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tiles/0/1/0.png)
+    * [Get tile grid for OpenLayers 4.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=ol4)
+    * [Get tile grid for Cesium 1.x](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/tilegrid?tiles=cesium)
+    * [Get legend for layer (PNG)](http://localhost:8080/xcube/api/0.1.0.dev6/datasets/local/vars/conc_chl/legend.png)
+* Time series service (preliminary & unstable, will likely change soon)
+    * [Get time stamps per dataset](http://localhost:8080/xcube/api/0.1.0.dev6/ts)
+    * [Get time series for single point](http://localhost:8080/xcube/api/0.1.0.dev6/ts/local/conc_chl/point?lat=51.4&lon=2.1&startDate=2017-01-15&endDate=2017-01-29)
+* Places service (preliminary & unstable, will likely change soon)
+    * [Get all features](http://localhost:8080/xcube/api/0.1.0.dev6/places/all)
+    * [Get all features of collection "inside-cube"](http://localhost:8080/xcube/api/0.1.0.dev6/features/inside-cube)
+    * [Get all features for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/all/local)
+    * [Get all features of collection "inside-cube" for dataset "local"](http://localhost:8080/xcube/api/0.1.0.dev6/places/inside-cube/local)
 
 
 ### Clients
@@ -142,33 +136,24 @@ into the `xcube-server` source directory so that there exists an
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
 in the [demo's HTML file](https://github.com/bcdev/xcube-server/blob/master/xcube_server/res/demo/index-cesium.html).
 
-## TODO
-
-At project level:
-
-* Build on Travis & AppVeyor
-* Configure Flake8
-* Configure Coverage
-
-In code:
+### TODO:
 
 * Bug/Performance: ServiceContext.dataset_cache uses dataset names as ID, but actually, caching of *open* datasets 
   should be based on *same* dataset sources, namely given the local file path or the remote URL
-* Feature: WMTS GetFeatureInfo
-* Feature: Add time slider to OL demo client
-* Feature: Let users specify TileGrid in configuration
-* Bug/Performance: /xcube/wmts/1.0.0/WMTSCapabilities.xml is veeerry slow,
-  due to ZARR data cube access on OTC, 15 seconds for first call - investigate and e.g. cache.
+* Bug/Performance: /xcube/wmts/1.0.0/WMTSCapabilities.xml slow for ZARR data cubes in OTC's object storage.
+  15 seconds for first call - investigate and e.g. cache.
 * Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
   There may be different identifiers that have the same path!
+* Performance: use multi-resolution levels embedded in future cube datasets
+* Performance: consider external chunking when computing TileGrid
 * Performance: After some period check if datasets haven't been used for a long time - close them and remove from cache.
 * Performance: Internally cache TileGrid instances, so we don't need to recompute them.
   TileGrid cache keys must be based on dataset path, array shape, and chunk shape.
+* Feature: WMTS GetFeatureInfo
+* Feature: Let users specify TileGrid in configuration
 * Feature: Add a service that allows retrieving the actual cubes indexers and coordinates given a
   variable and dimension KVP.
   This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual,
   effectively selected coordinates.
-* Feature/Performance: use multi-resolution levels embedded in future cube datasets
-* Feature/Performance: consider external chunking when computing TileGrid
 * Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache.
 

@@ -123,44 +123,50 @@ class HandlersTest(AsyncHTTPTestCase):
         response = self.fetch(self.prefix + '/wmts/1.0.0/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
         self.assertResponseOK(response)
 
-    def test_fetch_dataset_tile(self):
-        response = self.fetch(self.prefix + '/tile/demo/conc_chl/0/0/0.png')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_tile_with_params(self):
-        response = self.fetch(self.prefix + '/tile/demo/conc_chl/0/0/0.png?time=current&cbar=jet')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_tile_grid_ol4_json(self):
-        response = self.fetch(self.prefix + '/tilegrid/demo/conc_chl/ol4')
-        self.assertResponseOK(response)
-
-    def test_fetch_dataset_tile_grid_cesium_json(self):
-        response = self.fetch(self.prefix + '/tilegrid/demo/conc_chl/cesium')
-        self.assertResponseOK(response)
-
-    def test_fetch_ne2_tile(self):
-        response = self.fetch(self.prefix + '/tile/ne2/0/0/0.jpg')
-        self.assertResponseOK(response)
-
-    def test_fetch_ne2_tile_grid(self):
-        response = self.fetch(self.prefix + '/tilegrid/ne2/ol4')
-        self.assertResponseOK(response)
-
     def test_fetch_datasets_json(self):
         response = self.fetch(self.prefix + '/datasets')
         self.assertResponseOK(response)
 
-    def test_fetch_variables_json(self):
-        response = self.fetch(self.prefix + '/variables/demo')
+    def test_fetch_datasets_details_json(self):
+        response = self.fetch(self.prefix + '/datasets?details=1')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/variables/demo?client=ol4')
+        response = self.fetch(self.prefix + '/datasets?details=1&tiles=cesium')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/variables/demo?client=cesium')
+
+    def test_fetch_dataset_json(self):
+        response = self.fetch(self.prefix + '/datasets/demo')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/datasets/demo?tiles=ol4')
+        self.assertResponseOK(response)
+        response = self.fetch(self.prefix + '/datasets/demo?tiles=cesium')
         self.assertResponseOK(response)
 
     def test_fetch_coords_json(self):
-        response = self.fetch(self.prefix + '/coords/demo/time')
+        response = self.fetch(self.prefix + '/datasets/demo/coords/time')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile_with_params(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png?time=current&cbar=jet')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile_grid_ol4_json(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tilegrid?tiles=ol4')
+        self.assertResponseOK(response)
+
+    def test_fetch_dataset_tile_grid_cesium_json(self):
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tilegrid?tiles=cesium')
+        self.assertResponseOK(response)
+
+    def test_fetch_ne2_tile(self):
+        response = self.fetch(self.prefix + '/ne2/tiles/0/0/0.jpg')
+        self.assertResponseOK(response)
+
+    def test_fetch_ne2_tile_grid(self):
+        response = self.fetch(self.prefix + '/ne2/tilegrid?tiles=ol4')
         self.assertResponseOK(response)
 
     def test_fetch_color_bars_json(self):
@@ -172,23 +178,23 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_feature_collections(self):
-        response = self.fetch(self.prefix + '/features')
+        response = self.fetch(self.prefix + '/places')
         self.assertResponseOK(response)
 
     def test_fetch_features(self):
-        response = self.fetch(self.prefix + '/features/all')
+        response = self.fetch(self.prefix + '/places/all')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/features/all?bbox=10,10,20,20')
+        response = self.fetch(self.prefix + '/places/all?bbox=10,10,20,20')
         self.assertResponseOK(response)
 
     def test_fetch_features_for_dataset(self):
-        response = self.fetch(self.prefix + '/features/all/demo')
+        response = self.fetch(self.prefix + '/places/all/demo')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/features/inside-cube/demo')
+        response = self.fetch(self.prefix + '/places/inside-cube/demo')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/features/bibo/demo')
-        self.assertResourceNotFoundResponse(response, 'Feature collection "bibo" not found')
-        response = self.fetch(self.prefix + '/features/inside-cube/bibo')
+        response = self.fetch(self.prefix + '/places/bibo/demo')
+        self.assertResourceNotFoundResponse(response, 'Place group "bibo" not found')
+        response = self.fetch(self.prefix + '/places/inside-cube/bibo')
         self.assertResourceNotFoundResponse(response, 'Dataset "bibo" not found')
 
     def test_fetch_time_series_info(self):
@@ -237,20 +243,20 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_time_series_features(self):
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
                               body='')
         self.assertBadRequestResponse(response, 'Invalid or missing GeoJSON feature collection in request body')
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
                               body='{"type":"Point"}')
         self.assertBadRequestResponse(response, 'Invalid GeoJSON feature collection')
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
-                              body='{"type": "FeatureCollection", "features": null}')
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+                              body='{"type": "FeatureCollection", "places": null}')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
-                              body='{"type": "FeatureCollection", "features": []}')
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+                              body='{"type": "FeatureCollection", "places": []}')
         self.assertResponseOK(response)
-        response = self.fetch(self.prefix + '/ts/demo/conc_chl/features', method="POST",
-                              body='{"type": "FeatureCollection", "features": ['
+        response = self.fetch(self.prefix + '/ts/demo/conc_chl/places', method="POST",
+                              body='{"type": "FeatureCollection", "places": ['
                                    '  {"type": "Feature", "properties": {}, '
                                    '   "geometry": {"type": "Point", "coordinates": [1, 51]}}'
                                    ']}')

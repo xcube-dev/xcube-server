@@ -1,0 +1,104 @@
+Datasets:
+  - Identifier: Sweden_SE
+    Title: "Sverige"
+    # BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: "local"
+    Path: "D:\\EOData\\CyanoAlert\\DataCubes\\Sweden\\LakesSE\\OLCI-SE-L2C-CUBE-v2-20180708_1_375_509.zarr"
+    #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
+    Format: zarr
+    Style: default
+    PlaceGroups:
+      - PlaceGroupRef: Sweden_SE_Lakes
+
+  - Identifier: Sweden_SE_1W
+    Title: "Sverige 1W"
+    # BoundingBox: [0.0, 50, 5.0, 52.5]
+    #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
+    Style: default
+    FileSystem: "computed"
+    Path: "resample_in_time.py"
+    Function: "compute_dataset"
+    Args: ["@Sweden_SE@", "1W"]
+    PlaceGroups:
+      - PlaceGroupRef: Sweden_SE_Lakes
+
+  - Identifier: Germany_SH
+    Title: "Deutschland/SH"
+    # BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: "local"
+    Path: "D:\\EOData\\CyanoAlert\\DataCubes\\Germany\\LakesSH\\OLCI-GER-L2C-CUBE-v2-20180708_1_218_238.zarr"
+    #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
+    Format: zarr
+    Style: default
+    PlaceGroups:
+      - PlaceGroupRef: German_SH_Lakes
+      - PlaceGroupRef: German_SH_Stations
+
+  - Identifier: Germany_SH_1W
+    Title: "Deutschland/SH 1W"
+    # BoundingBox: [0.0, 50, 5.0, 52.5]
+    #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
+    Style: default
+    FileSystem: "computed"
+    Path: "resample_in_time.py"
+    Function: "compute_dataset"
+    Args: ["@Germany_SH@", "1W"]
+    PlaceGroups:
+      - PlaceGroupRef: Sweden_SE_Lakes
+
+PlaceGroups:
+  - Identifier: Sweden_SE_Lakes
+    Title: "Svenska Sj\u00f6arna"
+    # Path: "places/Sweden-Lakes.geojson"
+    Path: "C:\\Users\\Norman\\PycharmProjects\\cyanoalert-regions\\input\\L2_Sweden\\L2C_LakesSE\\Selected_Monitoring_Lakes_wgs84.shp"
+    CharacterEncoding: utf-8
+    PropertyMapping:
+      label: "SJONAMN"
+      infoUrl: "URL_VISS"
+  - Identifier: German_SH_Lakes
+    Title: "Seen in SH"
+    Path: "places/Germany-SH-Lakes.geojson"
+    PropertyMapping:
+      label: "S_NAME"
+      infoUrl: "METADATA_U"
+  - Identifier: German_SH_Stations
+    Title: "Stationen in SH"
+    Path: "places/Germany-SH-Stations.geojson"
+    PropertyMapping:
+      label: "Name"
+
+
+Styles:
+  - Identifier: default
+    ColorMappings:
+      conc_chl:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      chl_c2rcc:
+        ColorBar: "plasma"
+        ValueRange: [0., 24.]
+      conc_tsm:
+        ColorBar: "PuBuGn"
+        ValueRange: [0., 100.]
+      kd489:
+        ColorBar: "jet"
+        ValueRange: [0., 6.]
+
+ServiceProvider:
+  ProviderName: "Brockmann Consult GmbH"
+  ProviderSite: "https://www.brockmann-consult.de"
+  ServiceContact:
+    IndividualName: "Norman Fomferra"
+    PositionName: "Senior Software Engineer"
+    ContactInfo:
+      Phone:
+        Voice: "+49 4152 889 303"
+        Facsimile: "+49 4152 889 330"
+      Address:
+        DeliveryPoint: "HZG / GITZ"
+        City: "Geesthacht"
+        AdministrativeArea: "Herzogtum Lauenburg"
+        PostalCode: "21502"
+        Country: "Germany"
+        ElectronicMailAddress: "norman.fomferra@brockmann-consult.de"
+

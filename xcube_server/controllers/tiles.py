@@ -1,26 +1,26 @@
+import io
 import time
 from typing import Dict, Any
 
 import matplotlib
 import matplotlib.cm as cm
-import matplotlib.colors
 import matplotlib.colorbar
+import matplotlib.colors
+import matplotlib.figure
 import numpy as np
 import xarray as xr
-import io
-import matplotlib.figure
 
-from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
-from ..ne2 import NaturalEarth2Image
-from ..utils import compute_tile_grid
 from ..context import ServiceContext
 from ..defaults import TRACE_PERF, DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
+from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
+from ..ne2 import NaturalEarth2Image
 from ..reqparams import RequestParams
+from ..utils import compute_tile_grid
 
 
 def get_dataset_tile(ctx: ServiceContext,
-                     ds_name: str,
+                     ds_id: str,
                      var_name: str,
                      x: str, y: str, z: str,
                      params: RequestParams):
@@ -28,22 +28,22 @@ def get_dataset_tile(ctx: ServiceContext,
     y = params.to_int('y', y)
     z = params.to_int('z', z)
 
-    dataset, var = ctx.get_dataset_and_variable(ds_name, var_name)
+    dataset, var = ctx.get_dataset_and_variable(ds_id, var_name)
 
     dim_names = list(var.dims)
     if 'lon' not in dim_names or 'lat' not in dim_names:
-        raise ServiceBadRequestError(f'Variable "{var_name}" of dataset "{ds_name}" is not geo-spatial')
+        raise ServiceBadRequestError(f'Variable "{var_name}" of dataset "{ds_id}" is not geo-spatial')
 
     dim_names.remove('lon')
     dim_names.remove('lat')
 
-    var_indexers = ctx.get_var_indexers(ds_name, var_name, var, dim_names, params)
+    var_indexers = ctx.get_var_indexers(ds_id, var_name, var, dim_names, params)
 
     cmap_cbar = params.get_query_argument('cbar', default=None)
     cmap_vmin = params.get_query_argument_float('vmin', default=None)
     cmap_vmax = params.get_query_argument_float('vmax', default=None)
     if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None:
-        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_name, var_name)
+        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
         cmap_cbar = cmap_cbar or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
@@ -51,7 +51,7 @@ def get_dataset_tile(ctx: ServiceContext,
     # TODO: use MD5 hashes as IDs instead
 
     var_index_id = '-'.join(f'-{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items())
-    array_id = '%s-%s-%s' % (ds_name, var_name, var_index_id)
+    array_id = '%s-%s-%s' % (ds_id, var_name, var_index_id)
     image_id = '%s-%s-%s-%s' % (array_id, cmap_cbar, cmap_vmin, cmap_vmax)
 
     if image_id in ctx.pyramid_cache:
@@ -83,7 +83,7 @@ def get_dataset_tile(ctx: ServiceContext,
         def array_image_id_factory(level):
             return 'arr-%s/%s' % (array_id, level)
 
-        tile_grid = get_tile_grid(ctx, ds_name, var_name, var)
+        tile_grid = get_tile_grid(ctx, ds_id, var_name, var)
 
         pyramid = ImagePyramid.create_from_array(array, tile_grid,
                                                  level_image_id_factory=array_image_id_factory)
@@ -124,7 +124,7 @@ def get_dataset_tile(ctx: ServiceContext,
 
 
 def get_legend(ctx: ServiceContext,
-               ds_name: str,
+               ds_id: str,
                var_name: str,
                params: RequestParams):
     cmap_cbar = params.get_query_argument('cbar', default=None)
@@ -133,7 +133,7 @@ def get_legend(ctx: ServiceContext,
     cmap_w = params.get_query_argument_int('width', default=None)
     cmap_h = params.get_query_argument_int('height', default=None)
     if cmap_cbar is None or cmap_vmin is None or cmap_vmax is None or cmap_w is None or cmap_h is None:
-        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_name, var_name)
+        default_cmap_cbar, default_cmap_vmin, default_cmap_vmax = ctx.get_color_mapping(ds_id, var_name)
         cmap_cbar = cmap_cbar or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
@@ -151,7 +151,7 @@ def get_legend(ctx: ServiceContext,
     image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
                                                     norm=norm, orientation='vertical')
 
-    image_legend_label = ctx.get_legend_label(ds_name, var_name)
+    image_legend_label = ctx.get_legend_label(ds_id, var_name)
     if image_legend_label is not None:
         image_legend.set_label(image_legend_label)
 
@@ -166,30 +166,28 @@ def get_legend(ctx: ServiceContext,
 
 
 def get_dataset_tile_grid(ctx: ServiceContext,
-                          ds_name: str,
+                          ds_id: str,
                           var_name: str,
-                          format_name: str,
+                          tile_client: str,
                           base_url: str) -> Dict[str, Any]:
-    dataset, variable = ctx.get_dataset_and_variable(ds_name, var_name)
-    tile_grid = get_tile_grid(ctx, ds_name, var_name, variable)
-    if format_name == 'ol4' or format_name == 'cesium':
+    dataset, variable = ctx.get_dataset_and_variable(ds_id, var_name)
+    tile_grid = get_tile_grid(ctx, ds_id, var_name, variable)
+    if tile_client == 'ol4' or tile_client == 'cesium':
         return get_tile_source_options(tile_grid,
-                                       get_dataset_tile_url(ctx, ds_name, var_name, base_url),
-                                       client=format_name)
+                                       get_dataset_tile_url(ctx, ds_id, var_name, base_url),
+                                       client=tile_client)
     else:
-        raise ServiceBadRequestError(f'Unknown tile schema format "{format_name}"')
+        raise ServiceBadRequestError(f'Unknown tile client "{tile_client}"')
 
 
-# noinspection PyMethodMayBeStatic
-def get_dataset_tile_url(ctx: ServiceContext, ds_name: str, var_name: str, base_url: str):
-    return ctx.get_service_url(base_url, 'tile', ds_name, var_name, '{z}/{x}/{y}.png')
+def get_dataset_tile_url(ctx: ServiceContext, ds_id: str, var_name: str, base_url: str):
+    return ctx.get_service_url(base_url, 'datasets', ds_id, 'vars', var_name, 'tiles', '{z}/{x}/{y}.png')
 
 
-# noinspection PyMethodMayBeStatic
-def get_tile_grid(ctx: ServiceContext, ds_name: str, var_name: str, var: xr.DataArray):
-    tile_grid = get_or_compute_tile_grid(ctx, ds_name, var)
+def get_tile_grid(ctx: ServiceContext, ds_id: str, var_name: str, var: xr.DataArray):
+    tile_grid = get_or_compute_tile_grid(ctx, ds_id, var)
     if tile_grid is None:
-        raise ServiceError(f'Failed computing tile grid for variable "{var_name}" of dataset "{ds_name}"')
+        raise ServiceError(f'Failed computing tile grid for variable "{var_name}" of dataset "{ds_id}"')
     return tile_grid
 
 
@@ -201,18 +199,22 @@ def get_ne2_tile(ctx: ServiceContext, x: str, y: str, z: str, params: RequestPar
     return NaturalEarth2Image.get_pyramid().get_tile(x, y, z)
 
 
-def get_ne2_tile_grid(ctx: ServiceContext, format_name: str, base_url: str):
-    if format_name == 'ol4':
+def get_ne2_tile_grid(ctx: ServiceContext, tile_client: str, base_url: str):
+    if tile_client == 'ol4':
         return get_tile_source_options(NaturalEarth2Image.get_pyramid().tile_grid,
-                                       ctx.get_service_url(base_url, 'tile', 'ne2', '{z}/{x}/{y}.jpg'),
-                                       client='ol4')
+                                       get_ne2_tile_url(ctx, base_url),
+                                       client=tile_client)
     else:
-        raise ServiceBadRequestError(f'Unknown tile schema format {format_name!r}')
+        raise ServiceBadRequestError(f'Unknown tile client {tile_client!r}')
 
 
-def get_or_compute_tile_grid(ctx: ServiceContext, ds_name: str, var: xr.DataArray):
-    ctx.get_dataset(ds_name)  # make sure ds_name provides a cached entry
-    _, _, tile_grid_cache = ctx.dataset_cache[ds_name]
+def get_ne2_tile_url(ctx: ServiceContext, base_url: str):
+    return ctx.get_service_url(base_url, 'ne2', 'tiles', '{z}/{x}/{y}.jpg')
+
+
+def get_or_compute_tile_grid(ctx: ServiceContext, ds_id: str, var: xr.DataArray):
+    ctx.get_dataset(ds_id)  # make sure ds_id provides a cached entry
+    _, _, tile_grid_cache = ctx.dataset_cache[ds_id]
     shape = var.shape
     tile_grid_key = f'tg_{shape[-1]}_{shape[-2]}'
     if tile_grid_key in tile_grid_cache:

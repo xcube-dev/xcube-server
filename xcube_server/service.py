@@ -29,7 +29,7 @@ import time
 import traceback
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional
+from typing import Optional, Any, Dict
 
 import tornado.escape
 import tornado.options
@@ -38,12 +38,13 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
-from xcube_server.errors import ServiceBadRequestError
-from xcube_server.undefined import UNDEFINED
 from .context import ServiceContext, Config
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_NAME
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME
+from .errors import ServiceBadRequestError
+from .im import set_default_tile_cache
 from .reqparams import RequestParams
+from .undefined import UNDEFINED
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -61,6 +62,7 @@ class Service:
                  address: str = DEFAULT_ADDRESS,
                  port: int = DEFAULT_PORT,
                  config_file: Optional[str] = None,
+                 tile_cache_size: Optional[str] = DEFAULT_TILE_CACHE_SIZE,
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
                  log_file_prefix: str = DEFAULT_LOG_PREFIX,
                  log_to_stderr: bool = False,
@@ -106,6 +108,8 @@ class Service:
                                       config=config,
                                       base_dir=os.path.dirname(self.config_file or os.path.abspath('')))
         self._maybe_load_config()
+
+        set_default_tile_cache(**parse_tile_cache_config(tile_cache_size))
 
         application.service_context = self.context
         application.time_of_last_activity = time.clock()
@@ -214,7 +218,11 @@ class ServiceRequestHandler(RequestHandler):
     def set_default_headers(self):
         self.set_header("Access-Control-Allow-Origin", "*")
         self.set_header("Access-Control-Allow-Headers", "x-requested-with")
-        self.set_header('Access-Control-Allow-Methods', 'PUT, DELETE, OPTIONS')
+        self.set_header('Access-Control-Allow-Methods', 'GET, PUT, DELETE, OPTIONS')
+
+    def options(self):
+        self.set_status(204)
+        self.finish()
 
     def get_body_as_json_object(self, name="JSON object"):
         """ Get the body argument as JSON object. """
@@ -334,3 +342,22 @@ def url_pattern(pattern: str):
             reg_expr += pattern[pos:]
             break
     return reg_expr
+
+
+def parse_tile_cache_config(tile_cache_size: str) -> Dict[str, Any]:
+    tile_cache_size = tile_cache_size.upper()
+    if tile_cache_size != "" and tile_cache_size != "OFF":
+        unit = tile_cache_size[-1]
+        factors = {"B": 10 ** 0, "K": 10 ** 3, "M": 10 ** 6, "G": 10 ** 9, "T": 10 ** 12}
+        try:
+            if unit in factors:
+                capacity = int(tile_cache_size[0: -1]) * factors[unit]
+            else:
+                capacity = int(tile_cache_size)
+        except ValueError:
+            raise ValueError(f"invalid tile cache size: {tile_cache_size!r}")
+        if capacity > 0:
+            return dict(capacity=capacity)
+        elif capacity < 0:
+            raise ValueError(f"negative tile cache size: {tile_cache_size!r}")
+    return dict(no_cache=True)

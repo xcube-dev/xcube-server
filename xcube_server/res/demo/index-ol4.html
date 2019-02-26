@@ -50,8 +50,8 @@
         </div>
     </div>
     <script type="text/javascript">
-        var baseUrl = 'http://localhost:8080/xcube/api/0.1.0.dev5';
-        var datasetNames = [];
+        var baseUrl = 'http://localhost:8080/xcube/api/0.1.0.dev6';
+        // var baseUrl = 'http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev5';
         var animationId = null;
         var frameRate = 0.5; // frames per second
         var baseTileUrl = null;
@@ -71,68 +71,64 @@
             })
         });
 
-        fetch(baseUrl + '/datasets')
+        fetch(baseUrl + '/datasets?deep=1&client=ol4')
         .then(response => response.json())
         .then(datasetsJson => {
-            for(let dataset of datasetsJson.datasets){
-                var datasetName  = dataset.name;
+            for (let dataset of datasetsJson.datasets) {
+                var datasetId  = dataset.id;
 
-                fetch(baseUrl + '/variables/' + datasetName)
-                .then(response => response.json())
-                .then(options => {
-                    let name = options.name;
-                    var overlayGroup = new ol.layer.Group({
-                        name: name,
-                        title: dataset.title || name,
-                        layers: []
-                    });
-                    var variables = options.variables
-                    var datasetName = options.name;
-                    datasets[datasetName] = [];
-                    for (var variable of variables) {
-                        var variableName = variable.name
-                        datasets[datasetName].push(variableName);
-                        datasets[datasetName][variableName] = variable;
-                        overlayGroup.getLayers().push(
-                            new ol.layer.Tile({
-                                name: variableName,
-                                title: variable.title || variableName,
-                                type: 'base',
-                                visible: false,
-                                source: newTileXYZSourceFromJsonOptions(variable.tileSourceOptions)
-                            })
-                        );
-                    }                   
-                    map.addLayer(overlayGroup);
-                })
-                .then(() => {
-                    // Add feature layer
-                    var pointStyle = new ol.style.Circle({
-                        radius: 5,
-                        fill: new ol.style.Fill({color: 'yellow', opacity: 0.5}),
-                        stroke: new ol.style.Stroke({color: 'red', width: 2})
-                    });
-                    var styles = {
-                        'Point': new ol.style.Style({
-                           image: pointStyle
-                        })
-                    };
-                    var styleFunction = function(feature) {
-                        return styles[feature.getGeometry().getType()];
-                    };
-                    map.addLayer(new ol.layer.Vector({
-                        title: 'Stations',
-                        style: styleFunction,
-                        source: new ol.source.Vector({
-                            url: baseUrl + '/features/all',
-                            format: new ol.format.GeoJSON(),
-                            //features: (new ol.format.GeoJSON()).readFeatures(featureCollection),
-                            //projection: 'EPSG:4326',
-                        })
-                    }));
+                var overlayGroup = new ol.layer.Group({
+                    name: datasetId,
+                    title: dataset.title || name,
+                    layers: []
                 });
+                var variables = dataset.variables;
 
-                fetch(baseUrl + '/coords/' + datasetName + '/time')
+                datasets[datasetId] = [];
+                for (var variable of variables) {
+                    var variableName = variable.name
+                    datasets[datasetId].push(variableName);
+                    datasets[datasetId][variableName] = variable;
+                    overlayGroup.getLayers().push(
+                        new ol.layer.Tile({
+                            name: variableName,
+                            title: variable.title || variableName,
+                            type: 'base',
+                            visible: false,
+                            source: newTileXYZSourceFromJsonOptions(variable.tileSourceOptions)
+                        })
+                    );
+                }
+
+                map.addLayer(overlayGroup);
+            })
+            .then(() => {
+                // Add feature layer
+                var pointStyle = new ol.style.Circle({
+                    radius: 5,
+                    fill: new ol.style.Fill({color: 'yellow', opacity: 0.5}),
+                    stroke: new ol.style.Stroke({color: 'red', width: 2})
+                });
+                var styles = {
+                    'Point': new ol.style.Style({
+                       image: pointStyle
+                    })
+                };
+                var styleFunction = function(feature) {
+                    return styles[feature.getGeometry().getType()];
+                };
+                map.addLayer(new ol.layer.Vector({
+                    title: 'Stations',
+                    style: styleFunction,
+                    source: new ol.source.Vector({
+                        url: baseUrl + '/places/all',
+                        format: new ol.format.GeoJSON(),
+                        //features: (new ol.format.GeoJSON()).readFeatures(featureCollection),
+                        //projection: 'EPSG:4326',
+                    })
+                }));
+
+                fetch(baseUrl + '/coords/' + datasetId + '/time')
                 .then(response => response.json())
                 .then(coords => {
                     timeValues = coords.values;
@@ -166,12 +162,12 @@
             updateTimeInfo();
 
             map.getLayerGroup().getLayers().forEach((overlayGroup) => {
-                var datasetName = overlayGroup.get('name');
-                if (datasetName) {
+                var datasetId = overlayGroup.get('name');
+                if (datasetId) {
                     overlayGroup.getLayers().forEach((layer) => {
                         if (layer.get('visible')) {
                             var layerName = layer.get('name');
-                            var sourceOptions = datasets[datasetName][layerName]['tileSourceOptions'];
+                            var sourceOptions = datasets[datasetId][layerName]['tileSourceOptions'];
                             var newLayerSourceOptions = { ...sourceOptions, url: sourceOptions.url + '?time=' + timeValue };
                             layer.setSource(newTileXYZSourceFromJsonOptions(newLayerSourceOptions));
                         }

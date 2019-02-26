@@ -11,13 +11,13 @@ Datasets:
     Args: ["@demo@", "1W"]
     Style: default
 
-Features:
+PlaceGroups:
   - Identifier: inside-cube
     Title: Points inside the cube
-    Path: "features/inside-cube.geojson"
+    Path: "places/inside-cube.geojson"
   - Identifier: outside-cube
     Title: Points outside the cube
-    Path: "features/outside-cube.geojson"
+    Path: "places/outside-cube.geojson"
 
 Styles:
   - Identifier: default
