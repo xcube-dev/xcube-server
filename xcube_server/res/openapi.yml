@@ -173,7 +173,7 @@ paths:
   # Tiles
   ########################################################################################
 
-  'datasets/{dataset}/vars/{variable}/tiles/{z}/{x}/{y}.png':
+  '/datasets/{dataset}/vars/{variable}/tiles/{z}/{x}/{y}.png':
     get:
       tags:
         - tiles
@@ -199,7 +199,7 @@ paths:
         '404':
           description: Resource not found.
 
-  'datasets/{dataset}/vars/{variable}/tilegrid':
+  '/datasets/{dataset}/vars/{variable}/tilegrid':
     get:
       tags:
         - tiles
@@ -224,7 +224,7 @@ paths:
         '404':
           description: Resource not found.
 
-  'datasets/{dataset}/vars/{variable}/legend.png':
+  '/datasets/{dataset}/vars/{variable}/legend.png':
     get:
       tags:
         - tiles
@@ -274,7 +274,6 @@ paths:
                     type: object
         '404':
           description: Resource not found.
-
 
   ########################################################################################
   # Time-Series (PRELIMINARY & UNSTABLE - will be revised soon)
