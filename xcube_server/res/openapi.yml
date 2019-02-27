@@ -1,6 +1,8 @@
 openapi: 3.0.0
 
 servers:
+  - description: CyanoAlert Development API
+    url: http://www.brockmann-consult.de/cyanoalert-dev/api/0.1.0.dev6
   - description: DCS4COP Development API
     url: http://xcube.dcs4cop.eu/dcs4cop-dev/api/0.1.0.dev6
   - description: SwaggerHub API Auto Mocking
@@ -165,7 +167,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CoordinateVariable'
+                $ref: '#/components/schemas/DimensionInfo'
 
   ########################################################################################
   # Tiles
@@ -201,7 +203,7 @@ paths:
     get:
       tags:
         - tiles
-      summary: Get tiling schema for OL4
+      summary: Get tiling schema
       operationId: getDatasetVariableTileGrid
       description: |
         Get a tile grid description compatible with
@@ -216,7 +218,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OL4TileSchema'
+                oneOf:
+                  - $ref: '#/components/schemas/OL4TileSchema'
+                  - $ref: '#/components/schemas/CesiumTileGrid'
         '404':
           description: Resource not found.
 
@@ -654,8 +658,6 @@ components:
       required:
         - name
         - title
-        - variables
-        - dimensions
       properties:
         name:
           type: string
@@ -670,7 +672,7 @@ components:
         dimensions:
           type: array
           items:
-            $ref: '#/components/schemas/VariableInfo'
+            $ref: '#/components/schemas/DimensionInfo'
         placeGroups:
           type: array
           items:
@@ -703,13 +705,14 @@ components:
           items:
             type: number
         tileSourceOptions:
-          $ref: '#/components/schemas/OL4TileSchema'
+          oneOf:
+            - $ref: '#/components/schemas/OL4TileSchema'
+            - $ref: '#/components/schemas/CesiumTileGrid'
     DimensionInfo:
       type: object
       required:
         - name
         - size
-        - units
         - dtype
         - coordinates
       properties:
@@ -739,17 +742,6 @@ components:
           type: string
         title:
           type: string
-    CoordinateVariable:
-      type: object
-      properties:
-        name:
-          type: string
-        dtype:
-          type: string
-        values:
-          type: array
-          items:
-            type: number
     CesiumTileGrid:
       type: object
       properties:
@@ -776,12 +768,6 @@ components:
           type: number
         numberOfLevelZeroTilesY:
           type: number
-        minZoom:
-          type: number
-        maxZoom:
-          type: number
-        tileGrid:
-          $ref: '#/components/schemas/OL4TileGrid'
     CesiumRectangle:
       type: object
       properties:
