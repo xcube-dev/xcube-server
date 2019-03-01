@@ -3,6 +3,7 @@ from typing import Optional, Tuple, Union, Dict, Any, List
 
 import affine
 import numpy as np
+import pandas as pd
 import rasterio.features
 import shapely.geometry
 import shapely.geometry
@@ -109,6 +110,20 @@ def get_geometry_mask(width: int, height: int,
                                            transform=transform,
                                            all_touched=True,
                                            invert=True)
+
+
+def timestamp_to_iso_string(time: np.datetime64, freq='S'):
+    """
+    Convert a UTC timestamp given as nanos, millis, seconds, etc. since 1970-01-01 00:00:00
+    to an ISO-format string.
+
+    :param time: UTC timestamp given as time delta since since 1970-01-01 00:00:00 in the units given by
+           the numpy datetime64 type, so it can be as nanos, millis, seconds since 1970-01-01 00:00:00.
+    :param freq: time rounding resolution. See pandas.Timestamp.round().
+    :return: ISO-format string.
+    """
+    # All times are UTC (Z = Zulu Time Zone = UTC)
+    return pd.Timestamp(time).round(freq).isoformat() + 'Z'
 
 
 class GeoJSON:

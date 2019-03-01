@@ -7,7 +7,7 @@ from ..context import ServiceContext
 from ..controllers.tiles import get_tile_source_options, get_dataset_tile_url, get_or_compute_tile_grid
 from ..errors import ServiceBadRequestError
 from ..im.cmaps import get_cmaps
-from ..utils import get_dataset_bounds
+from ..utils import get_dataset_bounds, timestamp_to_iso_string
 
 
 def get_datasets(ctx: ServiceContext, details=False, client=None, base_url: str = None) -> Dict:
@@ -102,7 +102,7 @@ def get_dataset_coordinates(ctx: ServiceContext, ds_id: str, dim_name: str) -> D
     elif np.issubdtype(var.dtype, np.integer):
         converter = int
     else:
-        converter = str
+        converter = timestamp_to_iso_string
     for value in var.values:
         values.append(converter(value))
     return dict(name=dim_name,
@@ -135,7 +135,7 @@ def get_color_bars(ctx: ServiceContext, mime_type: str) -> str:
                 cmap_name, cmap_data = cmap_bar
                 cmap_image = f'<img src="data:image/png;base64,{cmap_data}" width="100%%" height="32"/>'
                 html_body += f'        <tr><td style="width: 5em">{cmap_name}:' \
-                             f'</td><td style="width: 40em">{cmap_image}</td></tr>\n'
+                    f'</td><td style="width: 40em">{cmap_image}</td></tr>\n'
             html_body += '    </table>\n'
         return html_head + html_body + html_foot
     raise ServiceBadRequestError(f'Format {mime_type!r} not supported for color bars')

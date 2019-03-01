@@ -19,18 +19,17 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+import math
 from typing import Dict, List
 
-import math
 import numpy as np
 import shapely.geometry
 import xarray as xr
-from pandas import Timestamp
 
-from xcube_server.errors import ServiceBadRequestError
 from ..context import ServiceContext
+from ..errors import ServiceBadRequestError
 from ..utils import get_dataset_bounds, get_dataset_geometry, get_box_split_bounds_geometry, get_geometry_mask, \
-    GeoJSON
+    GeoJSON, timestamp_to_iso_string
 
 
 def get_time_series_info(ctx: ServiceContext) -> Dict:
@@ -45,7 +44,7 @@ def get_time_series_info(ctx: ServiceContext) -> Dict:
             time_data = dataset.variables['time'].data
             time_stamps = []
             for time in time_data:
-                time_stamps.append(_to_isoformat(time))
+                time_stamps.append(timestamp_to_iso_string(time))
             for variable in dataset.data_vars.variables:
                 variable_dict = {'name': '{0}.{1}'.format(descriptor['Identifier'], variable),
                                  'dates': time_stamps,
@@ -141,7 +140,7 @@ def _get_time_series_for_point(dataset: xr.Dataset,
         else:
             statistics['validCount'] = 1
             statistics['average'] = item
-        result = {'result': statistics, 'date': _to_isoformat(entry.time.data)}
+        result = {'result': statistics, 'date': timestamp_to_iso_string(entry.time.data)}
         time_series.append(result)
     return {'results': time_series}
 
@@ -200,7 +199,7 @@ def _get_time_series_for_geometry(dataset: xr.Dataset,
         else:
             statistics['validCount'] = valid_count
             statistics['average'] = float(mean_ts_var)
-        result = {'result': statistics, 'date': _to_isoformat(variable_slice.time.data)}
+        result = {'result': statistics, 'date': timestamp_to_iso_string(variable_slice.time.data)}
         time_series.append(result)
 
     return {'results': time_series}
@@ -226,9 +225,3 @@ def _clamp(x, x1, x2):
     if x > x2:
         return x2
     return x
-
-
-# TODO (forman) - make time_round_freq a configuration parameter
-def _to_isoformat(time, time_round_freq='s'):
-    # All times are UTC (Z = Zulu Time Zone = UTC)
-    return Timestamp(time).round(time_round_freq).isoformat() + 'Z'

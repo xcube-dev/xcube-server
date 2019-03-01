@@ -137,7 +137,7 @@ class GetDatasetsHandler(ServiceRequestHandler):
         tile_client = self.params.get_query_argument('tiles', None)
         response = get_datasets(self.service_context, details=details, client=tile_client, base_url=self.base_url)
         self.set_header('Content-Type', 'application/json')
-        self.write(json.dumps(response, indent=2))
+        self.write(json.dumps(response, indent=None if details else 2))
 
 
 class GetDatasetHandler(ServiceRequestHandler):
