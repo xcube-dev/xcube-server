@@ -1,7 +1,7 @@
 ## Changes in 0.1.0.dev5
 
 * Request for obtaining a legend for a layer of given by a variable of a data set was added.
-* Added a Dockerfile 
+* Added a Dockerfile to build an xcube docker image and to run the demo
 
 ## Changes in 0.1.0.dev4
 
