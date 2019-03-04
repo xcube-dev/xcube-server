@@ -38,9 +38,9 @@ from tornado.ioloop import IOLoop
 from tornado.log import enable_pretty_logging
 from tornado.web import RequestHandler, Application
 
-from .context import ServiceContext, Config
+from .context import ServiceContext
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceBadRequestError
 from .im import set_default_tile_cache
 from .reqparams import RequestParams
@@ -64,9 +64,9 @@ class Service:
                  config_file: Optional[str] = None,
                  tile_cache_size: Optional[str] = DEFAULT_TILE_CACHE_SIZE,
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
+                 trace_perf: bool = DEFAULT_TRACE_PERF,
                  log_file_prefix: str = DEFAULT_LOG_PREFIX,
-                 log_to_stderr: bool = False,
-                 config: Optional[Config] = None) -> None:
+                 log_to_stderr: bool = False) -> None:
 
         """
         Start a tile service.
@@ -105,8 +105,8 @@ class Service:
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
         self.context = ServiceContext(name=name,
-                                      config=config,
-                                      base_dir=os.path.dirname(self.config_file or os.path.abspath('')))
+                                      base_dir=os.path.dirname(self.config_file or os.path.abspath('')),
+                                      trace_perf=trace_perf)
         self._maybe_load_config()
 
         set_default_tile_cache(**parse_tile_cache_config(tile_cache_size))
@@ -279,6 +279,7 @@ class ServiceRequestParams(RequestParams):
         return value
 
 
+# noinspection PyAbstractClass
 class _GlobalEventLoopPolicy(asyncio.DefaultEventLoopPolicy):
     """
     Event loop policy that has one fixed global loop for all threads.

@@ -150,7 +150,7 @@ class HandlersTest(AsyncHTTPTestCase):
         self.assertResponseOK(response)
 
     def test_fetch_dataset_tile_with_params(self):
-        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png?time=current&cbar=jet')
+        response = self.fetch(self.prefix + '/datasets/demo/vars/conc_chl/tiles/0/0/0.png?time=current&cbar=jet&debug=1')
         self.assertResponseOK(response)
 
     def test_fetch_dataset_tile_grid_ol4_json(self):
