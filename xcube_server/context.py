@@ -35,8 +35,8 @@ import zarr
 from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
-    DEFAULT_CMAP_VMAX, TRACE_PERF, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
-    FILE_TILE_CACHE_ENABLED, API_PREFIX, DEFAULT_NAME
+    DEFAULT_CMAP_VMAX, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
+    FILE_TILE_CACHE_ENABLED, API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .logtime import log_time
 from .reqparams import RequestParams
@@ -55,10 +55,11 @@ class ServiceContext:
     def __init__(self,
                  name: str = DEFAULT_NAME,
                  base_dir: str = None,
-                 config: Config = None):
+                 config: Config = None,
+                 trace_perf: bool = DEFAULT_TRACE_PERF):
         self._name = name
         self.base_dir = os.path.abspath(base_dir or '')
-        self._config = config or dict()
+        self._config = config if config is not None else dict()
         self.dataset_cache = dict()  # contains tuples of form (ds, ds_descriptor, tile_grid_cache)
         # TODO by forman: move pyramid_cache, mem_tile_cache, rgb_tile_cache into dataset_cache values
         self.pyramid_cache = dict()
@@ -74,6 +75,7 @@ class ServiceContext:
             self.rgb_tile_cache = None
         self._place_group_cache = dict()
         self._feature_index = 0
+        self._trace_perf = trace_perf
 
     @property
     def config(self) -> Config:
@@ -97,6 +99,10 @@ class ServiceContext:
                         ds.close()
                         del self.dataset_cache[ds_name]
         self._config = config
+
+    @property
+    def trace_perf(self) -> bool:
+        return self._trace_perf
 
     def get_service_url(self, base_url, *path: str):
         return base_url + '/' + self._name + API_PREFIX + '/' + '/'.join(path)
@@ -238,7 +244,7 @@ class ServiceContext:
 
             t2 = time.clock()
 
-            if TRACE_PERF:
+            if self.config.get("trace_perf", False):
                 print(f'PERF: opening {ds_id!r} took {t2 - t1} seconds')
 
         return ds

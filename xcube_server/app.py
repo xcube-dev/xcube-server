@@ -116,31 +116,33 @@ def new_service(args=None) -> Service:
     parser.add_argument('--version', '-V', action='version', version=__version__)
     parser.add_argument('--name', '-n', dest='name', metavar='NAME',
                         help='Service name. '
-                             f'Defaults to {DEFAULT_NAME!r}.',
+                        f'Defaults to {DEFAULT_NAME!r}.',
                         default=DEFAULT_NAME)
     parser.add_argument('--address', '-a', dest='address', metavar='ADDRESS',
                         help='Server address. '
-                             f'Defaults to {DEFAULT_ADDRESS!r}.',
+                        f'Defaults to {DEFAULT_ADDRESS!r}.',
                         default=DEFAULT_ADDRESS)
     parser.add_argument('--port', '-p', dest='port', metavar='PORT', type=int,
                         default=DEFAULT_PORT,
                         help='Port number where the service will listen on. '
-                             f'Defaults to {DEFAULT_PORT}.')
+                        f'Defaults to {DEFAULT_PORT}.')
     parser.add_argument('--update', '-u', dest='update_period', metavar='UPDATE_PERIOD', type=float,
                         default=DEFAULT_UPDATE_PERIOD,
                         help='Service will update after given seconds of inactivity. Zero or a negative value will '
                              'disable update checks. '
-                             f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
+                        f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
     parser.add_argument('--config', '-c', dest='config_file', metavar='CONFIG_FILE', default=None,
-                        help='Configuration file. '
-                             f'Defaults to {DEFAULT_CONFIG_FILE!r}.')
+                        help='Datasets configuration file. '
+                        f'Defaults to {DEFAULT_CONFIG_FILE!r}.')
     parser.add_argument('--tilecache', '-t', dest='tile_cache', metavar='TILE_CACHE', default=DEFAULT_TILE_CACHE_SIZE,
                         help=f'In-memory tile cache size in bytes. '
-                             f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
-                             f'Defaults to {DEFAULT_TILE_CACHE_SIZE!r}. '
-                             f'The special value {"OFF"!r} disables tile caching.')
+                        f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
+                        f'Defaults to {DEFAULT_TILE_CACHE_SIZE!r}. '
+                        f'The special value {"OFF"!r} disables tile caching.')
     parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',
-                        help="if given, logging will be delegated to the console (stderr)")
+                        help="Delegate logging will be delegated to the console (stderr).")
+    parser.add_argument('--traceperf', dest='trace_perf', action='store_true',
+                        help="Print performance diagnostics (stdout).")
 
     args_obj = parser.parse_args(args)
 
@@ -151,7 +153,8 @@ def new_service(args=None) -> Service:
                    address=args_obj.address,
                    config_file=args_obj.config_file,
                    tile_cache_size=args_obj.tile_cache,
-                   update_period=args_obj.update_period)
+                   update_period=args_obj.update_period,
+                   trace_perf=args_obj.trace_perf)
 
 
 def main(args=None) -> int:

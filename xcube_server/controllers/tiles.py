@@ -11,7 +11,7 @@ import numpy as np
 import xarray as xr
 
 from ..context import ServiceContext
-from ..defaults import TRACE_PERF, DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
+from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
 from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
 from ..ne2 import NaturalEarth2Image
@@ -24,9 +24,11 @@ def get_dataset_tile(ctx: ServiceContext,
                      var_name: str,
                      x: str, y: str, z: str,
                      params: RequestParams):
-    x = params.to_int('x', x)
-    y = params.to_int('y', y)
-    z = params.to_int('z', z)
+    x = RequestParams.to_int('x', x)
+    y = RequestParams.to_int('y', y)
+    z = RequestParams.to_int('z', z)
+
+    trace_perf = params.get_query_argument_int('debug', ctx.trace_perf)
 
     dataset, var = ctx.get_dataset_and_variable(ds_id, var_name)
 
@@ -104,20 +106,20 @@ def get_dataset_tile(ctx: ServiceContext,
                                                      format='PNG',
                                                      tile_cache=ctx.rgb_tile_cache))
         ctx.pyramid_cache[image_id] = pyramid
-        if TRACE_PERF:
+        if trace_perf:
             print('Created pyramid "%s":' % image_id)
             print('  tile_size:', pyramid.tile_size)
             print('  num_level_zero_tiles:', pyramid.num_level_zero_tiles)
             print('  num_levels:', pyramid.num_levels)
 
-    if TRACE_PERF:
+    if trace_perf:
         print('PERF: >>> Tile:', image_id, z, y, x)
 
     t1 = time.clock()
     tile = pyramid.get_tile(x, y, z)
     t2 = time.clock()
 
-    if TRACE_PERF:
+    if trace_perf:
         print('PERF: <<< Tile:', image_id, z, y, x, 'took', t2 - t1, 'seconds')
 
     return tile
