@@ -88,7 +88,8 @@ def get_dataset_tile(ctx: ServiceContext,
         tile_grid = get_tile_grid(ctx, ds_id, var_name, var)
 
         pyramid = ImagePyramid.create_from_array(array, tile_grid,
-                                                 level_image_id_factory=array_image_id_factory)
+                                                 level_image_id_factory=array_image_id_factory,
+                                                 tile_cache=ctx.mem_tile_cache)
         pyramid = pyramid.apply(lambda image, level:
                                 TransformArrayImage(image,
                                                     image_id='tra-%s/%d' % (array_id, level),
@@ -111,6 +112,10 @@ def get_dataset_tile(ctx: ServiceContext,
             print('  tile_size:', pyramid.tile_size)
             print('  num_level_zero_tiles:', pyramid.num_level_zero_tiles)
             print('  num_levels:', pyramid.num_levels)
+            print('  min_width:', pyramid.tile_grid.min_width)
+            print('  min_height:', pyramid.tile_grid.min_height)
+            print('  max_width:', pyramid.tile_grid.max_width)
+            print('  max_height:', pyramid.tile_grid.max_height)
 
     if trace_perf:
         print('PERF: >>> Tile:', image_id, z, y, x)

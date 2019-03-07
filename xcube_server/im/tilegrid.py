@@ -170,15 +170,6 @@ class TileGrid:
         """
         gsb_x1, gsb_y1, gsb_x2, gsb_y2 = geo_extent.coords
 
-        if gsb_x1 < gsb_x2:
-            # crossing_anti-meridian = False
-            gsb_w = gsb_x2 - gsb_x1
-        else:
-            # crossing_anti-meridian = True
-            gsb_w = 360. + gsb_x2 - gsb_x1
-
-        gsb_h = gsb_y2 - gsb_y1
-
         w_mode = MODE_GE
         if gsb_x1 == -180. and gsb_x2 == 180.:
             w_mode = MODE_EQ
@@ -188,14 +179,30 @@ class TileGrid:
 
         (w_new, h_new), (tw, th), (nt0x, nt0y), nl = pow2_2d_subdivision(w, h,
                                                                          w_mode=w_mode, h_mode=h_mode,
-                                                                         tw_opt=min(w, tile_width or 512),
-                                                                         th_opt=min(h, tile_height or 512))
+                                                                         tw_opt=min(w, tile_width or 256),
+                                                                         th_opt=min(h, tile_height or 256))
 
-        assert w_new >= w
-        assert h_new >= h
+        new_extent = cls.adjust_geo_extend(geo_extent, w, h, w_new, h_new)
+        return TileGrid(nl, nt0x, nt0y, tw, th, new_extent)
 
-        if w_new > w:
-            gsb_w_new = w_new * gsb_w / w
+    @classmethod
+    def adjust_geo_extend(cls, geo_extent, w_old, h_old, w_new, h_new) -> GeoExtent:
+
+        assert w_new >= w_old
+        assert h_new >= h_old
+
+        gsb_x1, gsb_y1, gsb_x2, gsb_y2 = geo_extent.coords
+
+        if gsb_x1 < gsb_x2:
+            # crossing_anti-meridian = False
+            gsb_w = gsb_x2 - gsb_x1
+        else:
+            # crossing_anti-meridian = True
+            gsb_w = 360. + gsb_x2 - gsb_x1
+        gsb_h = gsb_y2 - gsb_y1
+
+        if w_new > w_old:
+            gsb_w_new = w_new * gsb_w / w_old
             # We cannot adjust gsb_x1, because we expect x to increase with x indices
             # and hence we would later on have to read from negative x indexes
             gsb_x2_new = gsb_x1 + gsb_w_new
@@ -204,8 +211,8 @@ class TileGrid:
         else:
             gsb_x2_new = gsb_x2
 
-        if h_new > h:
-            gsb_h_new = h_new * gsb_h / h
+        if h_new > h_old:
+            gsb_h_new = h_new * gsb_h / h_old
             if geo_extent.inv_y:
                 # We cannot adjust gsb_y2, because we expect y to decrease with y indices
                 # and hence we would later on have to read from negative y indexes
@@ -219,13 +226,12 @@ class TileGrid:
         else:
             gsb_y1_new, gsb_y2_new = gsb_y1, gsb_y2
 
-        new_extent = GeoExtent(west=gsb_x1,
-                               south=gsb_y1_new,
-                               east=gsb_x2_new,
-                               north=gsb_y2_new,
-                               inv_y=geo_extent.inv_y,
-                               eps=geo_extent.eps)
-        return TileGrid(nl, nt0x, nt0y, tw, th, new_extent)
+        return GeoExtent(west=gsb_x1,
+                         south=gsb_y1_new,
+                         east=gsb_x2_new,
+                         north=gsb_y2_new,
+                         inv_y=geo_extent.inv_y,
+                         eps=geo_extent.eps)
 
 
 @functools.lru_cache(maxsize=256)

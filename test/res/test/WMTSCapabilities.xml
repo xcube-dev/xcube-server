@@ -86,27 +86,27 @@
                 <ows:Identifier>0</ows:Identifier>
                 <ScaleDenominator>3975696.099759771</ScaleDenominator>
                 <TopLeftCorner>2.168404344971009e-19 52.5</TopLeftCorner>
-                <TileWidth>250</TileWidth>
+                <TileWidth>500</TileWidth>
                 <TileHeight>250</TileHeight>
-                <MatrixWidth>2</MatrixWidth>
+                <MatrixWidth>1</MatrixWidth>
                 <MatrixHeight>1</MatrixHeight>
             </TileMatrix>
             <TileMatrix>
                 <ows:Identifier>1</ows:Identifier>
                 <ScaleDenominator>1987848.0498798855</ScaleDenominator>
                 <TopLeftCorner>2.168404344971009e-19 52.5</TopLeftCorner>
-                <TileWidth>250</TileWidth>
+                <TileWidth>500</TileWidth>
                 <TileHeight>250</TileHeight>
-                <MatrixWidth>4</MatrixWidth>
+                <MatrixWidth>2</MatrixWidth>
                 <MatrixHeight>2</MatrixHeight>
             </TileMatrix>
             <TileMatrix>
                 <ows:Identifier>2</ows:Identifier>
                 <ScaleDenominator>993924.0249399428</ScaleDenominator>
                 <TopLeftCorner>2.168404344971009e-19 52.5</TopLeftCorner>
-                <TileWidth>250</TileWidth>
+                <TileWidth>500</TileWidth>
                 <TileHeight>250</TileHeight>
-                <MatrixWidth>8</MatrixWidth>
+                <MatrixWidth>4</MatrixWidth>
                 <MatrixHeight>4</MatrixHeight>
             </TileMatrix>
         </TileMatrixSet>

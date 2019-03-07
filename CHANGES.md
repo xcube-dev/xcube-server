@@ -1,5 +1,6 @@
 ## Changes in 0.1.0.dev6 (in dev)
 
+* Respecting chunk sizes when computing tile sizes [#44](https://github.com/dcs4cop/xcube-server/issues/44)
 * New CLI option "--traceperf" that allows switching on performance diagnostics.
 * The RESTful tile operations now have a query parameter "debug=1" which also switches on tile 
   computation performance diagnostics.
