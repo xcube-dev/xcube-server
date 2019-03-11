@@ -182,11 +182,11 @@ class TileGrid:
                                                                          tw_opt=min(w, tile_width or 256),
                                                                          th_opt=min(h, tile_height or 256))
 
-        new_extent = cls.adjust_geo_extend(geo_extent, w, h, w_new, h_new)
+        new_extent = cls.adjust_geo_extent(geo_extent, w, h, w_new, h_new)
         return TileGrid(nl, nt0x, nt0y, tw, th, new_extent)
 
     @classmethod
-    def adjust_geo_extend(cls, geo_extent, w_old, h_old, w_new, h_new) -> GeoExtent:
+    def adjust_geo_extent(cls, geo_extent, w_old, h_old, w_new, h_new) -> GeoExtent:
 
         assert w_new >= w_old
         assert h_new >= h_old

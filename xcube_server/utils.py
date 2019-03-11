@@ -80,7 +80,7 @@ def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
     :return:  a new TileGrid object or None if *var* cannot be represented as a spatial image
     """
     try:
-        geo_extent = get_extend_from_var(var)
+        geo_extent = get_extent_from_var(var)
     except ValueError:
         return None
 
@@ -107,7 +107,7 @@ def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
         return TileGrid(1, 1, 1, width, height, geo_extent)
 
 
-def get_extend_from_var(var: xr.DataArray) -> Optional[GeoExtent]:
+def get_extent_from_var(var: xr.DataArray) -> Optional[GeoExtent]:
     """
     Compute geographic extent for given variable.
 
