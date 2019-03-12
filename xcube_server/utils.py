@@ -1,4 +1,3 @@
-import warnings
 from typing import Optional, Tuple, Union, Dict, Any, List
 
 import affine
@@ -80,23 +79,46 @@ def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
     :param var: A variable of an xarray dataset.
     :return:  a new TileGrid object or None if *var* cannot be represented as a spatial image
     """
-    lat_dim_name = 'lat'
-    lon_dim_name = 'lon'
-    if lat_dim_name not in var.coords or lon_dim_name not in var.coords:
+    try:
+        geo_extent = get_extent_from_var(var)
+    except ValueError:
         return None
-    width, height = var.shape[-1], var.shape[-2]
-    lats = var.coords[lat_dim_name]
-    lons = var.coords[lon_dim_name]
+
+    dims = var.dims
+    shape = var.shape
+    if len(dims) < 2 or len(dims) != len(shape) or dims[-2] != "lat" or dims[-1] != "lon":
+        return None
+
+    width, height = shape[-1], shape[-2]
+    tile_width, tile_height = 256, 256
+
+    encoding = var.encoding
+    chunks = None
+    if "chunks" in encoding:
+        chunks = encoding["chunks"]
+    elif "chunksizes" in encoding:
+        chunks = encoding["chunksizes"]
+    if chunks is not None and len(chunks) > 2:
+        tile_width, tile_height = chunks[-1], chunks[-2]
+
     try:
-        geo_extent = GeoExtent.from_coord_arrays(lons, lats)
-    except ValueError as e:
-        warnings.warn(f'failed to derive geo-extent for tile grid: {e}')
-        # Create a default geo-extent which is probably wrong, but at least we see something
-        geo_extent = GeoExtent()
-    try:
-        return TileGrid.create(width, height, 360, 360, geo_extent)
+        return TileGrid.create(width, height, tile_width, tile_height, geo_extent)
     except ValueError:
         return TileGrid(1, 1, 1, width, height, geo_extent)
+
+
+def get_extent_from_var(var: xr.DataArray) -> Optional[GeoExtent]:
+    """
+    Compute geographic extent for given variable.
+
+    :param var: A variable of an xarray dataset.
+    :return:  a new TileGrid object or None if *var* cannot be represented as a spatial image
+    """
+    if 'lon' not in var.coords:
+        raise ValueError("Missing coordinate variable 'lon'")
+    if 'lat' not in var.coords:
+        raise ValueError("Missing coordinate variable 'lat'")
+    return GeoExtent.from_coord_arrays(var.coords['lon'], var.coords['lat'])
 
 
 def get_geometry_mask(width: int, height: int,
