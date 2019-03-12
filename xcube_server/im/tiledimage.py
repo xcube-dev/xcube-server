@@ -689,7 +689,7 @@ class FastNdarrayDownsamplingImage(OpImage):
         return trim_tile(tile, self.tile_size)
 
 
-# TODO (forman): issue #46: use an NdarrayImage for each variable and each level of a DatasetPyramid
+# TODO (forman): issue #46: use an NdarrayImage for each variable and each level of a MultiLevelDataset
 
 class NdarrayImage(OpImage):
     """

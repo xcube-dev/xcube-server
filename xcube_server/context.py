@@ -22,8 +22,9 @@
 import glob
 import logging
 import os
+import threading
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import fiona
 import numpy as np
@@ -31,7 +32,7 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
-from xcube_server.pyramid import StoredMultiLevelDataset
+from xcube_server.utils import compute_tile_grid
 
 from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
@@ -39,7 +40,9 @@ from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
     FILE_TILE_CACHE_ENABLED, API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
+from .im import TileGrid
 from .logtime import log_time
+from .mldataset import StoredMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset
 from .reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
@@ -49,7 +52,8 @@ _LOG = logging.getLogger('xcube')
 
 Config = Dict[str, Any]
 
-# TODO (forman): issue #46: all configured datasets shall be read as instances of DatasetPyramid.
+
+# TODO (forman): issue #46: all configured datasets shall be read as instances of MultiLevelDataset.
 
 
 # noinspection PyMethodMayBeStatic
@@ -63,9 +67,9 @@ class ServiceContext:
         self._name = name
         self.base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
-        self.dataset_cache = dict()  # contains tuples of form (ds, ds_descriptor, tile_grid_cache)
+        self.dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor, tile_grid_cache)
         # TODO by forman: move pyramid_cache, mem_tile_cache, rgb_tile_cache into dataset_cache values
-        self.pyramid_cache = dict()
+        self.image_cache = dict()
         self.mem_tile_cache = Cache(MemoryCacheStore(),
                                     capacity=MEM_TILE_CACHE_CAPACITY,
                                     threshold=0.75)
@@ -79,6 +83,7 @@ class ServiceContext:
         self._place_group_cache = dict()
         self._feature_index = 0
         self._trace_perf = trace_perf
+        self._lock = threading.RLock()
 
     @property
     def config(self) -> Config:
@@ -89,18 +94,28 @@ class ServiceContext:
         if self._config:
             old_dataset_descriptors = self._config.get('Datasets')
             new_dataset_descriptors = config.get('Datasets')
+
+            clean_image_caches = False
+
             if not new_dataset_descriptors:
-                for ds, _, _ in self.dataset_cache.values():
-                    ds.close()
+                for ml_dataset, _, _ in self.dataset_cache.values():
+                    ml_dataset.close()
                 self.dataset_cache.clear()
+
             if new_dataset_descriptors and old_dataset_descriptors:
                 ds_names = list(self.dataset_cache.keys())
                 for ds_name in ds_names:
                     dataset_descriptor = self.find_dataset_descriptor(new_dataset_descriptors, ds_name)
                     if dataset_descriptor is None:
-                        ds, _, _ = self.dataset_cache[ds_name]
-                        ds.close()
+                        ml_dataset, _, _ = self.dataset_cache[ds_name]
+                        ml_dataset.close()
                         del self.dataset_cache[ds_name]
+
+            if clean_image_caches:
+                self.image_cache.clear()
+                if self.rgb_tile_cache is not None:
+                    self.rgb_tile_cache.clear()
+
         self._config = config
 
     @property
@@ -110,11 +125,27 @@ class ServiceContext:
     def get_service_url(self, base_url, *path: str):
         return base_url + '/' + self._name + API_PREFIX + '/' + '/'.join(path)
 
-    def get_dataset_and_variable(self, ds_name: str, var_name: str):
-        dataset = self.get_dataset(ds_name)
+    def get_ml_dataset(self, ds_id: str) -> MultiLevelDataset:
+        ml_dataset, _, _ = self._get_dataset_entry(ds_id)
+        return ml_dataset
+
+    def get_dataset(self, ds_id: str) -> xr.Dataset:
+        ml_dataset, _, _ = self._get_dataset_entry(ds_id)
+        return ml_dataset.base_dataset
+
+    def get_dataset_and_variable(self, ds_id: str, var_name: str) -> Tuple[xr.Dataset, xr.DataArray]:
+        dataset = self.get_dataset(ds_id)
         if var_name in dataset:
             return dataset, dataset[var_name]
-        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_name}"')
+        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
+
+    def get_dataset_and_variable_for_z(self, ds_id: str, var_name: str, z_index: int) -> Tuple[
+        xr.Dataset, xr.DataArray]:
+        ml_dataset = self.get_ml_dataset(ds_id)
+        dataset = ml_dataset.get_dataset(ml_dataset.num_levels - 1 - z_index)
+        if var_name in dataset:
+            return dataset, dataset[var_name]
+        raise ServiceResourceNotFoundError(f'Variable "{var_name}" not found in dataset "{ds_id}"')
 
     def get_dataset_descriptors(self):
         dataset_descriptors = self.config.get('Datasets')
@@ -130,6 +161,20 @@ class ServiceContext:
         if dataset_descriptor is None:
             raise ServiceResourceNotFoundError(f'Dataset "{ds_id}" not found')
         return dataset_descriptor
+
+    def get_tile_grid(self, ds_id: str, var_name: str):
+        ml_dataset, _, tile_grid_cache = self._get_dataset_entry(ds_id)
+        var = ml_dataset.base_dataset[var_name]
+        shape = var.shape
+        tile_grid_key = f'tg_{ds_id}_{shape[-1]}_{shape[-2]}'
+        if tile_grid_key in tile_grid_cache:
+            tile_grid = tile_grid_cache[tile_grid_key]
+        else:
+            tile_grid = compute_tile_grid(var)
+            if tile_grid is None:
+                raise ServiceError(f'Failed computing tile grid for variable "{var_name}" of dataset "{ds_id}"')
+            tile_grid_cache[tile_grid_key] = tile_grid
+        return tile_grid
 
     def get_color_mapping(self, ds_id: str, var_name: str):
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
@@ -153,113 +198,118 @@ class ServiceContext:
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
         return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
 
-    def get_dataset(self, ds_id: str) -> xr.Dataset:
-        if ds_id in self.dataset_cache:
-            ds, _, _ = self.dataset_cache[ds_id]
-        else:
-            dataset_descriptor = self.get_dataset_descriptor(ds_id)
+    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any], Dict[str, TileGrid]]:
+        if ds_id not in self.dataset_cache:
+            with self._lock:
+                self.dataset_cache[ds_id] = self._create_dataset_entry(ds_id)
+        return self.dataset_cache[ds_id]
 
-            path = dataset_descriptor.get('Path')
-            if not path:
-                raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
+    def _create_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any], Dict[str, TileGrid]]:
 
-            pyramid = None
+        dataset_descriptor = self.get_dataset_descriptor(ds_id)
 
-            t1 = time.clock()
+        path = dataset_descriptor.get('Path')
+        if not path:
+            raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
 
-            fs_type = dataset_descriptor.get('FileSystem', 'local')
-            if fs_type == 'obs':
-                data_format = dataset_descriptor.get('Format', 'zarr')
-                if data_format != 'zarr':
-                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
-                client_kwargs = {}
-                if 'Endpoint' in dataset_descriptor:
-                    client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
-                if 'Region' in dataset_descriptor:
-                    client_kwargs['region_name'] = dataset_descriptor['Region']
-                s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
-                store = s3fs.S3Map(root=path, s3=s3, check=False)
-                cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-                with log_time(f"opened remote dataset {path}"):
-                    ds = xr.open_zarr(cached_store)
-            elif fs_type == 'local':
-                if not os.path.isabs(path):
-                    path = os.path.join(self.base_dir, path)
+        t1 = time.clock()
 
-                data_format = dataset_descriptor.get('Format', 'nc')
-                if data_format == 'nc':
-                    with log_time(f"opened local NetCDF dataset {path}"):
-                        ds = xr.open_dataset(path)
-                elif data_format == 'zarr':
-                    with log_time(f"opened local Zarr dataset {path}"):
-                        ds = xr.open_zarr(path)
-                elif data_format == 'pyram':
-                    with log_time(f"opened local dataset pyramid {path}"):
-                        pyramid = StoredMultiLevelDataset(path)
-                        ds = pyramid.get_dataset(0)
-                else:
-                    raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
-            elif fs_type == 'computed':
-                if not os.path.isabs(path):
-                    path = os.path.join(self.base_dir, path)
-                with open(path) as fp:
-                    python_code = fp.read()
+        fs_type = dataset_descriptor.get('FileSystem', 'local')
+        if fs_type == 'obs':
+            data_format = dataset_descriptor.get('Format', 'zarr')
+            if data_format != 'zarr':
+                raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
+            client_kwargs = {}
+            if 'Endpoint' in dataset_descriptor:
+                client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
+            if 'Region' in dataset_descriptor:
+                client_kwargs['region_name'] = dataset_descriptor['Region']
+            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
+            store = s3fs.S3Map(root=path, s3=s3, check=False)
+            cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+            with log_time(f"opened remote dataset {path}"):
+                ds = xr.open_zarr(cached_store)
+            ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+        elif fs_type == 'local':
+            if not os.path.isabs(path):
+                path = os.path.join(self.base_dir, path)
 
-                local_env = dict()
-                global_env = None
-                try:
-                    exec(python_code, global_env, local_env)
-                except Exception as e:
-                    raise ServiceError(f"Failed to compute dataset {ds_id!r} from {path!r}: {e}") from e
-
-                callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
-                callable_args = dataset_descriptor.get('Args', [])
-                callable_kwargs = dataset_descriptor.get('Kwargs', {})
-
-                callable_obj = local_env.get(callable_name)
-                if callable_obj is None:
-                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                             f"no callable named {callable_name!r} found in {path!r}")
-                elif not callable(callable_obj):
-                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                             f"object {callable_name!r} in {path!r} is not callable")
-
-                def parse_arg_value(arg_value):
-                    if isinstance(arg_value, str) and len(arg_value) > 2 \
-                            and arg_value.startswith('@') and arg_value.endswith('@'):
-                        ref_ds_name = arg_value[1:-1]
-                        if not self.get_dataset_descriptor(ref_ds_name):
-                            raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                                     f"argument {arg_value!r} of callable {callable_name!r} "
-                                                     f"must reference another dataset")
-                        return self.get_dataset(ref_ds_name)
-                    return arg_value
-
-                args = [parse_arg_value(arg) for arg in callable_args]
-                kwargs = {kw: parse_arg_value(arg) for kw, arg in callable_kwargs.items()}
-
-                try:
-                    with log_time(f"created computed dataset {ds_id}"):
-                        ds = callable_obj(*args, **kwargs)
-                except Exception as e:
-                    raise ServiceError(f"Failed to compute dataset {ds_id!r} "
-                                       f"from function {callable_name!r} in {path!r}: {e}") from e
-                if not isinstance(ds, xr.Dataset):
-                    raise ServiceError(f"Failed to compute dataset {ds_id!r} "
-                                       f"from function {callable_name!r} in {path!r}: "
-                                       f"expected an xarray.Dataset but got a {type(ds)}")
+            data_format = dataset_descriptor.get('Format', 'nc')
+            if data_format == 'nc':
+                with log_time(f"opened local NetCDF dataset {path}"):
+                    ds = xr.open_dataset(path)
+                ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+            elif data_format == 'zarr':
+                with log_time(f"opened local Zarr dataset {path}"):
+                    ds = xr.open_zarr(path)
+                ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+            elif data_format == 'levels':
+                with log_time(f"opened local multi-level dataset {path}"):
+                    ml_dataset = StoredMultiLevelDataset(path)
             else:
-                raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
+                raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
+        elif fs_type == 'computed':
+            if not os.path.isabs(path):
+                path = os.path.join(self.base_dir, path)
+            with open(path) as fp:
+                python_code = fp.read()
 
-            tile_grid_cache = dict()
-            self.dataset_cache[ds_id] = ds, dataset_descriptor, tile_grid_cache
+            local_env = dict()
+            global_env = None
+            try:
+                exec(python_code, global_env, local_env)
+            except Exception as e:
+                raise ServiceError(f"Failed to compute dataset {ds_id!r} from {path!r}: {e}") from e
 
-            t2 = time.clock()
+            callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
+            callable_args = dataset_descriptor.get('Args', [])
+            callable_kwargs = dataset_descriptor.get('Kwargs', {})
 
-            if self.config.get("trace_perf", False):
-                print(f'PERF: opening {ds_id!r} took {t2 - t1} seconds')
+            callable_obj = local_env.get(callable_name)
+            if callable_obj is None:
+                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
+                                         f"no callable named {callable_name!r} found in {path!r}")
+            elif not callable(callable_obj):
+                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
+                                         f"object {callable_name!r} in {path!r} is not callable")
 
-        return ds
+            def parse_arg_value(arg_value):
+                if isinstance(arg_value, str) and len(arg_value) > 2 \
+                        and arg_value.startswith('@') and arg_value.endswith('@'):
+                    ref_ds_name = arg_value[1:-1]
+                    if not self.get_dataset_descriptor(ref_ds_name):
+                        raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
+                                                 f"argument {arg_value!r} of callable {callable_name!r} "
+                                                 f"must reference another dataset")
+                    return self.get_dataset(ref_ds_name)
+                return arg_value
+
+            args = [parse_arg_value(arg) for arg in callable_args]
+            kwargs = {kw: parse_arg_value(arg) for kw, arg in callable_kwargs.items()}
+
+            try:
+                with log_time(f"created computed dataset {ds_id}"):
+                    ds = callable_obj(*args, **kwargs)
+
+                # TODO (forman): issue #46: instead use ComputedMultiLevelDatasets.
+                ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+
+            except Exception as e:
+                raise ServiceError(f"Failed to compute dataset {ds_id!r} "
+                                   f"from function {callable_name!r} in {path!r}: {e}") from e
+            if not isinstance(ds, xr.Dataset):
+                raise ServiceError(f"Failed to compute dataset {ds_id!r} "
+                                   f"from function {callable_name!r} in {path!r}: "
+                                   f"expected an xarray.Dataset but got a {type(ds)}")
+        else:
+            raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
+
+        t2 = time.clock()
+
+        if self.config.get("trace_perf", False):
+            print(f'PERF: opening {ds_id!r} took {t2 - t1} seconds')
+
+        return ml_dataset, dataset_descriptor, dict()
 
     def get_legend_label(self, ds_name: str, var_name: str):
         dataset = self.get_dataset(ds_name)
@@ -347,13 +397,13 @@ class ServiceContext:
         if not os.path.isabs(place_path_wc):
             place_path_wc = os.path.join(self.base_dir, place_path_wc)
 
-        propertyMapping = place_group_config.get("PropertyMapping")
-        characterEncoding = place_group_config.get("CharacterEncoding", "utf-8")
+        property_mapping = place_group_config.get("PropertyMapping")
+        character_encoding = place_group_config.get("CharacterEncoding", "utf-8")
 
         features = []
         collection_files = glob.glob(place_path_wc)
         for collection_file in collection_files:
-            with fiona.open(collection_file, encoding=characterEncoding) as feature_collection:
+            with fiona.open(collection_file, encoding=character_encoding) as feature_collection:
                 for feature in feature_collection:
                     self._remove_feature_id(feature)
                     feature["id"] = str(self._feature_index)
@@ -364,7 +414,7 @@ class ServiceContext:
                            features=features,
                            id=place_group_id,
                            title=place_group_title,
-                           propertyMapping=propertyMapping)
+                           propertyMapping=property_mapping)
 
         sub_place_group_configs = place_group_config.get("Places")
         if sub_place_group_configs:

@@ -32,7 +32,7 @@ MODE_EQ = 0
 MODE_GE = 1
 
 
-# TODO (forman): issue #46: a TileGrid must be fully compatible with each level of a DatasetPyramid
+# TODO (forman): issue #46: a TileGrid must be fully compatible with each level of a MultiLevelDataset
 
 class TileGrid:
     """

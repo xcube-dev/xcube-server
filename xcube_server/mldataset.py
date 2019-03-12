@@ -1,5 +1,6 @@
+import threading
 from abc import abstractmethod, ABCMeta
-from collections import Sequence
+from typing import Dict, Union, Sequence
 
 import xarray as xr
 
@@ -51,6 +52,9 @@ class MultiLevelDataset(metaclass=ABCMeta):
         :return: the dataset for the level at *index*.
         """
 
+    def close(self):
+        """ Close all datasets. """
+
 
 class SimpleMultiLevelDataset(MultiLevelDataset):
     """
@@ -82,6 +86,10 @@ class SimpleMultiLevelDataset(MultiLevelDataset):
         """
         return self._level_datasets[index]
 
+    def close(self):
+        for dataset in self._level_datasets:
+            dataset.close()
+
 
 class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     """
@@ -99,6 +107,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         self._level_datasets = [None] * num_levels
         self._args = args
         self._kwargs = kwargs
+        self._lock = threading.RLock()
 
     @property
     def num_levels(self) -> int:
@@ -115,9 +124,9 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         :return: the dataset for the level at *index*.
         """
         if self._level_datasets[index] is None:
-            # TODO (forman): issue #46: we need to synchronize this block, otherwise we end here again for same index
-            # noinspection PyTypeChecker
-            self._level_datasets[index] = self.get_dataset_lazily(index, *self._args, **self._kwargs)
+            with self._lock:
+                # noinspection PyTypeChecker
+                self._level_datasets[index] = self.get_dataset_lazily(index, *self._args, **self._kwargs)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
 
@@ -131,6 +140,11 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         :param kwargs: Extra keyword arguments passed to constructor.
         :return: the dataset for the level at *index*.
         """
+
+    def close(self):
+        for dataset in self._level_datasets:
+            if dataset is not None:
+                dataset.close()
 
 
 class StoredMultiLevelDataset(LazyMultiLevelDataset):
@@ -179,3 +193,90 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
             with open(file_path, "r") as fp:
                 file_path = fp.read()
         return xr.open_zarr(file_path, **kwargs)
+
+
+class BaseMultiLevelDataset(LazyMultiLevelDataset):
+    """
+    A multi-level dataset whose level datasets are a created by down-sampling a base dataset.
+
+    :param base_dataset: The base dataset for the level at index zero.
+    :param num_levels: The number of levels.
+    :param chunks: The chunks for each dimension.
+    """
+
+    def __init__(self,
+                 base_dataset: xr.Dataset,
+                 num_levels: int = None,
+                 chunks: Union[int, Dict[str, int]] = None):
+        if base_dataset is None:
+            raise ValueError("base_dataset must be given")
+
+        var_names = list(base_dataset.data_vars)
+        if not var_names:
+            raise ValueError("base_dataset must contain at least one data variable")
+
+        var = base_dataset[var_names[0]]
+
+        if isinstance(chunks, int):
+            chunks_dict = {dim: 1 for dim in var.dims}
+            chunks_dict[var.dims[-2]] = chunks_dict[var.dims[-1]] = chunks
+            chunks = chunks_dict
+        elif isinstance(chunks, dict):
+            chunks_dict = dict(chunks)
+            for dim in var.dims:
+                if dim not in chunks_dict:
+                    chunks_dict[dim] = 1
+            chunks = chunks_dict
+        elif chunks is not None:
+            raise TypeError("chunks must be an int, dict, or None")
+
+        var_chunks = var.chunks
+        if var_chunks is not None:
+            # var.chunks is a tuple whose items are either a common block size or a tuple of varying block sizes
+            var_chunks = {var.dims[i]: (var_chunks[i] if isinstance(var_chunks[i], int) else max(var_chunks[i]))
+                          for i in range(var.ndim)}
+
+        rechunk = chunks != var_chunks
+        chunks = chunks or var_chunks
+
+        if num_levels is None and chunks is None:
+            raise ValueError("one of num_levels or chunks must be given")
+
+        if num_levels is None:
+            num_levels = 1
+            height, width = var.shape[-2:]
+            chunk_height, chunk_width = chunks[var.dims[-2]], chunks[var.dims[-1]]
+            while True:
+                if width <= chunk_width or height <= chunk_height:
+                    break
+                width = (width + 1) // 2
+                height = (height + 1) // 2
+                num_levels += 1
+
+        super().__init__(num_levels)
+        self._base_dataset = base_dataset
+        self._chunks = chunks
+        self._rechunk = rechunk
+
+    def get_dataset_lazily(self, index: int, *args, **kwargs) -> xr.Dataset:
+        """
+        Compute the dataset at level *index*: If *index* is zero, return the base image passed to constructor,
+        otherwise down-sample the dataset for the level at given *index*.
+
+        :param index: the level index
+        :return: the dataset for the level at *index*.
+        """
+        if index == 0:
+            level_dataset = self._base_dataset
+        else:
+            base_dataset = self._base_dataset
+            step = 2 ** index
+            data_vars = {}
+            for var_name in base_dataset.data_vars:
+                var = base_dataset[var_name]
+                var = var[..., ::step, ::step]
+                data_vars[var_name] = var
+            level_dataset = xr.Dataset(data_vars, attrs=base_dataset.attrs)
+        if self._rechunk:
+            level_dataset = level_dataset.chunk(chunks=self._chunks)
+        return level_dataset
