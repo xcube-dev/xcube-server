@@ -122,6 +122,25 @@ After starting both the xcube-server and web server, e.g. on port 9090
 
 you can run the client demos by following their links given below.
     
+    
+### Docker
+
+To start a demo using docker use the following commands
+
+    $ docker build -t [your name] .
+    $ docker run -d -p [host port]:8000 [your name]
+    
+**Example:**
+
+    $  docker build -t xcube:0.1.0dev6 .
+    $  docker run -d -p 8001:8000 xcube:0.1.0dev6
+    $  docker ps
+
+**TODO:** 
+
+The idea is to have the container automatically build on quay.io 
+and then used in a xcube-services ```docker-compose.yml``` configuration.
+
 
 #### OpenLayers
 
