@@ -31,6 +31,7 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
+from xcube_server.pyramid import StoredMultiLevelDataset
 
 from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
@@ -47,6 +48,8 @@ ALL_PLACES = "all"
 _LOG = logging.getLogger('xcube')
 
 Config = Dict[str, Any]
+
+# TODO (forman): issue #46: all configured datasets shall be read as instances of DatasetPyramid.
 
 
 # noinspection PyMethodMayBeStatic
@@ -160,6 +163,8 @@ class ServiceContext:
             if not path:
                 raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
 
+            pyramid = None
+
             t1 = time.clock()
 
             fs_type = dataset_descriptor.get('FileSystem', 'local')
@@ -180,13 +185,18 @@ class ServiceContext:
             elif fs_type == 'local':
                 if not os.path.isabs(path):
                     path = os.path.join(self.base_dir, path)
+
                 data_format = dataset_descriptor.get('Format', 'nc')
                 if data_format == 'nc':
                     with log_time(f"opened local NetCDF dataset {path}"):
                         ds = xr.open_dataset(path)
                 elif data_format == 'zarr':
-                    with log_time(f"opened local zarr dataset {path}"):
+                    with log_time(f"opened local Zarr dataset {path}"):
                         ds = xr.open_zarr(path)
+                elif data_format == 'pyram':
+                    with log_time(f"opened local dataset pyramid {path}"):
+                        pyramid = StoredMultiLevelDataset(path)
+                        ds = pyramid.get_dataset(0)
                 else:
                     raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
             elif fs_type == 'computed':
@@ -204,6 +214,7 @@ class ServiceContext:
 
                 callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
                 callable_args = dataset_descriptor.get('Args', [])
+                callable_kwargs = dataset_descriptor.get('Kwargs', {})
 
                 callable_obj = local_env.get(callable_name)
                 if callable_obj is None:
@@ -213,8 +224,7 @@ class ServiceContext:
                     raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                              f"object {callable_name!r} in {path!r} is not callable")
 
-                args = list()
-                for arg_value in callable_args:
+                def parse_arg_value(arg_value):
                     if isinstance(arg_value, str) and len(arg_value) > 2 \
                             and arg_value.startswith('@') and arg_value.endswith('@'):
                         ref_ds_name = arg_value[1:-1]
@@ -222,13 +232,15 @@ class ServiceContext:
                             raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                                      f"argument {arg_value!r} of callable {callable_name!r} "
                                                      f"must reference another dataset")
-                        args.append(self.get_dataset(ref_ds_name))
-                    else:
-                        args.append(arg_value)
+                        return self.get_dataset(ref_ds_name)
+                    return arg_value
+
+                args = [parse_arg_value(arg) for arg in callable_args]
+                kwargs = {kw: parse_arg_value(arg) for kw, arg in callable_kwargs.items()}
 
                 try:
                     with log_time(f"created computed dataset {ds_id}"):
-                        ds = callable_obj(*args)
+                        ds = callable_obj(*args, **kwargs)
                 except Exception as e:
                     raise ServiceError(f"Failed to compute dataset {ds_id!r} "
                                        f"from function {callable_name!r} in {path!r}: {e}") from e

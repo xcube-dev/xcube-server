@@ -686,23 +686,44 @@ class FastNdarrayDownsamplingImage(OpImage):
         tile = tile[..., ::s, ::s]
 
         # ensure that our tile size is w x h: resize and fill in background value.
-        return self.pad_tile(tile, self.tile_size)
+        return trim_tile(tile, self.tile_size)
 
-    @staticmethod
-    def pad_tile(tile: Tile, target_tile_size: Size2D, fill_value: float = np.nan) -> Tile:
-        (target_width, target_height) = target_tile_size
-        tile_width, tile_heigth = tile.shape[-1], tile.shape[-2]
-        if target_width > tile_width:
-            # expand in width
-            h_pad = np.empty((tile_heigth, target_width - tile_width))
-            h_pad.fill(fill_value)
-            tile = np.hstack((tile, h_pad))
-        if target_height > tile_heigth:
-            # expand in height
-            v_pad = np.empty((target_height - tile_heigth, target_width))
-            v_pad.fill(fill_value)
-            tile = np.vstack((tile, v_pad))
-        return tile
+
+# TODO (forman): issue #46: use an NdarrayImage for each variable and each level of a DatasetPyramid
+
+class NdarrayImage(OpImage):
+    """
+    A tiled image created an numpy ndarray-like data array.
+
+    :param array: a numpy ndarray-like data array
+    :param tile_size: the tile size
+    :param image_id: optional unique image identifier
+    :param tile_cache: an optional tile cache
+    """
+
+    def __init__(self,
+                 array,
+                 tile_size: Size2D,
+                 image_id: str = None,
+                 tile_cache: Cache = None):
+        width, height = array.shape[-1], array.shape[-2]
+        tile_width, tile_height = tile_size
+        num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height
+        super().__init__((width, height),
+                         tile_size=tile_size,
+                         num_tiles=num_tiles,
+                         mode=str(array.dtype),
+                         format=None,
+                         image_id=image_id,
+                         tile_cache=tile_cache)
+        self._array = array
+        self._empty_tile = None
+
+    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
+        x, y, w, h = rectangle
+        tile = self._array[..., y:y + h, x:x + w]
+        # ensure that our tile size is w x h
+        return trim_tile(tile, self.tile_size)
 
 
 LC_STANDARD_NAMES = {'land_cover_lccs algorithmic_confidence', 'land_cover_lccs status_flag', 'land_cover_lccs',
@@ -841,3 +862,32 @@ def create_ndarray_downsampling_image(source_image: TiledImage,
                                       step_exp: int,
                                       **kwargs) -> TiledImage:
     return NdarrayDownsamplingImage(higher_level_image, **kwargs)
+
+
+def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan) -> Tile:
+    """
+    Trim a tile.
+
+    If to small, expand and pad with background value. If to large, crop.
+
+    :param tile: The tile
+    :param expected_tile_size: expected tile size
+    :param fill_value: fill value for padding
+    :return: the trimmed tile
+    """
+    expected_width, expected_height = expected_tile_size
+    actual_width, actual_height = tile.shape[-1], tile.shape[-2]
+    if expected_width > actual_width:
+        # expand in width and pad with fill_value
+        h_pad = np.empty((actual_height, expected_width - actual_width))
+        h_pad.fill(fill_value)
+        tile = np.hstack((tile, h_pad))
+    if expected_height > actual_height:
+        # expand in height and pad with fill_value
+        v_pad = np.empty((expected_height - actual_height, expected_width))
+        v_pad.fill(fill_value)
+        tile = np.vstack((tile, v_pad))
+    if expected_width < actual_width or expected_height < actual_height:
+        # crop
+        tile = tile[..., 0:expected_height, 0:expected_width]
+    return tile

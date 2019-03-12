@@ -19,6 +19,8 @@ from ..reqparams import RequestParams
 from ..utils import compute_tile_grid
 
 
+# TODO (forman): issue #46: get_dataset_tile() must be rewritten to DatasetPyramid instead of ImagePyramid.
+
 def get_dataset_tile(ctx: ServiceContext,
                      ds_id: str,
                      var_name: str,

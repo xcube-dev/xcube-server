@@ -32,6 +32,8 @@ MODE_EQ = 0
 MODE_GE = 1
 
 
+# TODO (forman): issue #46: a TileGrid must be fully compatible with each level of a DatasetPyramid
+
 class TileGrid:
     """
     Image pyramid tile grid.
@@ -245,7 +247,7 @@ def pow2_2d_subdivision(w: int, h: int,
     """
     Get a pyramidal quad-tree subdivision of a 2D image rectangle given by image width *w* and height *h*.
     We want all pyramid levels to use the same tile size *tw*, *th*. All but the lowest resolution level, level zero,
-    shall have 2 times the number of tiles than in a previous level in x- and y-direction.
+    shall have 2 times the number of tiles of a previous level in both x- and y-direction.
 
     As there can be multiple of such subdivisions, we select an optimum subdivision by constraints. We want
     (in this order):
@@ -280,10 +282,14 @@ def pow2_2d_subdivision(w: int, h: int,
                                                  nt0_max=nt0_max, nl_max=nl_max)
     if nl_x < nl_y:
         nl = nl_x
-        nt0_y = h_act // (1 << (nl - 1)) // th
+        f = 1 << (nl - 1)
+        h0 = (h_act + f - 1) // f
+        nt0_y = (h0 + th - 1) // th
     elif nl_x > nl_y:
         nl = nl_y
-        nt0_x = w_act // (1 << (nl - 1)) // tw
+        f = 1 << (nl - 1)
+        w0 = (w_act + f - 1) // f
+        nt0_x = (w0 + tw - 1) // tw
     else:
         nl = nl_x
 
