@@ -83,7 +83,6 @@ class TiledImage(metaclass=ABCMeta):
         Return a unique image identifier.
         :return: A unique (string) object
         """
-        pass
 
     @property
     @abstractmethod
@@ -92,7 +91,6 @@ class TiledImage(metaclass=ABCMeta):
         Return a format string such as 'PNG', 'JPG', 'RAW', etc, or None according to PIL.
         :return: A string indicating the image (file) format.
         """
-        pass
 
     @property
     @abstractmethod
@@ -102,7 +100,6 @@ class TiledImage(metaclass=ABCMeta):
         See http://pillow.readthedocs.org/en/3.0.x/handbook/concepts.html#modes
         :return: A string indicating the image mode
         """
-        pass
 
     @property
     @abstractmethod
@@ -110,7 +107,6 @@ class TiledImage(metaclass=ABCMeta):
         """
         :return: The size of the image as a (width, height) tuple
         """
-        pass
 
     @property
     @abstractmethod
@@ -118,7 +114,6 @@ class TiledImage(metaclass=ABCMeta):
         """
         :return: The size of the image as a (tile_width, tile_height) tuple
         """
-        pass
 
     @property
     @abstractmethod
@@ -126,23 +121,22 @@ class TiledImage(metaclass=ABCMeta):
         """
         :return: The number of tiles as a (num_tiles_x, num_tiles_y) tuple
         """
-        pass
 
     @abstractmethod
     def get_tile(self, tile_x, tile_y) -> Tile:
         """
-        :param tile_x: the tile coordinate in Y direction
-        :param tile_y: the tile coordinate in X direction
+        Get the tile at tile indices *tile_x*, *tile_y*.
+
+        :param tile_x: the tile index in X direction
+        :param tile_y: the tile index in Y direction
         :return: The image's tile data at tile_x, tile_y.
         """
-        pass
 
     @abstractmethod
     def dispose(self) -> None:
         """
-        Disposes this images.
+        Dispose resources allocated by this image.
         """
-        pass
 
 
 class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
@@ -199,7 +193,6 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
         """
         Does nothing.
         """
-        pass
 
     def get_tile_id(self, tile_x, tile_y):
         return '%s/%d/%d' % (self.id, tile_x, tile_y)
@@ -208,7 +201,7 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
 class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     """
     An abstract base class for images that compute their tiles.
-    Derived classes must implement the compute_tile(tile_x, tile_y, rect) method only.
+    Derived classes must implement the compute_tile(tile_x, tile_y, rectangle) method only.
 
     :param size: the image size as (width, height)
     :param tile_size: optional tile size as (tile_width, tile_height)
@@ -257,7 +250,15 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
 
     @abstractmethod
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
-        pass
+        """
+        Compute a tile at tile indices *tile_x*, *tile_y*.
+        The tile's boundaries are provided in *rectangle* given in image pixel coordinates.
+
+        :param tile_x: the tile index in X direction
+        :param tile_y: the tile index in Y direction
+        :param rectangle: tile rectangle is given in image pixel coordinates.
+        :return: a new tile
+        """
 
     def dispose(self) -> None:
         cache = self._tile_cache
@@ -312,7 +313,15 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
                                       tile_x: int, tile_y: int,
                                       rectangle: Rectangle2D,
                                       source_tile: Tile) -> Tile:
-        pass
+        """
+        Compute a tile from the given *source_tile*.
+
+        :param tile_x: the tile index in X direction
+        :param tile_y: the tile index in Y direction
+        :param rectangle: tile rectangle is given in image pixel coordinates.
+        :param source_tile: the source tile
+        :return: a new tile computed from the source tile
+        """
 
 
 class TransformArrayImage(DecoratorImage):
