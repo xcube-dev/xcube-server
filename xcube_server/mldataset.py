@@ -245,10 +245,8 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         if num_levels is None:
             num_levels = 1
             height, width = var.shape[-2:]
-            chunk_height, chunk_width = chunks[var.dims[-2]], chunks[var.dims[-1]]
-            while True:
-                if width <= chunk_width or height <= chunk_height:
-                    break
+            tile_height, tile_width = chunks[var.dims[-2]], chunks[var.dims[-1]]
+            while width > tile_width and height > tile_height:
                 width = (width + 1) // 2
                 height = (height + 1) // 2
                 num_levels += 1
