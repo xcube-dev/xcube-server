@@ -229,7 +229,7 @@ class ServiceContext:
             cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
             with log_time(f"opened remote dataset {path}"):
                 ds = xr.open_zarr(cached_store)
-            ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+            ml_dataset = BaseMultiLevelDataset(ds)
         elif fs_type == 'local':
             if not os.path.isabs(path):
                 path = os.path.join(self.base_dir, path)
@@ -238,11 +238,11 @@ class ServiceContext:
             if data_format == 'nc':
                 with log_time(f"opened local NetCDF dataset {path}"):
                     ds = xr.open_dataset(path)
-                ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+                ml_dataset = BaseMultiLevelDataset(ds)
             elif data_format == 'zarr':
                 with log_time(f"opened local Zarr dataset {path}"):
                     ds = xr.open_zarr(path)
-                ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+                ml_dataset = BaseMultiLevelDataset(ds)
             elif data_format == 'levels':
                 with log_time(f"opened local multi-level dataset {path}"):
                     ml_dataset = StoredMultiLevelDataset(path)
@@ -292,7 +292,7 @@ class ServiceContext:
                     ds = callable_obj(*args, **kwargs)
 
                 # TODO (forman): issue #46: instead use ComputedMultiLevelDatasets.
-                ml_dataset = BaseMultiLevelDataset(ds, chunks=512)
+                ml_dataset = BaseMultiLevelDataset(ds)
 
             except Exception as e:
                 raise ServiceError(f"Failed to compute dataset {ds_id!r} "
