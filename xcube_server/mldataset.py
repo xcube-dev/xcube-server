@@ -217,6 +217,9 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
 
         var = base_dataset[var_names[0]]
 
+        # TODO (forman): issue #46: IMPORTANT: we must construct pyramids compatible with
+        # controllers.tiles.get_dataset_tile_grid(). Otherwise the #levels or tiling will not match!
+
         if isinstance(chunks, int):
             chunks_dict = {dim: 1 for dim in var.dims}
             chunks_dict[var.dims[-2]] = chunks_dict[var.dims[-1]] = chunks
