@@ -38,7 +38,7 @@ from ..cache import Cache, MemoryCacheStore
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _DEFAULT_TILE_CACHE = None
-_DEBUG_OP_IMAGE = False
+_DEBUG_OP_IMAGE = True
 
 X = int
 Y = int
@@ -223,29 +223,26 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
 
     def get_tile(self, tile_x: int, tile_y: int) -> Tile:
         t0 = 0
-        tile_id = None
         cache = self._tile_cache
         if cache:
             tile_id = self.get_tile_id(tile_x, tile_y)
-            if _DEBUG_OP_IMAGE:
-                t0 = time.clock()
             tile = cache.get_value(tile_id)
             if tile is not None:
                 if _DEBUG_OP_IMAGE:
-                    print('tile "%s": restored from cache, took %.4f sec' % (tile_id, time.clock() - t0))
+                    print(f'tile {tile_id!r}: restored from cache')
                 return tile
         tw, th = self.tile_size
         if _DEBUG_OP_IMAGE:
-            t0 = time.clock()
+            t0 = time.perf_counter()
         tile = self.compute_tile(tile_x, tile_y, (tw * tile_x, th * tile_y, tw, th))
         if _DEBUG_OP_IMAGE:
-            print('tile "%s": computed, took %.4f sec' % (self.get_tile_id(tile_x, tile_y), time.clock() - t0))
+            tile_id = self.get_tile_id(tile_x, tile_y)
+            print(f'tile {tile_id!r}:', 'computed, took %.4f sec' % (time.perf_counter() - t0))
         if cache:
-            if _DEBUG_OP_IMAGE:
-                t0 = time.clock()
+            tile_id = self.get_tile_id(tile_x, tile_y)
             cache.put_value(tile_id, tile)
             if _DEBUG_OP_IMAGE:
-                print('tile "%s": stored in cache, took %.4f sec' % (tile_id, time.clock() - t0))
+                print(f'tile {tile_id!r}: stored in cache')
         return tile
 
     @abstractmethod
@@ -440,44 +437,49 @@ class ColorMappedRgbaImage(DecoratorImage):
     def compute_tile_from_source_tile(self,
                                       tile_x: int, tile_y: int,
                                       rectangle: Rectangle2D, source_tile: Tile) -> Tile:
-        value_min, value_max = self._value_range
-        if not np.ma.is_masked(source_tile):
-            if self._no_data_value is not None:
-                array = np.ma.masked_equal(source_tile, self._no_data_value)
-                array = array.clip(value_min, value_max, out=array)
-            elif np.issubdtype(source_tile.dtype, np.floating):
-                array = np.ma.masked_invalid(source_tile)
-                array = array.clip(value_min, value_max, out=array)
+        with time_it("compute_tile_from_source_tile: clip()", enabled=_DEBUG_OP_IMAGE):
+            value_min, value_max = self._value_range
+            if not np.ma.is_masked(source_tile):
+                if self._no_data_value is not None:
+                    array = np.ma.masked_equal(source_tile, self._no_data_value)
+                    array = array.clip(value_min, value_max, out=array)
+                elif np.issubdtype(source_tile.dtype, np.floating):
+                    array = np.ma.masked_invalid(source_tile)
+                    array = array.clip(value_min, value_max, out=array)
+                else:
+                    array = source_tile.clip(value_min, value_max)
             else:
                 array = source_tile.clip(value_min, value_max)
-        else:
-            array = source_tile.clip(value_min, value_max)
 
-        old_shape = array.shape
-        height = old_shape[-2]
-        width = old_shape[-1]
-        if width * height == array.size:
-            array = np.reshape(array, (height, width))
-        else:
-            # noinspection PyTypeChecker
-            index = [0] * (array.ndim - 2) + [slice(None), slice(None)]
-            array = array[index]
+        with time_it("compute_tile_from_source_tile: reshape()", enabled=_DEBUG_OP_IMAGE):
+            old_shape = array.shape
+            height = old_shape[-2]
+            width = old_shape[-1]
+            if width * height == array.size:
+                array = np.reshape(array, (height, width))
+            else:
+                # noinspection PyTypeChecker
+                index = [0] * (array.ndim - 2) + [slice(None), slice(None)]
+                array = array[index]
 
-        # check if we can optimize the following calls by using Numexpr
-        # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
-        array -= value_min
-        array *= 1.0 / (value_max - value_min)
-        array = self._cmap(array, bytes=True)
-        image = Image.fromarray(array, mode=self.mode)
+        with time_it("compute_tile_from_source_tile: _cmap()", enabled=_DEBUG_OP_IMAGE):
+            # check if we can optimize the following calls by using Numexpr
+            # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
+            array -= value_min
+            array *= 1.0 / (value_max - value_min)
+            array = self._cmap(array, bytes=True)
+            image = Image.fromarray(array, mode=self.mode)
 
-        if self._encode and self.format:
-            ostream = io.BytesIO()
-            image.save(ostream, format=self.format)
-            encoded_image = ostream.getvalue()
-            ostream.close()
-            return encoded_image
-        else:
-            return image
+        with time_it("compute_tile_from_source_tile: save()", enabled=_DEBUG_OP_IMAGE):
+            if self._encode and self.format:
+                # Saving a PNG file is slow: https://github.com/python-pillow/Pillow/issues/1211
+                ostream = io.BytesIO()
+                image.save(ostream, format=self.format, compress_level=1)
+                encoded_image = ostream.getvalue()
+                ostream.close()
+                return encoded_image
+            else:
+                return image
 
     def create_pyramid(self, **kwargs) -> 'ImagePyramid':
         if self._encode:
@@ -875,19 +877,39 @@ def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan
     :param fill_value: fill value for padding
     :return: the trimmed tile
     """
-    expected_width, expected_height = expected_tile_size
-    actual_width, actual_height = tile.shape[-1], tile.shape[-2]
-    if expected_width > actual_width:
-        # expand in width and pad with fill_value
-        h_pad = np.empty((actual_height, expected_width - actual_width))
-        h_pad.fill(fill_value)
-        tile = np.hstack((tile, h_pad))
-    if expected_height > actual_height:
-        # expand in height and pad with fill_value
-        v_pad = np.empty((expected_height - actual_height, expected_width))
-        v_pad.fill(fill_value)
-        tile = np.vstack((tile, v_pad))
-    if expected_width < actual_width or expected_height < actual_height:
-        # crop
-        tile = tile[..., 0:expected_height, 0:expected_width]
-    return tile
+    with time_it("trim_tile", enabled=_DEBUG_OP_IMAGE):
+        expected_width, expected_height = expected_tile_size
+        actual_width, actual_height = tile.shape[-1], tile.shape[-2]
+        if expected_width > actual_width:
+            # expand in width and pad with fill_value
+            h_pad = np.empty((actual_height, expected_width - actual_width))
+            h_pad.fill(fill_value)
+            tile = np.hstack((tile, h_pad))
+        if expected_height > actual_height:
+            # expand in height and pad with fill_value
+            v_pad = np.empty((expected_height - actual_height, expected_width))
+            v_pad.fill(fill_value)
+            tile = np.vstack((tile, v_pad))
+        if expected_width < actual_width or expected_height < actual_height:
+            # crop
+            tile = tile[..., 0:expected_height, 0:expected_width]
+        return tile
+
+
+class time_it:
+    def __init__(self, what, enabled=True):
+        self.what = what
+        self.enabled = enabled
+        if enabled:
+            self.start_time = None
+            self.delta = None
+
+    def __enter__(self):
+        if self.enabled:
+            self.start_time = time.perf_counter()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.enabled:
+            self.delta = time.perf_counter() - self.start_time
+            print(f"{self.what} took {self.delta} seconds")
+        return self
