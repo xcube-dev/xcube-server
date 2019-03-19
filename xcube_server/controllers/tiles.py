@@ -81,7 +81,7 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_vmin = np.nanmin(array.values) if np.isnan(cmap_vmin) else cmap_vmin
         cmap_vmax = np.nanmax(array.values) if np.isnan(cmap_vmax) else cmap_vmax
 
-        tile_grid = ctx.get_tile_grid(ds_id, var_name)
+        tile_grid = ctx.get_tile_grid(ds_id)
 
         image = NdarrayImage(array,
                              image_id=f'ndai-{image_id}',
@@ -174,7 +174,7 @@ def get_dataset_tile_grid(ctx: ServiceContext,
                           var_name: str,
                           tile_client: str,
                           base_url: str) -> Dict[str, Any]:
-    tile_grid = ctx.get_tile_grid(ds_id, var_name)
+    tile_grid = ctx.get_tile_grid(ds_id)
     if tile_client == 'ol4' or tile_client == 'cesium':
         return get_tile_source_options(tile_grid,
                                        get_dataset_tile_url(ctx, ds_id, var_name, base_url),

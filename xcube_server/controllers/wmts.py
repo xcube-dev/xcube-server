@@ -116,7 +116,7 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
             if tile_grid_id in tile_grids:
                 tile_grid = tile_grids[tile_grid_id]
             else:
-                tile_grid = ctx.get_tile_grid(ds_name, var_name)
+                tile_grid = ctx.get_tile_grid(ds_name)
                 if tile_grid is not None:
                     tile_grids[tile_grid_id] = tile_grid
                     write_tile_matrix_set = True

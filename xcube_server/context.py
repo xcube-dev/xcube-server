@@ -32,7 +32,6 @@ import pandas as pd
 import s3fs
 import xarray as xr
 import zarr
-from xcube_server.utils import compute_tile_grid
 
 from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
@@ -40,7 +39,6 @@ from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
     FILE_TILE_CACHE_ENABLED, API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from .im import TileGrid
 from .logtime import log_time
 from .mldataset import StoredMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset
 from .reqparams import RequestParams
@@ -98,7 +96,7 @@ class ServiceContext:
             clean_image_caches = False
 
             if not new_dataset_descriptors:
-                for ml_dataset, _, _ in self.dataset_cache.values():
+                for ml_dataset, _ in self.dataset_cache.values():
                     ml_dataset.close()
                 self.dataset_cache.clear()
 
@@ -107,7 +105,7 @@ class ServiceContext:
                 for ds_name in ds_names:
                     dataset_descriptor = self.find_dataset_descriptor(new_dataset_descriptors, ds_name)
                     if dataset_descriptor is None:
-                        ml_dataset, _, _ = self.dataset_cache[ds_name]
+                        ml_dataset, _ = self.dataset_cache[ds_name]
                         ml_dataset.close()
                         del self.dataset_cache[ds_name]
 
@@ -126,11 +124,11 @@ class ServiceContext:
         return base_url + '/' + self._name + API_PREFIX + '/' + '/'.join(path)
 
     def get_ml_dataset(self, ds_id: str) -> MultiLevelDataset:
-        ml_dataset, _, _ = self._get_dataset_entry(ds_id)
+        ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset
 
     def get_dataset(self, ds_id: str) -> xr.Dataset:
-        ml_dataset, _, _ = self._get_dataset_entry(ds_id)
+        ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.base_dataset
 
     def get_dataset_and_variable(self, ds_id: str, var_name: str) -> Tuple[xr.Dataset, xr.DataArray]:
@@ -161,19 +159,9 @@ class ServiceContext:
             raise ServiceResourceNotFoundError(f'Dataset "{ds_id}" not found')
         return dataset_descriptor
 
-    def get_tile_grid(self, ds_id: str, var_name: str):
-        ml_dataset, _, tile_grid_cache = self._get_dataset_entry(ds_id)
-        var = ml_dataset.base_dataset[var_name]
-        shape = var.shape
-        tile_grid_key = f'tg_{ds_id}_{shape[-1]}_{shape[-2]}'
-        if tile_grid_key in tile_grid_cache:
-            tile_grid = tile_grid_cache[tile_grid_key]
-        else:
-            tile_grid = compute_tile_grid(var)
-            if tile_grid is None:
-                raise ServiceError(f'Failed computing tile grid for variable "{var_name}" of dataset "{ds_id}"')
-            tile_grid_cache[tile_grid_key] = tile_grid
-        return tile_grid
+    def get_tile_grid(self, ds_id: str):
+        ml_dataset, _ = self._get_dataset_entry(ds_id)
+        return ml_dataset.tile_grid
 
     def get_color_mapping(self, ds_id: str, var_name: str):
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
@@ -197,13 +185,13 @@ class ServiceContext:
         _LOG.warning(f'color mapping for variable {var_name!r} of dataset {ds_id!r} undefined: using defaults')
         return DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, DEFAULT_CMAP_VMAX
 
-    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any], Dict[str, TileGrid]]:
+    def _get_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
         if ds_id not in self.dataset_cache:
             with self._lock:
                 self.dataset_cache[ds_id] = self._create_dataset_entry(ds_id)
         return self.dataset_cache[ds_id]
 
-    def _create_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any], Dict[str, TileGrid]]:
+    def _create_dataset_entry(self, ds_id: str) -> Tuple[MultiLevelDataset, Dict[str, Any]]:
 
         dataset_descriptor = self.get_dataset_descriptor(ds_id)
 
@@ -308,7 +296,7 @@ class ServiceContext:
         if self.config.get("trace_perf", False):
             print(f'PERF: opening {ds_id!r} took {t2 - t1} seconds')
 
-        return ml_dataset, dataset_descriptor, dict()
+        return ml_dataset, dataset_descriptor
 
     def get_legend_label(self, ds_name: str, var_name: str):
         dataset = self.get_dataset(ds_name)

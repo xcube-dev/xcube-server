@@ -8,7 +8,7 @@ import shapely.geometry
 import shapely.geometry
 import xarray as xr
 
-from xcube_server.im import GeoExtent, TileGrid
+from xcube_server.im import GeoExtent
 
 Bounds = Tuple[float, float, float, float]
 SplitBounds = Tuple[Bounds, Optional[Bounds]]
@@ -17,6 +17,8 @@ SplitBounds = Tuple[Bounds, Optional[Bounds]]
 def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray]) -> shapely.geometry.base.BaseGeometry:
     return get_box_split_bounds_geometry(*get_dataset_bounds(dataset))
 
+
+# TODO: issue #46: use together with GeoExtent.from_coord_arrays()
 
 def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray]) -> Bounds:
     lon_var = dataset.coords.get("lon")
@@ -72,40 +74,7 @@ def get_box_split_bounds_geometry(lon_min: float, lat_min: float,
         return shapely.geometry.box(*box_1)
 
 
-def compute_tile_grid(var: xr.DataArray) -> Optional[TileGrid]:
-    """
-    Compute an efficient tile grid for the given variable *var*.
-
-    :param var: A variable of an xarray dataset.
-    :return:  a new TileGrid object or None if *var* cannot be represented as a spatial image
-    """
-    try:
-        geo_extent = get_extent_from_var(var)
-    except ValueError:
-        return None
-
-    dims = var.dims
-    shape = var.shape
-    if len(dims) < 2 or len(dims) != len(shape) or dims[-2] != "lat" or dims[-1] != "lon":
-        return None
-
-    width, height = shape[-1], shape[-2]
-    tile_width, tile_height = 256, 256
-
-    encoding = var.encoding
-    chunks = None
-    if "chunks" in encoding:
-        chunks = encoding["chunks"]
-    elif "chunksizes" in encoding:
-        chunks = encoding["chunksizes"]
-    if chunks is not None and len(chunks) > 2:
-        tile_width, tile_height = chunks[-1], chunks[-2]
-
-    try:
-        return TileGrid.create(width, height, tile_width, tile_height, geo_extent)
-    except ValueError:
-        return TileGrid(1, 1, 1, width, height, geo_extent)
-
+# TODO: issue #46: get rid of function, use get_dataset_bounds()
 
 def get_extent_from_var(var: xr.DataArray) -> Optional[GeoExtent]:
     """

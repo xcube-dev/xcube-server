@@ -4,8 +4,11 @@ from typing import Dict, Union, Sequence
 
 import xarray as xr
 
+from xcube_server.im import TileGrid, GeoExtent
+
 
 # TODO (forman): issue #46: write unit level tests for concrete classes in here
+
 
 class MultiLevelDataset(metaclass=ABCMeta):
     """
@@ -19,6 +22,13 @@ class MultiLevelDataset(metaclass=ABCMeta):
     Any dataset chunking is assumed to be the same in all levels. Usually, the number of chunks is one
     in one of the spatial dimensions of the highest level.
     """
+
+    @property
+    @abstractmethod
+    def tile_grid(self) -> TileGrid:
+        """
+        :return: the tile grid.
+        """
 
     @property
     @abstractmethod
@@ -71,19 +81,17 @@ class SimpleMultiLevelDataset(MultiLevelDataset):
         # 3. for all items, i > 0: size[i] = (size[i - 1] + 1) // 2
         self._level_datasets = list(level_datasets)
         self._num_levels = len(self._level_datasets)
+        self._tile_grid = _get_dataset_tile_grid(self.get_dataset(0))
 
     @property
     def num_levels(self) -> int:
-        """
-        :return: the number of pyramid levels.
-        """
         return self._num_levels
 
+    @property
+    def tile_grid(self) -> TileGrid:
+        return self._tile_grid
+
     def get_dataset(self, index: int) -> xr.Dataset:
-        """
-        :param index: the level index
-        :return: the dataset for the level at *index*.
-        """
         return self._level_datasets[index]
 
     def close(self):
@@ -174,12 +182,17 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
                     level_paths[index] = (ext, file_path)
 
         if num_levels != len(level_paths):
-            raise ValueError(f"Inconsistent pyramid directory:"
+            raise ValueError(f"Inconsistent levels directory:"
                              f" expected {num_levels} but found {len(level_paths)} entries:"
                              f" {dir_path}")
 
         super().__init__(num_levels, **zarr_kwargs)
         self._level_paths = level_paths
+        self._tile_grid = _get_dataset_tile_grid(self.get_dataset(0))
+
+    @property
+    def tile_grid(self) -> TileGrid:
+        return self._tile_grid
 
     def get_dataset_lazily(self, index: int, *args, **kwargs) -> xr.Dataset:
         """
@@ -211,53 +224,22 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
         if base_dataset is None:
             raise ValueError("base_dataset must be given")
 
-        var_names = list(base_dataset.data_vars)
-        if not var_names:
-            raise ValueError("base_dataset must contain at least one data variable")
+        tile_grid = _get_dataset_tile_grid(base_dataset)
 
-        var = base_dataset[var_names[0]]
+        chunks = {}
+        for var_name in base_dataset.data_vars:
+            chunks.update({dim: 1 for dim in base_dataset[var_name].dims})
+        chunks.update({"lon": tile_grid.tile_width, "lat": tile_grid.tile_height})
 
-        # TODO (forman): issue #46: IMPORTANT: we must construct pyramids compatible with
-        # controllers.tiles.get_dataset_tile_grid(). Otherwise the #levels or tiling will not match!
-
-        if isinstance(chunks, int):
-            chunks_dict = {dim: 1 for dim in var.dims}
-            chunks_dict[var.dims[-2]] = chunks_dict[var.dims[-1]] = chunks
-            chunks = chunks_dict
-        elif isinstance(chunks, dict):
-            chunks_dict = dict(chunks)
-            for dim in var.dims:
-                if dim not in chunks_dict:
-                    chunks_dict[dim] = 1
-            chunks = chunks_dict
-        elif chunks is not None:
-            raise TypeError("chunks must be an int, dict, or None")
-
-        var_chunks = var.chunks
-        if var_chunks is not None:
-            # var.chunks is a tuple whose items are either a common block size or a tuple of varying block sizes
-            var_chunks = {var.dims[i]: (var_chunks[i] if isinstance(var_chunks[i], int) else max(var_chunks[i]))
-                          for i in range(var.ndim)}
-
-        rechunk = chunks != var_chunks
-        chunks = chunks or var_chunks
-
-        if num_levels is None and chunks is None:
-            raise ValueError("one of num_levels or chunks must be given")
-
-        if num_levels is None:
-            num_levels = 1
-            height, width = var.shape[-2:]
-            tile_height, tile_width = chunks[var.dims[-2]], chunks[var.dims[-1]]
-            while width > tile_width and height > tile_height:
-                width = (width + 1) // 2
-                height = (height + 1) // 2
-                num_levels += 1
-
-        super().__init__(num_levels)
-        self._base_dataset = base_dataset
+        self._tile_grid = tile_grid
         self._chunks = chunks
-        self._rechunk = rechunk
+
+        super().__init__(tile_grid.num_levels)
+        self._base_dataset = base_dataset
+
+    @property
+    def tile_grid(self) -> TileGrid:
+        return self._tile_grid
 
     def get_dataset_lazily(self, index: int, *args, **kwargs) -> xr.Dataset:
         """
@@ -278,6 +260,63 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                 var = var[..., ::step, ::step]
                 data_vars[var_name] = var
             level_dataset = xr.Dataset(data_vars, attrs=base_dataset.attrs)
-        if self._rechunk:
-            level_dataset = level_dataset.chunk(chunks=self._chunks)
+        # TODO (forman): PERF: check if following line can improve performance
+        #                for tiling != chunking and tiling == chunking.
+        #                So far, I couldn't see a performance benefit when uncommenting line.
+        # level_dataset = level_dataset.chunk(chunks=self._chunks)
         return level_dataset
+
+
+def _get_cube_spatial_sizes(dataset: xr.Dataset):
+    first_var_name = None
+    spatial_shape = None
+    spatial_chunks = None
+    for var_name in dataset.data_vars:
+        var = dataset[var_name]
+
+        if var.ndim < 2 or var.dims[-2:] != ("lat", "lon"):
+            continue
+
+        if first_var_name is None:
+            first_var_name = var_name
+
+        if spatial_shape is None:
+            spatial_shape = var.shape[-2:]
+        elif spatial_shape != var.shape[-2:]:
+            raise ValueError(f"variables in dataset have different spatial shapes:"
+                             f" variable {first_var_name!r} has {spatial_shape}"
+                             f" while {var_name!r} has {var.shape}")
+
+        if var.chunks is not None:
+            if spatial_chunks is None:
+                spatial_chunks = var.chunks[-2:]
+            elif spatial_chunks != var.chunks[-2:]:
+                raise ValueError(f"variables in dataset have different spatial chunks:"
+                                 f" variable {first_var_name!r} has {spatial_chunks}"
+                                 f" while {var_name!r} has {var.chunks}")
+
+    if spatial_shape is None:
+        raise ValueError("no variables with spatial dimensions found")
+
+    width, height = spatial_shape[-1], spatial_shape[-2]
+    tile_width, tile_height = None, None
+
+    if spatial_chunks is not None:
+        def to_int(v):
+            return v if isinstance(v, int) else v[0]
+
+        spatial_chunks = tuple(map(to_int, spatial_chunks))
+        tile_width, tile_height = spatial_chunks[-1], spatial_chunks[-2]
+
+    return width, height, tile_width, tile_height
+
+
+def _get_dataset_tile_grid(dataset: xr.Dataset):
+    geo_extent = GeoExtent.from_coord_arrays(dataset.lon.values, dataset.lat.values)
+    width, height, tile_width, tile_height = _get_cube_spatial_sizes(dataset)
+    try:
+        tile_grid = TileGrid.create(width, height, tile_width, tile_height, geo_extent)
+    except ValueError:
+        tile_grid = TileGrid(1, 1, 1, width, height, geo_extent)
+
+    return tile_grid

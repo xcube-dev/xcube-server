@@ -68,7 +68,7 @@ def get_dataset(ctx: ServiceContext, ds_id: str, client=None, base_url: str = No
                              title=var.attrs.get('title', var.attrs.get('long_name', var_name)))
 
         if client is not None:
-            tile_grid = ctx.get_tile_grid(ds_id, var_name)
+            tile_grid = ctx.get_tile_grid(ds_id)
             tile_xyz_source_options = get_tile_source_options(tile_grid,
                                                               get_dataset_tile_url(ctx, ds_id, var_name,
                                                                                    base_url),
