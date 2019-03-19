@@ -30,7 +30,7 @@ def get_dataset_tile(ctx: ServiceContext,
 
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf)
 
-    dataset, var = ctx.get_dataset_and_variable_for_z(ds_id, var_name, z)
+    var = ctx.get_variable_for_z(ds_id, var_name, z)
 
     dim_names = list(var.dims)
     if 'lon' not in dim_names or 'lat' not in dim_names:
