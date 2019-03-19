@@ -11,11 +11,11 @@ class log_time(AbstractContextManager):
         self.duration = None
 
     def __enter__(self):
-        self.start_time = time.clock()
+        self.start_time = time.perf_counter()
         return self
 
     def __exit__(self, *exc):
-        self.duration = time.clock() - self.start_time
+        self.duration = time.perf_counter() - self.start_time
         if self.message:
             if isinstance(self.logger, str):
                 logger = logging.getLogger(self.logger)
@@ -23,4 +23,5 @@ class log_time(AbstractContextManager):
                 logger = logging.getLogger("xcube")
             else:
                 logger = self.logger
-            logger.info(f"{self.message} completed within {self.duration} seconds")
+            logger.info(f"{self.message} completed within %.2f ms" % (self.duration * 1000))
+
