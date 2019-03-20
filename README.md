@@ -157,6 +157,7 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-server/blob/master/xcub
 
 ### TODO:
 
+* Performance: Fix all `# TODO (forman): issue #46: ...`, see [#46](https://github.com/dcs4cop/xcube-server/issues/46)
 * Bug/Performance: ServiceContext.dataset_cache uses dataset names as ID, but actually, caching of *open* datasets 
   should be based on *same* dataset sources, namely given the local file path or the remote URL.
   There may be different identifiers that have the same path!
