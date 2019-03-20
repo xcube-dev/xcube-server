@@ -51,9 +51,6 @@ _LOG = logging.getLogger('xcube')
 Config = Dict[str, Any]
 
 
-# TODO (forman): issue #46: all configured datasets shall be read as instances of MultiLevelDataset.
-
-
 # noinspection PyMethodMayBeStatic
 class ServiceContext:
 

@@ -158,21 +158,12 @@ in the [demo's HTML file](https://github.com/bcdev/xcube-server/blob/master/xcub
 ### TODO:
 
 * Bug/Performance: ServiceContext.dataset_cache uses dataset names as ID, but actually, caching of *open* datasets 
-  should be based on *same* dataset sources, namely given the local file path or the remote URL
+  should be based on *same* dataset sources, namely given the local file path or the remote URL.
+  There may be different identifiers that have the same path!
 * Bug/Performance: /xcube/wmts/1.0.0/WMTSCapabilities.xml slow for ZARR data cubes in OTC's object storage.
   15 seconds for first call - investigate and e.g. cache.
-* Bug/Performance: open datasets must be cached based on their paths, not the config identifier names.
-  There may be different identifiers that have the same path!
-* Performance: use multi-resolution levels embedded in future cube datasets
-* Performance: consider external chunking when computing TileGrid
 * Performance: After some period check if datasets haven't been used for a long time - close them and remove from cache.
-* Performance: Internally cache TileGrid instances, so we don't need to recompute them.
-  TileGrid cache keys must be based on dataset path, array shape, and chunk shape.
 * Feature: WMTS GetFeatureInfo
-* Feature: Let users specify TileGrid in configuration
-* Feature: Add a service that allows retrieving the actual cubes indexers and coordinates given a
-  variable and dimension KVP.
-  This is because we use `var.sel(method='nearest, **indexers)`, users cannot know the actual,
-  effectively selected coordinates.
-* Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache.
+* Feature: collect Path entry of any Dataset and observe if the file are modified, if so remove dataset from cache
+  to force its reopening.
 

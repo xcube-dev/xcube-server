@@ -17,8 +17,6 @@ from ..ne2 import NaturalEarth2Image
 from ..reqparams import RequestParams
 
 
-# TODO (forman): issue #46: get_dataset_tile() must be rewritten to MultiLevelDataset instead of ImagePyramid.
-
 def get_dataset_tile(ctx: ServiceContext,
                      ds_id: str,
                      var_name: str,
