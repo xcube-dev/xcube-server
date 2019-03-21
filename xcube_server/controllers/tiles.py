@@ -26,7 +26,7 @@ def get_dataset_tile(ctx: ServiceContext,
     y = RequestParams.to_int('y', y)
     z = RequestParams.to_int('z', z)
 
-    trace_perf = params.get_query_argument_int('debug', ctx.trace_perf)
+    log_perf = params.get_query_argument_int('debug', ctx.log_perf)
 
     var = ctx.get_variable_for_z(ds_id, var_name, z)
 
@@ -47,8 +47,6 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_cbar = cmap_cbar or default_cmap_cbar
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
-
-    # TODO: use MD5 hashes as IDs instead
 
     image_id = '-'.join([ds_id, f"{z}", var_name]
                         + [f'{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items()])
@@ -83,24 +81,27 @@ def get_dataset_tile(ctx: ServiceContext,
 
         image = NdarrayImage(array,
                              image_id=f'ndai-{image_id}',
-                             tile_size=tile_grid.tile_size)
+                             tile_size=tile_grid.tile_size,
+                             log_perf=log_perf)
         image = TransformArrayImage(image,
                                     image_id=f'tai-{image_id}',
                                     flip_y=tile_grid.geo_extent.inv_y,
                                     force_masked=True,
                                     no_data_value=no_data_value,
                                     valid_range=valid_range,
-                                    tile_cache=ctx.mem_tile_cache)
+                                    tile_cache=ctx.mem_tile_cache,
+                                    log_perf=log_perf)
         image = ColorMappedRgbaImage(image,
                                      image_id=f'rgb-{image_id}',
                                      value_range=(cmap_vmin, cmap_vmax),
                                      cmap_name=cmap_cbar,
                                      encode=True,
                                      format='PNG',
-                                     tile_cache=ctx.rgb_tile_cache)
+                                     tile_cache=ctx.rgb_tile_cache,
+                                     log_perf=log_perf)
 
         ctx.image_cache[image_id] = image
-        if trace_perf:
+        if log_perf:
             print('Created tiled image "%s":' % image_id)
             print('  size:', image.size)
             print('as part of tile grid:')
@@ -112,15 +113,16 @@ def get_dataset_tile(ctx: ServiceContext,
             print('  max_width:', tile_grid.max_width)
             print('  max_height:', tile_grid.max_height)
 
-    if trace_perf:
+    if log_perf:
         print('PERF: >>> Tile:', image_id, z, y, x)
 
     t1 = time.clock()
     tile = image.get_tile(x, y)
     t2 = time.clock()
 
-    if trace_perf:
-        print('PERF: <<< Tile:', image_id, z, y, x, 'took', t2 - t1, 'seconds')
+    if log_perf:
+        delta = t2 - t1
+        print('PERF: <<< Tile:', image_id, z, y, x, 'took %.2fms total' % (delta * 1000))
 
     return tile
 

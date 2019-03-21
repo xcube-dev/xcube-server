@@ -40,9 +40,8 @@ from tornado.web import RequestHandler, Application
 
 from .context import ServiceContext
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_LOG_PERF
 from .errors import ServiceBadRequestError
-from .im import set_default_tile_cache
 from .reqparams import RequestParams
 from .undefined import UNDEFINED
 
@@ -64,7 +63,7 @@ class Service:
                  config_file: Optional[str] = None,
                  tile_cache_size: Optional[str] = DEFAULT_TILE_CACHE_SIZE,
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
-                 trace_perf: bool = DEFAULT_TRACE_PERF,
+                 trace_perf: bool = DEFAULT_LOG_PERF,
                  log_file_prefix: str = DEFAULT_LOG_PREFIX,
                  log_to_stderr: bool = False) -> None:
 
@@ -95,6 +94,8 @@ class Service:
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
+        tile_cache_config = parse_tile_cache_config(tile_cache_size)
+
         self.config_file = os.path.abspath(config_file) if config_file else None
         self.config_mtime = None
         self.update_period = update_period
@@ -104,12 +105,12 @@ class Service:
                                  address=address,
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
+
         self.context = ServiceContext(name=name,
                                       base_dir=os.path.dirname(self.config_file or os.path.abspath('')),
-                                      trace_perf=trace_perf)
+                                      log_perf=trace_perf,
+                                      tile_cache_size=tile_cache_size)
         self._maybe_load_config()
-
-        set_default_tile_cache(**parse_tile_cache_config(tile_cache_size))
 
         application.service_context = self.context
         application.time_of_last_activity = time.clock()

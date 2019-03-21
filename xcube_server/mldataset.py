@@ -1,6 +1,7 @@
+import os
 import threading
 from abc import abstractmethod, ABCMeta
-from typing import Dict, Union, Sequence
+from typing import Sequence, Callable, Any, Dict, Optional
 
 import xarray as xr
 
@@ -19,7 +20,7 @@ class MultiLevelDataset(metaclass=ABCMeta):
     is computed by the formula ``size[index + 1] = (size[index] + 1) // 2``
     with ``size[index]`` being the maximum size of the spatial dimensions at level zero.
 
-    Any dataset chunking is assumed to be the same in all levels. Usually, the number of chunks is one
+    Any dataset chunks are assumed to be the same in all levels. Usually, the number of chunks is one
     in one of the spatial dimensions of the highest level.
     """
 
@@ -31,11 +32,11 @@ class MultiLevelDataset(metaclass=ABCMeta):
         """
 
     @property
-    @abstractmethod
     def num_levels(self) -> int:
         """
         :return: the number of pyramid levels.
         """
+        return self.tile_grid.num_levels
 
     @property
     def base_dataset(self) -> xr.Dataset:
@@ -63,66 +64,33 @@ class MultiLevelDataset(metaclass=ABCMeta):
         """
 
     def close(self):
-        """ Close all datasets. """
-
-
-class SimpleMultiLevelDataset(MultiLevelDataset):
-    """
-    A multi-level dataset created from a sequence of datasets.
-
-    :param level_datasets: A dataset for each level.
-    """
-
-    def __init__(self, level_datasets: Sequence[xr.Dataset]):
-        # TODO (forman): issue #46: perform validation of levels_datasets here
-        # 0. must be sequence
-        # 1. all items must be instanceof(xr.Dataset)
-        # 2. all items variables must have same dims + shapes + chunks
-        # 3. for all items, i > 0: size[i] = (size[i - 1] + 1) // 2
-        self._level_datasets = list(level_datasets)
-        self._num_levels = len(self._level_datasets)
-        self._tile_grid = _get_dataset_tile_grid(self.get_dataset(0))
-
-    @property
-    def num_levels(self) -> int:
-        return self._num_levels
-
-    @property
-    def tile_grid(self) -> TileGrid:
-        return self._tile_grid
-
-    def get_dataset(self, index: int) -> xr.Dataset:
-        return self._level_datasets[index]
-
-    def close(self):
-        for dataset in self._level_datasets:
-            dataset.close()
+        """ Close all datasets. Default implementation does nothing. """
 
 
 class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     """
-    A multi-level dataset where each level is lazily retrieved, i.e. read or computed.
+    A multi-level dataset where each level dataset is lazily retrieved, i.e. read or computed by the abstract method
+    ``get_dataset_lazily(index, **kwargs)``.
 
-    :param num_levels: The number of levels.
-    :param args: Extra arguments that will be passed to the ``retrieve_dataset`` method.
-    :param kwargs: Extra keyword arguments that will be passed to the ``retrieve_dataset`` method.
+    If no *tile_grid* is passed it will be retrieved lazily by using the ``get_tile_grid_lazily()`` method,
+    which may be overridden.The default implementation computes a new tile grid based on the dataset at level zero.
+
+    :param tile_grid: The tile grid. If None, a new tile grid will be computed based on the dataset at level zero.
+    :param kwargs: Extra keyword arguments that will be passed to the ``get_dataset_lazily`` method.
     """
 
-    def __init__(self, num_levels: int, *args, **kwargs):
-        if num_levels < 1:
-            raise ValueError("num_levels must be a positive integer")
-        self._num_levels = num_levels
-        self._level_datasets = [None] * num_levels
-        self._args = args
+    def __init__(self, tile_grid: TileGrid = None, kwargs: Dict[str, Any] = None):
+        self._tile_grid = tile_grid
+        self._level_datasets = {}
         self._kwargs = kwargs
         self._lock = threading.RLock()
 
     @property
-    def num_levels(self) -> int:
-        """
-        :return: the number of pyramid levels.
-        """
-        return self._num_levels
+    def tile_grid(self) -> TileGrid:
+        if self._tile_grid is None:
+            with self._lock:
+                self._tile_grid = self.get_tile_grid_lazily()
+        return self._tile_grid
 
     def get_dataset(self, index: int) -> xr.Dataset:
         """
@@ -131,28 +99,37 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         :param index: the level index
         :return: the dataset for the level at *index*.
         """
-        if self._level_datasets[index] is None:
+        if index not in self._level_datasets:
+            kwargs = self._kwargs if self._kwargs is not None else {}
             with self._lock:
                 # noinspection PyTypeChecker
-                self._level_datasets[index] = self.get_dataset_lazily(index, *self._args, **self._kwargs)
+                self._level_datasets[index] = self.get_dataset_lazily(index, **kwargs)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
 
     @abstractmethod
-    def get_dataset_lazily(self, index: int, *args, **kwargs) -> xr.Dataset:
+    def get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
         """
         Retrieve, i.e. read or compute, the dataset for the level at given *index*.
 
         :param index: the level index
-        :param args: Extra arguments passed to constructor.
         :param kwargs: Extra keyword arguments passed to constructor.
         :return: the dataset for the level at *index*.
         """
 
+    def get_tile_grid_lazily(self):
+        """
+        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
+
+        :return: the dataset for the level at *index*.
+        """
+        return _get_dataset_tile_grid(self.get_dataset(0))
+
     def close(self):
-        for dataset in self._level_datasets:
-            if dataset is not None:
-                dataset.close()
+        with self._lock:
+            for dataset in self._level_datasets.values():
+                if dataset is not None:
+                    dataset.close()
 
 
 class StoredMultiLevelDataset(LazyMultiLevelDataset):
@@ -163,10 +140,7 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
     :param zarr_kwargs: Keyword arguments accepted by the ``xarray.open_zarr()`` function.
     """
 
-    def __init__(self, dir_path: str, **zarr_kwargs):
-        import os
-
-        self._dir_path = dir_path
+    def __init__(self, dir_path: str, zarr_kwargs: Dict[str, Any] = None):
         file_paths = os.listdir(dir_path)
         level_paths = {}
         num_levels = -1
@@ -186,15 +160,11 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
                              f" expected {num_levels} but found {len(level_paths)} entries:"
                              f" {dir_path}")
 
-        super().__init__(num_levels, **zarr_kwargs)
+        super().__init__(kwargs=zarr_kwargs)
+        self._dir_path = dir_path
         self._level_paths = level_paths
-        self._tile_grid = _get_dataset_tile_grid(self.get_dataset(0))
 
-    @property
-    def tile_grid(self) -> TileGrid:
-        return self._tile_grid
-
-    def get_dataset_lazily(self, index: int, *args, **kwargs) -> xr.Dataset:
+    def get_dataset_lazily(self, index: int, **zarr_kwargs) -> xr.Dataset:
         """
         Read the dataset for the level at given *index*.
 
@@ -205,7 +175,7 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
         if ext == ".link":
             with open(file_path, "r") as fp:
                 file_path = fp.read()
-        return xr.open_zarr(file_path, **kwargs)
+        return xr.open_zarr(file_path, **zarr_kwargs)
 
 
 class BaseMultiLevelDataset(LazyMultiLevelDataset):
@@ -213,40 +183,21 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
     A multi-level dataset whose level datasets are a created by down-sampling a base dataset.
 
     :param base_dataset: The base dataset for the level at index zero.
-    :param num_levels: The number of levels.
-    :param chunks: The chunks for each dimension.
     """
 
-    def __init__(self,
-                 base_dataset: xr.Dataset,
-                 num_levels: int = None,
-                 chunks: Union[int, Dict[str, int]] = None):
+    def __init__(self, base_dataset: xr.Dataset, tile_grid: TileGrid = None):
+        super().__init__(tile_grid=tile_grid)
         if base_dataset is None:
             raise ValueError("base_dataset must be given")
-
-        tile_grid = _get_dataset_tile_grid(base_dataset)
-
-        chunks = {}
-        for var_name in base_dataset.data_vars:
-            chunks.update({dim: 1 for dim in base_dataset[var_name].dims})
-        chunks.update({"lon": tile_grid.tile_width, "lat": tile_grid.tile_height})
-
-        self._tile_grid = tile_grid
-        self._chunks = chunks
-
-        super().__init__(tile_grid.num_levels)
         self._base_dataset = base_dataset
 
-    @property
-    def tile_grid(self) -> TileGrid:
-        return self._tile_grid
-
-    def get_dataset_lazily(self, index: int, *args, **kwargs) -> xr.Dataset:
+    def get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
         """
         Compute the dataset at level *index*: If *index* is zero, return the base image passed to constructor,
         otherwise down-sample the dataset for the level at given *index*.
 
         :param index: the level index
+        :param kwargs: currently unused
         :return: the dataset for the level at *index*.
         """
         if index == 0:
@@ -260,11 +211,46 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
                 var = var[..., ::step, ::step]
                 data_vars[var_name] = var
             level_dataset = xr.Dataset(data_vars, attrs=base_dataset.attrs)
-        # TODO (forman): PERF: check if following line can improve performance
-        #                for tiling != chunking and tiling == chunking.
-        #                So far, I couldn't see a performance benefit when uncommenting line.
-        # level_dataset = level_dataset.chunk(chunks=self._chunks)
         return level_dataset
+
+
+class ComputedMultiLevelDataset(LazyMultiLevelDataset):
+    """
+    A multi-level dataset whose level datasets are a computed from the levels of a source multi-level dataset.
+
+    :param source: The source multi-level dataset.
+    :param tile_grid: The source multi-level dataset.
+    """
+
+    def __init__(self,
+                 function: Callable[[Optional[xr.Dataset], int], xr.Dataset],
+                 source: MultiLevelDataset = None,
+                 tile_grid: TileGrid = None,
+                 kwargs: Dict[str, Any] = None):
+        if source is None and tile_grid is None:
+            raise ValueError("either source or tile_grid must be given")
+        super().__init__(tile_grid=tile_grid, kwargs=kwargs)
+        self._source = source
+        self._function = function
+
+    def get_tile_grid_lazily(self) -> TileGrid:
+        if self._source is not None:
+            return self._source.tile_grid
+        return super().get_tile_grid_lazily()
+
+    def get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+        level_source = self._source.get_dataset(index) if self._source is not None else None
+        return self._function(level_source, index, **kwargs)
+
+
+def _get_dataset_tile_grid(dataset: xr.Dataset):
+    geo_extent = GeoExtent.from_coord_arrays(dataset.lon.values, dataset.lat.values)
+    width, height, tile_width, tile_height = _get_cube_spatial_sizes(dataset)
+    try:
+        tile_grid = TileGrid.create(width, height, tile_width, tile_height, geo_extent)
+    except ValueError:
+        tile_grid = TileGrid(1, 1, 1, width, height, geo_extent)
+    return tile_grid
 
 
 def _get_cube_spatial_sizes(dataset: xr.Dataset):
@@ -309,14 +295,3 @@ def _get_cube_spatial_sizes(dataset: xr.Dataset):
         tile_width, tile_height = spatial_chunks[-1], spatial_chunks[-2]
 
     return width, height, tile_width, tile_height
-
-
-def _get_dataset_tile_grid(dataset: xr.Dataset):
-    geo_extent = GeoExtent.from_coord_arrays(dataset.lon.values, dataset.lat.values)
-    width, height, tile_width, tile_height = _get_cube_spatial_sizes(dataset)
-    try:
-        tile_grid = TileGrid.create(width, height, tile_width, tile_height, geo_extent)
-    except ValueError:
-        tile_grid = TileGrid(1, 1, 1, width, height, geo_extent)
-
-    return tile_grid

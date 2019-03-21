@@ -18,7 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import functools
 import io
 import time
 import uuid
@@ -33,12 +33,9 @@ from .cmaps import ensure_cmaps_loaded
 from .geoextent import GeoExtent
 from .tilegrid import TileGrid
 from .utils import downsample_ndarray, aggregate_ndarray_first
-from ..cache import Cache, MemoryCacheStore
+from ..cache import Cache
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
-
-_DEFAULT_TILE_CACHE = None
-_DEBUG_OP_IMAGE = True
 
 X = int
 Y = int
@@ -54,21 +51,6 @@ LevelTransformer = Callable[['TiledImage', 'TiledImage', int, Optional[Any]], 'T
 LevelMapper = Callable[['TiledImage', int, Optional[Any]], 'TiledImage']
 TileAggregator = Callable[[Tile, Tile, Tile, Tile], Tile]
 LevelImageIdFactory = Callable[[int], str]
-
-
-def set_default_tile_cache(cache=None, no_cache=False, capacity=64 * 1024 * 1024, threshold=0.75):
-    global _DEFAULT_TILE_CACHE
-    if no_cache:
-        _DEFAULT_TILE_CACHE = None
-    elif cache is None:
-        _DEFAULT_TILE_CACHE = Cache(MemoryCacheStore(), capacity=capacity, threshold=threshold)
-    else:
-        _DEFAULT_TILE_CACHE = cache
-
-
-def get_default_tile_cache() -> Cache:
-    global _DEFAULT_TILE_CACHE
-    return _DEFAULT_TILE_CACHE
 
 
 class TiledImage(metaclass=ABCMeta):
@@ -210,39 +192,42 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     :param format: optional format string
     :param image_id: optional unique image identifier
     :param tile_cache: optional tile cache
+    :param log_perf: whether to log runtime performance information
     """
 
     def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
-                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None):
+                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None, log_perf=False):
         super().__init__(size, tile_size, num_tiles, mode=mode, format=format, image_id=image_id)
-        self._tile_cache = tile_cache if tile_cache is not None else get_default_tile_cache()
+        self._tile_cache = tile_cache
+        self._log_perf = log_perf
 
     @property
     def tile_cache(self) -> Cache:
         return self._tile_cache
 
     def get_tile(self, tile_x: int, tile_y: int) -> Tile:
-        t0 = 0
-        cache = self._tile_cache
-        if cache:
+
+        tile_cache = self._tile_cache
+        log_perf_cm = self.log_perf_cm(tile_x, tile_y)
+
+        if tile_cache is not None:
             tile_id = self.get_tile_id(tile_x, tile_y)
-            tile = cache.get_value(tile_id)
+            with log_perf_cm("queried cache"):
+                tile = tile_cache.get_value(tile_id)
             if tile is not None:
-                if _DEBUG_OP_IMAGE:
-                    print(f'tile {tile_id!r}: restored from cache')
+                if self._log_perf:
+                    print(f"tile {tile_id!r}:", 'restored from cache')
                 return tile
+
         tw, th = self.tile_size
-        if _DEBUG_OP_IMAGE:
-            t0 = time.perf_counter()
-        tile = self.compute_tile(tile_x, tile_y, (tw * tile_x, th * tile_y, tw, th))
-        if _DEBUG_OP_IMAGE:
-            tile_id = self.get_tile_id(tile_x, tile_y)
-            print(f'tile {tile_id!r}:', 'computed, took %.4f sec' % (time.perf_counter() - t0))
-        if cache:
-            tile_id = self.get_tile_id(tile_x, tile_y)
-            cache.put_value(tile_id, tile)
-            if _DEBUG_OP_IMAGE:
-                print(f'tile {tile_id!r}: stored in cache')
+        with log_perf_cm("compute tile"):
+            tile = self.compute_tile(tile_x, tile_y, (tw * tile_x, th * tile_y, tw, th))
+
+        if tile_cache is not None:
+            with log_perf_cm("stored in cache"):
+                # noinspection PyUnboundLocalVariable
+                tile_cache.put_value(tile_id, tile)
+
         return tile
 
     @abstractmethod
@@ -265,6 +250,13 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
                 for tile_x in range(num_tiles_x):
                     cache.remove_value(self.get_tile_id(tile_x, tile_y))
 
+    def log_perf_cm(self, tile_x, tile_y):
+        if self._log_perf:
+            tile_id = self.get_tile_id(tile_x, tile_y)
+            tile_tag = f"tile {tile_id!r}"
+            return functools.partial(_LogPerfCm, tile_tag)
+        return _LogPerfCmNoOp
+
 
 class DecoratorImage(OpImage, metaclass=ABCMeta):
     """
@@ -277,6 +269,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
     :param format: optional format string
     :param mode: optional mode string
     :param tile_cache: optional tile cache
+    :param log_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -284,14 +277,16 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
                  image_id: str = None,
                  format: str = None,
                  mode: str = None,
-                 tile_cache: Cache = None):
+                 tile_cache: Cache = None,
+                 log_perf=False):
         super().__init__(source_image.size,
                          source_image.tile_size,
                          source_image.num_tiles,
                          mode=mode if mode else source_image.mode,
                          format=format if format else source_image.format,
                          image_id=image_id,
-                         tile_cache=tile_cache)
+                         tile_cache=tile_cache,
+                         log_perf=log_perf)
         self._source_image = source_image
 
     @property
@@ -332,6 +327,7 @@ class TransformArrayImage(DecoratorImage):
     :param force_masked: weather to force creation of masked arrays
     :param no_data_value: optional no-data value for mask creation
     :param tile_cache: optional tile cache
+    :param log_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -342,8 +338,9 @@ class TransformArrayImage(DecoratorImage):
                  force_2d: bool = False,
                  no_data_value: Number = None,
                  valid_range: Tuple[Number] = None,
-                 tile_cache: Cache = None):
-        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
+                 tile_cache: Cache = None,
+                 log_perf=False):
+        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, log_perf=log_perf)
         self._force_masked = force_masked
         self._force_2d = force_2d
         self._flip_y = flip_y
@@ -413,6 +410,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     :param encode: Whether to create tiles that are encoded image bytes according to *format*.
     :param format: Image format, e.g. "JPEG", "PNG"
     :param tile_cache: optional tile cache
+    :param log_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -424,8 +422,10 @@ class ColorMappedRgbaImage(DecoratorImage):
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
-                 tile_cache=None):
-        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache)
+                 tile_cache=None,
+                 log_perf=False):
+        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA',
+                         tile_cache=tile_cache, log_perf=log_perf)
         self._value_range = value_range
         self._cmap_name = cmap_name if cmap_name else 'jet'
         ensure_cmaps_loaded()
@@ -437,7 +437,8 @@ class ColorMappedRgbaImage(DecoratorImage):
     def compute_tile_from_source_tile(self,
                                       tile_x: int, tile_y: int,
                                       rectangle: Rectangle2D, source_tile: Tile) -> Tile:
-        with time_it("compute_tile_from_source_tile: clip()", enabled=_DEBUG_OP_IMAGE):
+        log_perf_cm = self.log_perf_cm(tile_x, tile_y)
+        with log_perf_cm("clip"):
             value_min, value_max = self._value_range
             if not np.ma.is_masked(source_tile):
                 if self._no_data_value is not None:
@@ -451,7 +452,7 @@ class ColorMappedRgbaImage(DecoratorImage):
             else:
                 array = source_tile.clip(value_min, value_max)
 
-        with time_it("compute_tile_from_source_tile: reshape()", enabled=_DEBUG_OP_IMAGE):
+        with log_perf_cm("reshape"):
             old_shape = array.shape
             height = old_shape[-2]
             width = old_shape[-1]
@@ -462,7 +463,7 @@ class ColorMappedRgbaImage(DecoratorImage):
                 index = [0] * (array.ndim - 2) + [slice(None), slice(None)]
                 array = array[index]
 
-        with time_it("compute_tile_from_source_tile: _cmap()", enabled=_DEBUG_OP_IMAGE):
+        with log_perf_cm("cmap"):
             # check if we can optimize the following calls by using Numexpr
             # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
             array -= value_min
@@ -470,7 +471,7 @@ class ColorMappedRgbaImage(DecoratorImage):
             array = self._cmap(array, bytes=True)
             image = Image.fromarray(array, mode=self.mode)
 
-        with time_it("compute_tile_from_source_tile: save()", enabled=_DEBUG_OP_IMAGE):
+        with log_perf_cm("save PNG"):
             if self._encode and self.format:
                 # Saving a PNG file is slow: https://github.com/python-pillow/Pillow/issues/1211
                 ostream = io.BytesIO()
@@ -657,7 +658,8 @@ class FastNdarrayDownsamplingImage(OpImage):
         w *= s
         h *= s
 
-        # TODO by forman: check why this is 10x slower than without it
+        # Note by forman: check why this is 10x slower than without it
+        #
         # num_tiles_x, num_tiles_y = self.num_tiles
         # if tile_x < 0 or tile_x > num_tiles_x - 1 or tile_y < 0 or tile_y > num_tiles_y - 1:
         #     print("Empty: ", tile_y, tile_x)
@@ -691,8 +693,6 @@ class FastNdarrayDownsamplingImage(OpImage):
         return trim_tile(tile, self.tile_size)
 
 
-# TODO (forman): issue #46: use an NdarrayImage for each variable and each level of a MultiLevelDataset
-
 class NdarrayImage(OpImage):
     """
     A tiled image created an numpy ndarray-like data array.
@@ -707,7 +707,8 @@ class NdarrayImage(OpImage):
                  array,
                  tile_size: Size2D,
                  image_id: str = None,
-                 tile_cache: Cache = None):
+                 tile_cache: Cache = None,
+                 log_perf=False):
         width, height = array.shape[-1], array.shape[-2]
         tile_width, tile_height = tile_size
         num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height
@@ -717,7 +718,8 @@ class NdarrayImage(OpImage):
                          mode=str(array.dtype),
                          format=None,
                          image_id=image_id,
-                         tile_cache=tile_cache)
+                         tile_cache=tile_cache,
+                         log_perf=log_perf)
         self._array = array
         self._empty_tile = None
 
@@ -877,39 +879,46 @@ def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan
     :param fill_value: fill value for padding
     :return: the trimmed tile
     """
-    with time_it("trim_tile", enabled=_DEBUG_OP_IMAGE):
-        expected_width, expected_height = expected_tile_size
-        actual_width, actual_height = tile.shape[-1], tile.shape[-2]
-        if expected_width > actual_width:
-            # expand in width and pad with fill_value
-            h_pad = np.empty((actual_height, expected_width - actual_width))
-            h_pad.fill(fill_value)
-            tile = np.hstack((tile, h_pad))
-        if expected_height > actual_height:
-            # expand in height and pad with fill_value
-            v_pad = np.empty((expected_height - actual_height, expected_width))
-            v_pad.fill(fill_value)
-            tile = np.vstack((tile, v_pad))
-        if expected_width < actual_width or expected_height < actual_height:
-            # crop
-            tile = tile[..., 0:expected_height, 0:expected_width]
-        return tile
+    expected_width, expected_height = expected_tile_size
+    actual_width, actual_height = tile.shape[-1], tile.shape[-2]
+    if expected_width > actual_width:
+        # expand in width and pad with fill_value
+        h_pad = np.empty((actual_height, expected_width - actual_width))
+        h_pad.fill(fill_value)
+        tile = np.hstack((tile, h_pad))
+    if expected_height > actual_height:
+        # expand in height and pad with fill_value
+        v_pad = np.empty((expected_height - actual_height, expected_width))
+        v_pad.fill(fill_value)
+        tile = np.vstack((tile, v_pad))
+    if expected_width < actual_width or expected_height < actual_height:
+        # crop
+        tile = tile[..., 0:expected_height, 0:expected_width]
+    return tile
 
 
-class time_it:
-    def __init__(self, what, enabled=True):
-        self.what = what
-        self.enabled = enabled
-        if enabled:
-            self.start_time = None
-            self.delta = None
+class _LogPerfCm:
+    def __init__(self, tag: str, message: str):
+        self.tag = tag
+        self.message = message
+        self.start_time = None
+        self.delta = None
 
     def __enter__(self):
-        if self.enabled:
-            self.start_time = time.perf_counter()
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        if self.enabled:
-            self.delta = time.perf_counter() - self.start_time
-            print(f"{self.what} took {self.delta} seconds")
+        self.start_time = time.perf_counter()
         return self
+
+    def __exit__(self, *exc):
+        self.delta = time.perf_counter() - self.start_time
+        print(f"{self.tag}: {self.message}:", "took %.2fms" % (self.delta * 1000.))
+
+
+class _LogPerfCmNoOp:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return None

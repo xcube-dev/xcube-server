@@ -36,8 +36,8 @@ import zarr
 from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
-    DEFAULT_CMAP_VMAX, MEM_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_CAPACITY, FILE_TILE_CACHE_PATH, \
-    FILE_TILE_CACHE_ENABLED, API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
+    DEFAULT_CMAP_VMAX, FILE_TILE_CACHE_PATH, \
+    API_PREFIX, DEFAULT_NAME, DEFAULT_LOG_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
 from .logtime import log_time
 from .mldataset import StoredMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset
@@ -58,27 +58,35 @@ class ServiceContext:
                  name: str = DEFAULT_NAME,
                  base_dir: str = None,
                  config: Config = None,
-                 trace_perf: bool = DEFAULT_TRACE_PERF):
+                 log_perf: bool = DEFAULT_LOG_PERF,
+                 mem_tile_cache_capacity: int = None,
+                 file_tile_cache_capacity: int = None):
         self._name = name
         self.base_dir = os.path.abspath(base_dir or '')
         self._config = config if config is not None else dict()
-        self.dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor, tile_grid_cache)
+        self._place_group_cache = dict()
+        self._feature_index = 0
+        self._log_perf = log_perf
+        self._lock = threading.RLock()
+
+        self.dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor)
         # TODO by forman: move pyramid_cache, mem_tile_cache, rgb_tile_cache into dataset_cache values
         self.image_cache = dict()
-        self.mem_tile_cache = Cache(MemoryCacheStore(),
-                                    capacity=MEM_TILE_CACHE_CAPACITY,
-                                    threshold=0.75)
-        if FILE_TILE_CACHE_ENABLED:
+
+        if mem_tile_cache_capacity and mem_tile_cache_capacity > 0:
+            self.mem_tile_cache = Cache(MemoryCacheStore(),
+                                        capacity=mem_tile_cache_capacity,
+                                        threshold=0.75)
+        else:
+            self.mem_tile_cache = None
+
+        if file_tile_cache_capacity and file_tile_cache_capacity > 0:
             tile_cache_dir = os.path.join(FILE_TILE_CACHE_PATH, 'v%s' % __version__, 'tiles')
             self.rgb_tile_cache = Cache(FileCacheStore(tile_cache_dir, ".png"),
-                                        capacity=FILE_TILE_CACHE_CAPACITY,
+                                        capacity=file_tile_cache_capacity,
                                         threshold=0.75)
         else:
             self.rgb_tile_cache = None
-        self._place_group_cache = dict()
-        self._feature_index = 0
-        self._trace_perf = trace_perf
-        self._lock = threading.RLock()
 
     @property
     def config(self) -> Config:
@@ -114,8 +122,8 @@ class ServiceContext:
         self._config = config
 
     @property
-    def trace_perf(self) -> bool:
-        return self._trace_perf
+    def log_perf(self) -> bool:
+        return self._log_perf
 
     def get_service_url(self, base_url, *path: str):
         return base_url + '/' + self._name + API_PREFIX + '/' + '/'.join(path)

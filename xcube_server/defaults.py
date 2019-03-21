@@ -30,7 +30,7 @@ DEFAULT_CONFIG_FILE = os.path.abspath('xcube_server.yml')
 DEFAULT_TILE_CACHE_SIZE = "512M"
 DEFAULT_UPDATE_PERIOD = 2.
 DEFAULT_LOG_PREFIX = os.path.abspath('xcube_server.log')
-DEFAULT_TRACE_PERF = True
+DEFAULT_LOG_PERF = True
 
 DEFAULT_CMAP_CBAR = 'jet'
 DEFAULT_CMAP_VMIN = 0.
@@ -45,6 +45,5 @@ FILE_TILE_CACHE_ENABLED = False
 FILE_TILE_CACHE_PATH = './image-cache'
 
 MEM_TILE_CACHE_CAPACITY = 2 * _GIGAS
-
 
 API_PREFIX = f"/api/{__version__}"
