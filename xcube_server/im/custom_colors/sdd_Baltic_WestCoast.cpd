@@ -1,0 +1,26 @@
+#BEAM Colour Palette Definition File
+#Fri Mar 08 13:34:47 CET 2019
+autoDistribute=false
+color0=153,51,0
+color1=255,102,0
+color2=255,153,0
+color3=255,204,0
+color4=255,255,0
+color5=255,255,153
+color6=128,230,204
+color7=0,204,255
+color8=51,102,255
+color9=0,0,255
+color10=0,0,128
+numPoints=11
+sample0=1.0
+sample1=2.0
+sample2=3.0
+sample3=4.0
+sample4=5.0
+sample5=6.0
+sample6=8.0
+sample7=10.0
+sample8=12.0
+sample9=14.0
+sample10=16.0

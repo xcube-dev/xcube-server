@@ -22,13 +22,17 @@ import base64
 import io
 import logging
 from threading import Lock
-
+import os
+import glob
+import re
 import matplotlib
+import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors
 import numpy as np
 from PIL import Image
-import cmocean.cm as ocm    # needs to be kept, because it is used in line 126
+import cmocean.cm as ocm  # needs to be kept, because it is used in line 126
+
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
@@ -37,8 +41,10 @@ _LOG = logging.getLogger('xcube')
 # (taken from http://matplotlib.org/examples/color/colormaps_reference.html)
 # colormaps for ocean:
 # (taken from https://matplotlib.org/cmocean/)
-
-_CMAPS = (('Perceptually Uniform Sequential',
+_CMAPS = (('Custom Ocean',
+           'Customized colormaps especially for ocean color paramter',
+           ('bfg', 'chl', 'sdd', 'tsm')),
+          ('Perceptually Uniform Sequential',
            'For many applications, a perceptually uniform colormap is the best choice - '
            'one in which equal steps in data are perceived as equal steps in the color space',
            ('viridis', 'inferno', 'plasma', 'magma')),
@@ -88,6 +94,8 @@ _CMAPS = (('Perceptually Uniform Sequential',
 _CBARS_LOADED = False
 _LOCK = Lock()
 
+_COLOR_TXTS = glob.glob(os.path.join(os.path.dirname(__file__), 'custom_colors/*.cpd'))
+
 
 def get_cmaps():
     """
@@ -107,7 +115,7 @@ def ensure_cmaps_loaded():
     """
     Loads all color maps from matplotlib and registers additional ones, if not done before.
     """
-    global _CBARS_LOADED, _CMAPS
+    global _CBARS_LOADED, _CMAPS, _COLOR_TXTS
     if not _CBARS_LOADED:
         _LOCK.acquire()
         if not _CBARS_LOADED:
@@ -116,7 +124,9 @@ def ensure_cmaps_loaded():
                 cbar_list = []
                 for cmap_name in cmap_names:
                     try:
-                        if cmap_category == 'Ocean':
+                        if cmap_category == 'Custom Ocean':
+                            cmap = _get_custom_colormap(cmap_name, _COLOR_TXTS)
+                        elif cmap_category == 'Ocean':
                             cmap = getattr(ocm, cmap_name)
                         else:
                             cmap = cm.get_cmap(cmap_name)
@@ -183,3 +193,51 @@ def ensure_cmaps_loaded():
             # import pprint
             # pprint.pprint(_CMAPS)
         _LOCK.release()
+
+
+def _get_custom_colormap(cmap_name, color_txts):
+    for color_txt in color_txts:
+
+        if cmap_name in color_txt:
+            colors = _get_color(color_txt)
+            values = get_tick_val_col(color_txt)
+
+            norm = plt.Normalize(min(values), max(values))
+            tuples = list(zip(map(norm, values), colors))
+            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", tuples)
+
+            return cmap
+
+
+def _get_color(colortext):
+    f = open(colortext, "r")
+    lines = f.readlines()
+    c = []
+    for x in lines:
+        if "color" in x:
+            r, g, b = (((re.split('\W+', x, 1)[1:])[0].strip()).split(','))
+            hex_col = ('#%02x%02x%02x' % (int(r), int(g), int(b)))
+            c.append(hex_col)
+    f.close()
+    return c
+
+
+def get_tick_val_col(colortext):
+    f = open(colortext, "r")
+    lines = f.readlines()
+    values = []
+    for x in lines:
+        if "sample" in x:
+            value = ((re.split('\W+', x, 1)[1:])[0].strip())
+            values.append(float(value))
+    f.close()
+    return values
+
+
+def get_norm(cmap_name):
+    for color_txt in _COLOR_TXTS:
+        if cmap_name in _COLOR_TXTS:
+            values = get_tick_val_col(color_txt)
+            norm = plt.Normalize(min(values), max(values))
+
+            return norm

@@ -10,6 +10,7 @@ import matplotlib.figure
 import numpy as np
 import xarray as xr
 
+from xcube_server.im.cmaps import get_norm
 from ..context import ServiceContext
 from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
@@ -154,7 +155,11 @@ def get_legend(ctx: ServiceContext,
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
     ax1 = fig.add_subplot(1, 1, 1)
-    norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
+
+    if cmap_cbar == 'bfg' or cmap_cbar == 'chl' or cmap_cbar == 'sdd' or cmap_cbar == 'tsm':
+        norm = get_norm(cmap_cbar)
+    else:
+        norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
     image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
                                                     norm=norm, orientation='vertical')
 
