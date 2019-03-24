@@ -238,6 +238,6 @@ def get_norm(cmap_name):
     for color_txt in _COLOR_TXTS:
         if cmap_name in _COLOR_TXTS:
             values = get_tick_val_col(color_txt)
-            norm = plt.Normalize(min(values), max(values))
+            norm = matplotlib.colors.LogNorm(min(values), max(values))
 
-            return norm
+            return norm, values

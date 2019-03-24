@@ -154,14 +154,20 @@ def get_legend(ctx: ServiceContext,
         raise ServiceResourceNotFoundError(f"color bar {cmap_cbar} not found")
 
     fig = matplotlib.figure.Figure(figsize=(cmap_w, cmap_h))
-    ax1 = fig.add_subplot(1, 1, 1)
+    ax = fig.add_subplot(1, 1, 1)
 
     if cmap_cbar == 'bfg' or cmap_cbar == 'chl' or cmap_cbar == 'sdd' or cmap_cbar == 'tsm':
-        norm = get_norm(cmap_cbar)
+        norm, ticks = get_norm(cmap_cbar)
+
     else:
         norm = matplotlib.colors.Normalize(vmin=cmap_vmin, vmax=cmap_vmax)
-    image_legend = matplotlib.colorbar.ColorbarBase(ax1, cmap=cmap,
-                                                    norm=norm, orientation='vertical')
+        ticks = None
+    image_legend = matplotlib.colorbar.ColorbarBase(ax,
+                                                    format='%.1f',
+                                                    ticks=ticks,
+                                                    cmap=cmap,
+                                                    norm=norm,
+                                                    orientation='vertical')
 
     image_legend_label = ctx.get_legend_label(ds_id, var_name)
     if image_legend_label is not None:

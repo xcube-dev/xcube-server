@@ -43,7 +43,7 @@ class CatalogueControllerTest(unittest.TestCase):
         response = get_color_bars(ctx, 'application/json')
         self.assertIsInstance(response, str)
         self.assertTrue(len(response) > 40)
-        self.assertEqual('[\n  [\n    "Perceptually Uniform Sequenti', response[0:40])
+        self.assertEqual('[\n  [\n    "Custom Ocean"', response[0:24])
 
         response = get_color_bars(ctx, 'text/html')
         self.assertIsInstance(response, str)
