@@ -2,7 +2,7 @@ name: xcube-server-dev
 
 channels:
   - conda-forge
-  - nodefaults
+  - defaults
 
 dependencies:
   - python =3.6*
@@ -13,7 +13,7 @@ dependencies:
   - botocore =1.12.3
   - cmocean =1.2
   - cython =0.28.5
-  - fiona =1.8.2
+  - fiona =1.8.6
   - h5netcdf =0.6.2
   - matplotlib =2.2.3
   - netcdf4 =1.4.2

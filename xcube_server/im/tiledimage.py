@@ -414,7 +414,7 @@ class ColorMappedRgbaImage(DecoratorImage):
                  image_id: str = None,
                  value_range: Tuple[float, float] = (0.0, 1.0),
                  cmap_name: str = None,
-                 num_colors: int = 256,
+                 num_colors: int = 4096,
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,

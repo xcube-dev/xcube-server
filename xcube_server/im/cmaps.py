@@ -126,6 +126,7 @@ def ensure_cmaps_loaded():
                     try:
                         if cmap_category == 'Custom Ocean':
                             cmap = _get_custom_colormap(cmap_name, _COLOR_TXTS)
+                            cm.register_cmap(cmap=cmap)
                         elif cmap_category == 'Ocean':
                             cmap = getattr(ocm, cmap_name)
                         else:
@@ -204,9 +205,10 @@ def _get_custom_colormap(cmap_name, color_txts):
 
             norm = plt.Normalize(min(values), max(values))
             tuples = list(zip(map(norm, values), colors))
-            cmap = matplotlib.colors.LinearSegmentedColormap.from_list("", tuples)
+            cmap = matplotlib.colors.LinearSegmentedColormap.from_list(cmap_name, tuples)
 
             return cmap
+    return None
 
 
 def _get_color(colortext):
