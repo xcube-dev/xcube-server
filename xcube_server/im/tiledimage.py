@@ -20,7 +20,6 @@
 # SOFTWARE.
 
 import io
-import time
 import uuid
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Sequence, Union, Any, Callable, Optional
@@ -28,6 +27,7 @@ from typing import Tuple, Sequence, Union, Any, Callable, Optional
 import matplotlib.cm as cm
 import numpy as np
 from PIL import Image
+from xcube_server.logtime import log_time
 
 from .cmaps import ensure_cmaps_loaded
 from .geoextent import GeoExtent
@@ -220,39 +220,36 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     """
 
     def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
-                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None):
+                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None,
+                 trace_perf=False):
         super().__init__(size, tile_size, num_tiles, mode=mode, format=format, image_id=image_id)
         self._tile_cache = tile_cache if tile_cache is not None else get_default_tile_cache()
+        self._trace_perf = trace_perf
 
     @property
     def tile_cache(self) -> Cache:
         return self._tile_cache
 
     def get_tile(self, tile_x: int, tile_y: int) -> Tile:
-        t0 = 0
-        tile_id = None
+        tile_id = self.get_tile_id(tile_x, tile_y)
         cache = self._tile_cache
+        trace_perf = self._trace_perf
         if cache:
-            tile_id = self.get_tile_id(tile_x, tile_y)
-            if _DEBUG_OP_IMAGE:
-                t0 = time.clock()
-            tile = cache.get_value(tile_id)
+            with log_time(message=f'tile {tile_id!r}: queried in cache' if trace_perf else None):
+                tile = cache.get_value(tile_id)
             if tile is not None:
-                if _DEBUG_OP_IMAGE:
-                    print('tile "%s": restored from cache, took %.4f sec' % (tile_id, time.clock() - t0))
+                if trace_perf:
+                    print(f'tile {tile_id!r}: restored from cache')
                 return tile
-        tw, th = self.tile_size
-        if _DEBUG_OP_IMAGE:
-            t0 = time.clock()
-        tile = self.compute_tile(tile_x, tile_y, (tw * tile_x, th * tile_y, tw, th))
-        if _DEBUG_OP_IMAGE:
-            print('tile "%s": computed, took %.4f sec' % (self.get_tile_id(tile_x, tile_y), time.clock() - t0))
+
+        with log_time(message=f'tile {tile_id!r}: computed' if trace_perf else None):
+            tw, th = self.tile_size
+            tile = self.compute_tile(tile_x, tile_y, (tw * tile_x, th * tile_y, tw, th))
+
         if cache:
-            if _DEBUG_OP_IMAGE:
-                t0 = time.clock()
-            cache.put_value(tile_id, tile)
-            if _DEBUG_OP_IMAGE:
-                print('tile "%s": stored in cache, took %.4f sec' % (tile_id, time.clock() - t0))
+            with log_time(message=f'tile {tile_id!r}: stored in cache' if trace_perf else None):
+                cache.put_value(tile_id, tile)
+
         return tile
 
     @abstractmethod
@@ -286,14 +283,16 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
                  image_id: str = None,
                  format: str = None,
                  mode: str = None,
-                 tile_cache: Cache = None):
+                 tile_cache: Cache = None,
+                 trace_perf: bool = False):
         super().__init__(source_image.size,
                          source_image.tile_size,
                          source_image.num_tiles,
                          mode=mode if mode else source_image.mode,
                          format=format if format else source_image.format,
                          image_id=image_id,
-                         tile_cache=tile_cache)
+                         tile_cache=tile_cache,
+                         trace_perf=trace_perf)
         self._source_image = source_image
 
     @property
@@ -336,8 +335,9 @@ class TransformArrayImage(DecoratorImage):
                  force_2d: bool = False,
                  no_data_value: Number = None,
                  valid_range: Tuple[Number] = None,
-                 tile_cache: Cache = None):
-        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache)
+                 tile_cache: Cache = None,
+                 trace_perf: bool = False):
+        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
         self._force_masked = force_masked
         self._force_2d = force_2d
         self._flip_y = flip_y
@@ -418,8 +418,10 @@ class ColorMappedRgbaImage(DecoratorImage):
                  no_data_value: Union[int, float] = None,
                  encode: bool = False,
                  format: str = None,
-                 tile_cache=None):
-        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache)
+                 tile_cache=None,
+                 trace_perf: bool = False):
+        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
+                         trace_perf=trace_perf)
         self._value_range = value_range
         self._cmap_name = cmap_name if cmap_name else 'jet'
         ensure_cmaps_loaded()

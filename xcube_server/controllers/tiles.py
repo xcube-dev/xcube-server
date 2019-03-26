@@ -28,7 +28,7 @@ def get_dataset_tile(ctx: ServiceContext,
     y = RequestParams.to_int('y', y)
     z = RequestParams.to_int('z', z)
 
-    trace_perf = params.get_query_argument_int('debug', ctx.trace_perf)
+    trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
 
     dataset, var = ctx.get_dataset_and_variable(ds_id, var_name)
 
@@ -97,7 +97,8 @@ def get_dataset_tile(ctx: ServiceContext,
                                                     force_masked=True,
                                                     no_data_value=no_data_value,
                                                     valid_range=valid_range,
-                                                    tile_cache=ctx.mem_tile_cache))
+                                                    tile_cache=ctx.mem_tile_cache,
+                                                    trace_perf=trace_perf))
         pyramid = pyramid.apply(lambda image, level:
                                 ColorMappedRgbaImage(image,
                                                      image_id='rgb-%s/%d' % (image_id, level),
@@ -105,7 +106,8 @@ def get_dataset_tile(ctx: ServiceContext,
                                                      cmap_name=cmap_cbar,
                                                      encode=True,
                                                      format='PNG',
-                                                     tile_cache=ctx.rgb_tile_cache))
+                                                     tile_cache=ctx.rgb_tile_cache,
+                                                     trace_perf=trace_perf))
         ctx.pyramid_cache[image_id] = pyramid
         if trace_perf:
             print('Created pyramid "%s":' % image_id)
@@ -125,7 +127,8 @@ def get_dataset_tile(ctx: ServiceContext,
     t2 = time.clock()
 
     if trace_perf:
-        print('PERF: <<< Tile:', image_id, z, y, x, 'took', t2 - t1, 'seconds')
+        delta = t2 - t1
+        print('PERF: <<< Tile:', image_id, z, y, x, 'took', '%.2f seconds' % delta)
 
     return tile
 

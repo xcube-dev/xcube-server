@@ -23,4 +23,4 @@ class log_time(AbstractContextManager):
                 logger = logging.getLogger("xcube")
             else:
                 logger = self.logger
-            logger.info(f"{self.message} completed within {self.duration} seconds")
+            logger.info(f"{self.message}: took " + "%.2fms" % self.duration)
