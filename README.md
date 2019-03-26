@@ -51,7 +51,7 @@ The SwaggerHub allows to choose the xcube-server project and therefore the datas
 
 Initially, checkout code and create conda environment `xcube-server-dev`:
 
-    $ git clone https://github.com/bcdev/xcube-server.git
+    $ git clone https://github.com/dcs4cop/xcube-server.git
     $ cd xcube-server
     $ conda env create
 
@@ -153,7 +153,7 @@ To run the [Cesium Demo](http://localhost:9090/xcube_server/res/demo/index-cesiu
 [download Cesium](https://cesiumjs.org/downloads/) and unpack the zip
 into the `xcube-server` source directory so that there exists an 
 `./Cesium-<version>` sub-directory. You may have to adapt the Cesium version number 
-in the [demo's HTML file](https://github.com/bcdev/xcube-server/blob/master/xcube_server/res/demo/index-cesium.html).
+in the [demo's HTML file](https://github.com/dcs4cop/xcube-server/blob/master/xcube_server/res/demo/index-cesium.html).
 
 ### TODO:
 
