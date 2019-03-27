@@ -1,5 +1,5 @@
 import io
-import time
+import logging
 from typing import Dict, Any
 
 import matplotlib
@@ -13,10 +13,12 @@ import xarray as xr
 from ..context import ServiceContext
 from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
-from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid
+from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid, measure_time_cm
 from ..ne2 import NaturalEarth2Image
 from ..reqparams import RequestParams
 from ..utils import compute_tile_grid
+
+_LOG = logging.getLogger('xcube')
 
 
 def get_dataset_tile(ctx: ServiceContext,
@@ -29,6 +31,7 @@ def get_dataset_tile(ctx: ServiceContext,
     z = RequestParams.to_int('z', z)
 
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
+    measure_time = measure_time_cm(logger=_LOG, disabled=not trace_perf)
 
     dataset, var = ctx.get_dataset_and_variable(ds_id, var_name)
 
@@ -50,9 +53,7 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
 
-    # TODO: use MD5 hashes as IDs instead
-
-    var_index_id = '-'.join(f'-{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items())
+    var_index_id = '-'.join(f'{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items())
     array_id = '%s-%s-%s' % (ds_id, var_name, var_index_id)
     image_id = '%s-%s-%s-%s' % (array_id, cmap_cbar, cmap_vmin, cmap_vmax)
 
@@ -89,7 +90,8 @@ def get_dataset_tile(ctx: ServiceContext,
 
         pyramid = ImagePyramid.create_from_array(array, tile_grid,
                                                  level_image_id_factory=array_image_id_factory,
-                                                 tile_cache=ctx.mem_tile_cache)
+                                                 tile_cache=ctx.mem_tile_cache,
+                                                 trace_perf=trace_perf)
         pyramid = pyramid.apply(lambda image, level:
                                 TransformArrayImage(image,
                                                     image_id='tra-%s/%d' % (array_id, level),
@@ -110,25 +112,23 @@ def get_dataset_tile(ctx: ServiceContext,
                                                      trace_perf=trace_perf))
         ctx.pyramid_cache[image_id] = pyramid
         if trace_perf:
-            print('Created pyramid "%s":' % image_id)
-            print('  tile_size:', pyramid.tile_size)
-            print('  num_level_zero_tiles:', pyramid.num_level_zero_tiles)
-            print('  num_levels:', pyramid.num_levels)
-            print('  min_width:', pyramid.tile_grid.min_width)
-            print('  min_height:', pyramid.tile_grid.min_height)
-            print('  max_width:', pyramid.tile_grid.max_width)
-            print('  max_height:', pyramid.tile_grid.max_height)
+            _LOG.info('Created pyramid "%s":' % image_id)
+            _LOG.info('  tile_size:', pyramid.tile_size)
+            _LOG.info('  num_level_zero_tiles:', pyramid.num_level_zero_tiles)
+            _LOG.info('  num_levels:', pyramid.num_levels)
+            _LOG.info('  min_width:', pyramid.tile_grid.min_width)
+            _LOG.info('  min_height:', pyramid.tile_grid.min_height)
+            _LOG.info('  max_width:', pyramid.tile_grid.max_width)
+            _LOG.info('  max_height:', pyramid.tile_grid.max_height)
 
     if trace_perf:
-        print('PERF: >>> Tile:', image_id, z, y, x)
+        _LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
 
-    t1 = time.clock()
-    tile = pyramid.get_tile(x, y, z)
-    t2 = time.clock()
+    with measure_time() as measured_time:
+        tile = pyramid.get_tile(x, y, z)
 
     if trace_perf:
-        delta = t2 - t1
-        print('PERF: <<< Tile:', image_id, z, y, x, 'took', '%.2f seconds' % delta)
+        _LOG.info(f'<<< tile {image_id}/{z}/{y}/{x}: took ' + '%.2f seconds' % measured_time.duration)
 
     return tile
 

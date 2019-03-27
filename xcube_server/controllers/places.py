@@ -7,7 +7,7 @@ from shapely.errors import WKTReadingError
 
 from ..context import ServiceContext
 from ..errors import ServiceBadRequestError
-from ..logtime import log_time
+from ..perf import measure_time
 from ..utils import get_dataset_geometry, get_box_split_bounds_geometry
 
 _LOG = logging.getLogger('xcube')
@@ -65,7 +65,7 @@ def _find_places(ctx: ServiceContext,
                  query_geometry: shapely.geometry.base.BaseGeometry = None,
                  query_expr: Any = None,
                  comb_op: str = "and") -> GeoJsonFeatureCollection:
-    with log_time() as cm:
+    with measure_time() as cm:
         features = __find_places(ctx, collection_name, query_geometry, query_expr, comb_op)
     _LOG.info(f"{len(features)} places found within {cm.duration} seconds")
     return features
