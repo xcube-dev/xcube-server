@@ -18,9 +18,7 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import functools
 import io
-import time
 import uuid
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Sequence, Union, Any, Callable, Optional
@@ -34,6 +32,7 @@ from .geoextent import GeoExtent
 from .tilegrid import TileGrid
 from .utils import downsample_ndarray, aggregate_ndarray_first
 from ..cache import Cache
+from ..perf import measure_time_cm
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -192,14 +191,15 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     :param format: optional format string
     :param image_id: optional unique image identifier
     :param tile_cache: optional tile cache
-    :param log_perf: whether to log runtime performance information
+    :param trace_perf: whether to trace runtime performance information
     """
 
     def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
-                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None, log_perf=False):
+                 mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None,
+                 trace_perf=False):
         super().__init__(size, tile_size, num_tiles, mode=mode, format=format, image_id=image_id)
         self._tile_cache = tile_cache
-        self._log_perf = log_perf
+        self._trace_perf = trace_perf
 
     @property
     def tile_cache(self) -> Cache:
@@ -207,25 +207,25 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
 
     def get_tile(self, tile_x: int, tile_y: int) -> Tile:
 
+        measure_time = self.measure_time
+        tile_id = self.get_tile_id(tile_x, tile_y)
+        tile_tag = self.__get_tile_tag(tile_id)
         tile_cache = self._tile_cache
-        log_perf_cm = self.log_perf_cm(tile_x, tile_y)
 
-        if tile_cache is not None:
-            tile_id = self.get_tile_id(tile_x, tile_y)
-            with log_perf_cm("queried cache"):
+        if tile_cache:
+            with measure_time(tile_tag + 'queried in tile cache'):
                 tile = tile_cache.get_value(tile_id)
             if tile is not None:
-                if self._log_perf:
-                    print(f"tile {tile_id!r}:", 'restored from cache')
+                if self._trace_perf:
+                    _LOG.info(tile_tag + 'restored from tile cache')
                 return tile
 
-        tw, th = self.tile_size
-        with log_perf_cm("compute tile"):
+        with measure_time(tile_tag + 'computed'):
+            tw, th = self.tile_size
             tile = self.compute_tile(tile_x, tile_y, (tw * tile_x, th * tile_y, tw, th))
 
-        if tile_cache is not None:
-            with log_perf_cm("stored in cache"):
-                # noinspection PyUnboundLocalVariable
+        if tile_cache:
+            with measure_time(tile_tag + 'stored in tile cache'):
                 tile_cache.put_value(tile_id, tile)
 
         return tile
@@ -250,12 +250,19 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
                 for tile_x in range(num_tiles_x):
                     cache.remove_value(self.get_tile_id(tile_x, tile_y))
 
-    def log_perf_cm(self, tile_x, tile_y):
-        if self._log_perf:
-            tile_id = self.get_tile_id(tile_x, tile_y)
-            tile_tag = f"tile {tile_id!r}"
-            return functools.partial(_LogPerfCm, tile_tag)
-        return _LogPerfCmNoOp
+    @property
+    def measure_time(self):
+        """ A context manager to measure execution time of code blocks. """
+        return measure_time_cm(disabled=not self._trace_perf)
+
+    def _get_tile_tag(self, tile_x: int, tile_y: int) -> str:
+        """ Use to log tile computation info """
+        return self.__get_tile_tag(self.get_tile_id(tile_x, tile_y))
+
+    @staticmethod
+    def __get_tile_tag(tile_id: str) -> str:
+        """ Use to log tile computation info """
+        return "tile " + tile_id + ": "
 
 
 class DecoratorImage(OpImage, metaclass=ABCMeta):
@@ -278,7 +285,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
                  format: str = None,
                  mode: str = None,
                  tile_cache: Cache = None,
-                 log_perf=False):
+                 trace_perf: bool = False):
         super().__init__(source_image.size,
                          source_image.tile_size,
                          source_image.num_tiles,
@@ -286,7 +293,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
                          format=format if format else source_image.format,
                          image_id=image_id,
                          tile_cache=tile_cache,
-                         log_perf=log_perf)
+                         trace_perf=trace_perf)
         self._source_image = source_image
 
     @property
@@ -339,8 +346,8 @@ class TransformArrayImage(DecoratorImage):
                  no_data_value: Number = None,
                  valid_range: Tuple[Number] = None,
                  tile_cache: Cache = None,
-                 log_perf=False):
-        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, log_perf=log_perf)
+                 trace_perf: bool = False):
+        super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
         self._force_masked = force_masked
         self._force_2d = force_2d
         self._flip_y = flip_y
@@ -370,29 +377,38 @@ class TransformArrayImage(DecoratorImage):
         return target_tile
 
     def compute_tile_from_source_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D, tile: Tile) -> Tile:
+        measure_time = self.measure_time
+        tile_tag = self._get_tile_tag(tile_x, tile_y)
+
         if self._force_2d and tile.ndim > 2:
-            # Create 2D subset using basic indexing
-            # noinspection PyTypeChecker
-            index = (tile.ndim - 2) * [0] + [slice(None), slice(None)]
-            tile = tile[index]
+            with measure_time(tile_tag + "index"):
+                # Create 2D subset using basic indexing
+                # noinspection PyTypeChecker
+                index = (tile.ndim - 2) * [0] + [slice(None), slice(None)]
+                tile = tile[index]
+
         if self._flip_y:
-            # Flip tile using fancy indexing
-            tile = tile[..., ::-1, :]
+            with measure_time(tile_tag + "flip y"):
+                # Flip tile using fancy indexing
+                tile = tile[..., ::-1, :]
+
         if self._force_masked and not np.ma.is_masked(tile):
-            # if tile is not masked
-            if self._no_data_value is not None:
-                # and we have a fill value, return a masked tile
-                tile = np.ma.masked_equal(tile, self._no_data_value)
-            elif self._valid_range is not None:
-                valid_min, valid_max = self._valid_range
-                # and we have a valid min or max, return a masked tile
-                if valid_min is not None:
-                    tile = np.ma.masked_less(tile, valid_min)
-                if valid_max is not None:
-                    tile = np.ma.masked_greater(tile, valid_max)
-            elif np.issubdtype(tile.dtype, np.floating) or np.issubdtype(tile.dtype, np.complexfloating):
-                # and it is of float type, return a masked tile with a mask from invalids, i.e. NaN, -Inf, +Inf
-                tile = np.ma.masked_invalid(tile)
+            with measure_time(tile_tag + "mask"):
+                # if tile is not masked
+                if self._no_data_value is not None:
+                    # and we have a fill value, return a masked tile
+                    tile = np.ma.masked_equal(tile, self._no_data_value)
+                elif self._valid_range is not None:
+                    valid_min, valid_max = self._valid_range
+                    # and we have a valid min or max, return a masked tile
+                    if valid_min is not None:
+                        tile = np.ma.masked_less(tile, valid_min)
+                    if valid_max is not None:
+                        tile = np.ma.masked_greater(tile, valid_max)
+                elif np.issubdtype(tile.dtype, np.floating) or np.issubdtype(tile.dtype, np.complexfloating):
+                    # and it is of float type, return a masked tile with a mask from invalids, i.e. NaN, -Inf, +Inf
+                    tile = np.ma.masked_invalid(tile)
+
         return tile
 
 
@@ -423,9 +439,9 @@ class ColorMappedRgbaImage(DecoratorImage):
                  encode: bool = False,
                  format: str = None,
                  tile_cache=None,
-                 log_perf=False):
-        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA',
-                         tile_cache=tile_cache, log_perf=log_perf)
+                 trace_perf: bool = False):
+        super().__init__(source_image, image_id=image_id, format=format, mode='RGBA', tile_cache=tile_cache,
+                         trace_perf=trace_perf)
         self._value_range = value_range
         self._cmap_name = cmap_name if cmap_name else 'jet'
         ensure_cmaps_loaded()
@@ -437,8 +453,10 @@ class ColorMappedRgbaImage(DecoratorImage):
     def compute_tile_from_source_tile(self,
                                       tile_x: int, tile_y: int,
                                       rectangle: Rectangle2D, source_tile: Tile) -> Tile:
-        log_perf_cm = self.log_perf_cm(tile_x, tile_y)
-        with log_perf_cm("clip"):
+        measure_time = self.measure_time
+        tile_tag = self._get_tile_tag(tile_x, tile_y)
+
+        with measure_time(tile_tag + "mask"):
             value_min, value_max = self._value_range
             if not np.ma.is_masked(source_tile):
                 if self._no_data_value is not None:
@@ -452,35 +470,37 @@ class ColorMappedRgbaImage(DecoratorImage):
             else:
                 array = source_tile.clip(value_min, value_max)
 
-        with log_perf_cm("reshape"):
-            old_shape = array.shape
-            height = old_shape[-2]
-            width = old_shape[-1]
-            if width * height == array.size:
-                array = np.reshape(array, (height, width))
-            else:
-                # noinspection PyTypeChecker
-                index = [0] * (array.ndim - 2) + [slice(None), slice(None)]
-                array = array[index]
+        old_shape = array.shape
+        height = old_shape[-2]
+        width = old_shape[-1]
+        if width * height == array.size:
+            array = np.reshape(array, (height, width))
+        else:
+            # noinspection PyTypeChecker
+            index = [0] * (array.ndim - 2) + [slice(None), slice(None)]
+            array = array[index]
 
-        with log_perf_cm("cmap"):
-            # check if we can optimize the following calls by using Numexpr
-            # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
+        # check if we can optimize the following calls by using Numexpr
+        # see https://github.com/pydata/numexpr/wiki/Numexpr-Users-Guide
+        with measure_time(tile_tag + "normalise"):
             array -= value_min
             array *= 1.0 / (value_max - value_min)
+
+        with measure_time(tile_tag + "map colors"):
             array = self._cmap(array, bytes=True)
+
+        with measure_time(tile_tag + "create image"):
             image = Image.fromarray(array, mode=self.mode)
 
-        with log_perf_cm("save PNG"):
-            if self._encode and self.format:
-                # Saving a PNG file is slow: https://github.com/python-pillow/Pillow/issues/1211
+        if self._encode and self.format:
+            with measure_time(tile_tag + "encode PNG"):
                 ostream = io.BytesIO()
-                image.save(ostream, format=self.format, compress_level=1)
+                image.save(ostream, format=self.format)
                 encoded_image = ostream.getvalue()
                 ostream.close()
                 return encoded_image
-            else:
-                return image
+        else:
+            return image
 
     def create_pyramid(self, **kwargs) -> 'ImagePyramid':
         if self._encode:
@@ -612,7 +632,6 @@ class NdarrayDownsamplingImage(DownsamplingImage):
             agg_y = target_positions[i][1]
             agg_tile = agg_tiles[i]
             agg_h, agg_w = agg_tile.shape[-2], agg_tile.shape[-1]
-            # print('agg_tile h, w: ', agg_h, agg_w)
             target_tile[..., agg_y:agg_y + agg_h, agg_x:agg_x + agg_w] = agg_tile
         return target_tile
 
@@ -633,7 +652,8 @@ class FastNdarrayDownsamplingImage(OpImage):
                  tile_size: Size2D,
                  step_exp: int,
                  image_id: str = None,
-                 tile_cache: Cache = None):
+                 tile_cache: Cache = None,
+                 trace_perf=False):
         step_size = 1 << step_exp
         source_width, source_height = array.shape[-1], array.shape[-2]
         width, height = source_width // step_size, source_height // step_size
@@ -645,12 +665,16 @@ class FastNdarrayDownsamplingImage(OpImage):
                          mode=str(array.dtype),
                          format=None,
                          image_id=image_id,
-                         tile_cache=tile_cache)
+                         tile_cache=tile_cache,
+                         trace_perf=trace_perf)
         self._array = array
         self._step_size = step_size
         self._empty_tile = None
 
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
+        measure_time = self.measure_time
+        tile_tag = self._get_tile_tag(tile_x, tile_y)
+
         x, y, w, h = rectangle
         s = self._step_size
         x *= s
@@ -679,18 +703,24 @@ class FastNdarrayDownsamplingImage(OpImage):
         # We could use slices with 'zoom' as step size, but this is incredibly slow when using xarray with dask!
         # 0.4 vs. 0.025 secs for 220x220 pixel tiles for chunked, compressed SST data.
         # tile = self._array[..., y:y + h:s, x:x + w:s]
-        tile = self._array[..., y:y + h, x:x + w]
+        with measure_time(tile_tag + "subset array"):
+            tile = self._array[..., y:y + h, x:x + w]
 
         # Let's see if it has the xarray.DataArray.load() method.
         # Pre-loading of tile data makes it easier to find bottlenecks in the image processing chain.
         if hasattr(tile, 'load'):
-            tile.load()
+            with measure_time(tile_tag + "load"):
+                tile.load()
 
         # We do the resampling to lower resolution after loading the data, which is MUCH faster, see note above.
-        tile = tile[..., ::s, ::s]
+        with measure_time(tile_tag + "down-sample"):
+            tile = tile[..., ::s, ::s]
 
         # ensure that our tile size is w x h: resize and fill in background value.
-        return trim_tile(tile, self.tile_size)
+        with measure_time(tile_tag + "trim"):
+            tile = trim_tile(tile, self.tile_size)
+
+        return tile
 
 
 class NdarrayImage(OpImage):
@@ -708,7 +738,7 @@ class NdarrayImage(OpImage):
                  tile_size: Size2D,
                  image_id: str = None,
                  tile_cache: Cache = None,
-                 log_perf=False):
+                 trace_perf=False):
         width, height = array.shape[-1], array.shape[-2]
         tile_width, tile_height = tile_size
         num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height
@@ -719,7 +749,7 @@ class NdarrayImage(OpImage):
                          format=None,
                          image_id=image_id,
                          tile_cache=tile_cache,
-                         log_perf=log_perf)
+                         trace_perf=trace_perf)
         self._array = array
         self._empty_tile = None
 
@@ -895,30 +925,3 @@ def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan
         # crop
         tile = tile[..., 0:expected_height, 0:expected_width]
     return tile
-
-
-class _LogPerfCm:
-    def __init__(self, tag: str, message: str):
-        self.tag = tag
-        self.message = message
-        self.start_time = None
-        self.delta = None
-
-    def __enter__(self):
-        self.start_time = time.perf_counter()
-        return self
-
-    def __exit__(self, *exc):
-        self.delta = time.perf_counter() - self.start_time
-        print(f"{self.tag}: {self.message}:", "took %.2fms" % (self.delta * 1000.))
-
-
-class _LogPerfCmNoOp:
-    def __init__(self, *args, **kwargs):
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return None

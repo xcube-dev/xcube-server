@@ -37,10 +37,10 @@ from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, FILE_TILE_CACHE_PATH, \
-    API_PREFIX, DEFAULT_NAME, DEFAULT_LOG_PERF
+    API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from .logtime import log_time
 from .mldataset import StoredMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset
+from .perf import measure_time
 from .reqparams import RequestParams
 
 COMPUTE_DATASET = 'compute_dataset'
@@ -58,7 +58,7 @@ class ServiceContext:
                  name: str = DEFAULT_NAME,
                  base_dir: str = None,
                  config: Config = None,
-                 log_perf: bool = DEFAULT_LOG_PERF,
+                 trace_perf: bool = DEFAULT_TRACE_PERF,
                  mem_tile_cache_capacity: int = None,
                  file_tile_cache_capacity: int = None):
         self._name = name
@@ -66,7 +66,7 @@ class ServiceContext:
         self._config = config if config is not None else dict()
         self._place_group_cache = dict()
         self._feature_index = 0
-        self._log_perf = log_perf
+        self._trace_perf = trace_perf
         self._lock = threading.RLock()
 
         self.dataset_cache = dict()  # contains tuples of form (MultiLevelDataset, ds_descriptor)
@@ -122,8 +122,8 @@ class ServiceContext:
         self._config = config
 
     @property
-    def log_perf(self) -> bool:
-        return self._log_perf
+    def trace_perf(self) -> bool:
+        return self._trace_perf
 
     def get_service_url(self, base_url, *path: str):
         return base_url + '/' + self._name + API_PREFIX + '/' + '/'.join(path)
@@ -219,7 +219,7 @@ class ServiceContext:
             s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
             store = s3fs.S3Map(root=path, s3=s3, check=False)
             cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-            with log_time(f"opened remote dataset {path}"):
+            with measure_time(tag=f"opened remote dataset {path}"):
                 ds = xr.open_zarr(cached_store)
             ml_dataset = BaseMultiLevelDataset(ds)
         elif fs_type == 'local':
@@ -228,15 +228,15 @@ class ServiceContext:
 
             data_format = dataset_descriptor.get('Format', 'nc')
             if data_format == 'nc':
-                with log_time(f"opened local NetCDF dataset {path}"):
+                with measure_time(tag=f"opened local NetCDF dataset {path}"):
                     ds = xr.open_dataset(path)
                 ml_dataset = BaseMultiLevelDataset(ds)
             elif data_format == 'zarr':
-                with log_time(f"opened local Zarr dataset {path}"):
+                with measure_time(tag=f"opened local zarr dataset {path}"):
                     ds = xr.open_zarr(path)
                 ml_dataset = BaseMultiLevelDataset(ds)
             elif data_format == 'levels':
-                with log_time(f"opened local multi-level dataset {path}"):
+                with measure_time(tag=f"opened local multi-level dataset {path}"):
                     ml_dataset = StoredMultiLevelDataset(path)
             else:
                 raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
@@ -280,7 +280,7 @@ class ServiceContext:
             kwargs = {kw: parse_arg_value(arg) for kw, arg in callable_kwargs.items()}
 
             try:
-                with log_time(f"created computed dataset {ds_id}"):
+                with measure_time(tag=f"created computed dataset {ds_id}"):
                     ds = callable_obj(*args, **kwargs)
 
                 # TODO (forman): issue #46: instead use ComputedMultiLevelDatasets.
@@ -299,7 +299,7 @@ class ServiceContext:
         t2 = time.clock()
 
         if self.config.get("trace_perf", False):
-            print(f'PERF: opening {ds_id!r} took {t2 - t1} seconds')
+            _LOG.info(f'Opening {ds_id!r} took {t2 - t1} seconds')
 
         return ml_dataset, dataset_descriptor
 

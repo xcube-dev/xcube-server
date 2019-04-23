@@ -1,9 +1,9 @@
 from unittest import TestCase
 
 import numpy as np
-from xcube_server.im import TileGrid, GeoExtent, trim_tile
+from xcube_server.im import TileGrid, GeoExtent
 from xcube_server.im.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
-    TransformArrayImage, FastNdarrayDownsamplingImage
+    TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
 from xcube_server.im.utils import aggregate_ndarray_mean
 
 

@@ -40,7 +40,7 @@ from tornado.web import RequestHandler, Application
 
 from .context import ServiceContext
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
-    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_LOG_PERF
+    DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceBadRequestError
 from .reqparams import RequestParams
 from .undefined import UNDEFINED
@@ -63,7 +63,7 @@ class Service:
                  config_file: Optional[str] = None,
                  tile_cache_size: Optional[str] = DEFAULT_TILE_CACHE_SIZE,
                  update_period: Optional[float] = DEFAULT_UPDATE_PERIOD,
-                 trace_perf: bool = DEFAULT_LOG_PERF,
+                 trace_perf: bool = DEFAULT_TRACE_PERF,
                  log_file_prefix: str = DEFAULT_LOG_PREFIX,
                  log_to_stderr: bool = False) -> None:
 

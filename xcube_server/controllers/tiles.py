@@ -1,5 +1,5 @@
 import io
-import time
+import logging
 from typing import Dict, Any
 
 import matplotlib
@@ -12,9 +12,12 @@ import numpy as np
 from ..context import ServiceContext
 from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceResourceNotFoundError
-from ..im import TransformArrayImage, ColorMappedRgbaImage, TileGrid, NdarrayImage
+from ..im import NdarrayImage
+from ..im import TransformArrayImage, ColorMappedRgbaImage, TileGrid, measure_time_cm
 from ..ne2 import NaturalEarth2Image
 from ..reqparams import RequestParams
+
+_LOG = logging.getLogger('xcube')
 
 
 def get_dataset_tile(ctx: ServiceContext,
@@ -26,7 +29,8 @@ def get_dataset_tile(ctx: ServiceContext,
     y = RequestParams.to_int('y', y)
     z = RequestParams.to_int('z', z)
 
-    log_perf = params.get_query_argument_int('debug', ctx.log_perf)
+    trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
+    measure_time = measure_time_cm(logger=_LOG, disabled=not trace_perf)
 
     var = ctx.get_variable_for_z(ds_id, var_name, z)
 
@@ -82,7 +86,7 @@ def get_dataset_tile(ctx: ServiceContext,
         image = NdarrayImage(array,
                              image_id=f'ndai-{image_id}',
                              tile_size=tile_grid.tile_size,
-                             log_perf=log_perf)
+                             trace_perf=trace_perf)
         image = TransformArrayImage(image,
                                     image_id=f'tai-{image_id}',
                                     flip_y=tile_grid.geo_extent.inv_y,
@@ -90,7 +94,7 @@ def get_dataset_tile(ctx: ServiceContext,
                                     no_data_value=no_data_value,
                                     valid_range=valid_range,
                                     # tile_cache=ctx.mem_tile_cache,
-                                    log_perf=log_perf)
+                                    trace_perf=trace_perf)
         image = ColorMappedRgbaImage(image,
                                      image_id=f'rgb-{image_id}',
                                      value_range=(cmap_vmin, cmap_vmax),
@@ -98,31 +102,29 @@ def get_dataset_tile(ctx: ServiceContext,
                                      encode=True,
                                      format='PNG',
                                      tile_cache=ctx.mem_tile_cache,
-                                     log_perf=log_perf)
+                                     trace_perf=trace_perf)
 
         ctx.image_cache[image_id] = image
-        if log_perf:
-            print('Created tiled image "%s":' % image_id)
-            print('  size:', image.size)
-            print('as part of tile grid:')
-            print('  tile_size:', tile_grid.tile_size)
-            print('  num_levels:', tile_grid.num_levels)
-            print('  num_level_zero_tiles:', tile_grid.num_tiles(0))
-            print('  min_width:', tile_grid.min_width)
-            print('  min_height:', tile_grid.min_height)
-            print('  max_width:', tile_grid.max_width)
-            print('  max_height:', tile_grid.max_height)
+        if trace_perf:
+            _LOG.info('Created tiled image "%s":' % image_id)
+            _LOG.info('  size:', image.size)
+            _LOG.info('as part of tile grid:')
+            _LOG.info('  tile_size:', tile_grid.tile_size)
+            _LOG.info('  num_levels:', tile_grid.num_levels)
+            _LOG.info('  num_level_zero_tiles:', tile_grid.num_tiles(0))
+            _LOG.info('  min_width:', tile_grid.min_width)
+            _LOG.info('  min_height:', tile_grid.min_height)
+            _LOG.info('  max_width:', tile_grid.max_width)
+            _LOG.info('  max_height:', tile_grid.max_height)
 
-    if log_perf:
-        print('PERF: >>> Tile:', image_id, z, y, x)
+    if trace_perf:
+        _LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
 
-    t1 = time.clock()
-    tile = image.get_tile(x, y)
-    t2 = time.clock()
+    with measure_time() as measured_time:
+        tile = image.get_tile(x, y)
 
-    if log_perf:
-        delta = t2 - t1
-        print('PERF: <<< Tile:', image_id, z, y, x, 'took %.2fms total' % (delta * 1000))
+    if trace_perf:
+        _LOG.info(f'<<< tile {image_id}/{z}/{y}/{x}: took ' + '%.2f seconds' % measured_time.duration)
 
     return tile
 
