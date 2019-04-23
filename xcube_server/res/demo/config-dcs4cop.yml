@@ -2,8 +2,6 @@ Datasets:
   - Identifier: s2p
     Title: "Sentinel 2 Plus SNS"
     FileSystem: "local"
-    #    Path: "D:\\Projects\\xcube\\PROJ_WGS84_DCS4COP_S2A_0021_FLANDERS_20180802T105621Z_31UCS_V003.levels"
-    #    Format: levels
     Path: "D:\\EOData\\DCS4COP\\S2Plus-GUC.zarr"
     Format: zarr
     Style: default
@@ -16,8 +14,6 @@ Datasets:
     FileSystem: "obs"
     Region: "eu-de"
     Style: default
-
-
 
 Styles:
   - Identifier: default
