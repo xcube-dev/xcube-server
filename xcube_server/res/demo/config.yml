@@ -57,7 +57,6 @@ Styles:
         ColorBar: "jet"
         ValueRange: [0., 6.]
 
-
 ServiceProvider:
   ProviderName: "Brockmann Consult GmbH"
   ProviderSite: "https://www.brockmann-consult.de"
