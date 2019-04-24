@@ -159,7 +159,6 @@ class GeoExtent:
         if y.size > 1:
             dy = np.gradient(y)
             if (dy.max() - dy.min()) >= eps:
-                # print('dy =', dy)
                 raise ValueError('coordinate variable "lat" is not equi-distant')
             dy = dy[0]
 

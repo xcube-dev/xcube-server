@@ -1,10 +1,9 @@
 from unittest import TestCase
 
 import numpy as np
-
 from xcube_server.im import TileGrid, GeoExtent
 from xcube_server.im.tiledimage import ImagePyramid, OpImage, create_ndarray_downsampling_image, \
-    TransformArrayImage, FastNdarrayDownsamplingImage
+    TransformArrayImage, FastNdarrayDownsamplingImage, trim_tile
 from xcube_server.im.utils import aggregate_ndarray_mean
 
 
@@ -151,20 +150,22 @@ class NdarrayImageTest(TestCase):
         self.assertEqual(target_image.tile_size, (2, 2))
         self.assertEqual(target_image.num_tiles, (3, 2))
 
-    def test_pad_tile(self):
+
+class TrimTileTest(TestCase):
+    def test_trim_tile(self):
         a = np.arange(0, 6, dtype=np.float32)
         a.shape = 2, 3
-        b = FastNdarrayDownsamplingImage.pad_tile(a, (3, 2))
+        b = trim_tile(a, (3, 2))
         np.testing.assert_equal(b, np.array([[0., 1., 2.],
                                              [3., 4., 5.]]))
-        b = FastNdarrayDownsamplingImage.pad_tile(a, (4, 2))
+        b = trim_tile(a, (4, 2))
         np.testing.assert_equal(b, np.array([[0., 1., 2., np.nan],
                                              [3., 4., 5., np.nan]]))
-        b = FastNdarrayDownsamplingImage.pad_tile(a, (3, 3))
+        b = trim_tile(a, (3, 3))
         np.testing.assert_equal(b, np.array([[0., 1., 2.],
                                              [3., 4., 5.],
                                              [np.nan, np.nan, np.nan]]))
-        b = FastNdarrayDownsamplingImage.pad_tile(a, (4, 3))
+        b = trim_tile(a, (4, 3))
         np.testing.assert_equal(b, np.array([[0., 1., 2., np.nan],
                                              [3., 4., 5., np.nan],
                                              [np.nan, np.nan, np.nan, np.nan]]))

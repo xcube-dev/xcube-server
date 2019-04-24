@@ -8,15 +8,14 @@ import matplotlib.colorbar
 import matplotlib.colors
 import matplotlib.figure
 import numpy as np
-import xarray as xr
 
 from ..context import ServiceContext
 from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
-from ..errors import ServiceBadRequestError, ServiceError, ServiceResourceNotFoundError
-from ..im import ImagePyramid, TransformArrayImage, ColorMappedRgbaImage, TileGrid, measure_time_cm
+from ..errors import ServiceBadRequestError, ServiceResourceNotFoundError
+from ..im import NdarrayImage
+from ..im import TransformArrayImage, ColorMappedRgbaImage, TileGrid, measure_time_cm
 from ..ne2 import NaturalEarth2Image
 from ..reqparams import RequestParams
-from ..utils import compute_tile_grid
 
 _LOG = logging.getLogger('xcube')
 
@@ -33,7 +32,7 @@ def get_dataset_tile(ctx: ServiceContext,
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
     measure_time = measure_time_cm(logger=_LOG, disabled=not trace_perf)
 
-    dataset, var = ctx.get_dataset_and_variable(ds_id, var_name)
+    var = ctx.get_variable_for_z(ds_id, var_name, z)
 
     dim_names = list(var.dims)
     if 'lon' not in dim_names or 'lat' not in dim_names:
@@ -53,12 +52,11 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_vmin = cmap_vmin or default_cmap_vmin
         cmap_vmax = cmap_vmax or default_cmap_vmax
 
-    var_index_id = '-'.join(f'{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items())
-    array_id = '%s-%s-%s' % (ds_id, var_name, var_index_id)
-    image_id = '%s-%s-%s-%s' % (array_id, cmap_cbar, cmap_vmin, cmap_vmax)
+    image_id = '-'.join([ds_id, f"{z}", var_name]
+                        + [f'{dim_name}={dim_value}' for dim_name, dim_value in var_indexers.items()])
 
-    if image_id in ctx.pyramid_cache:
-        pyramid = ctx.pyramid_cache[image_id]
+    if image_id in ctx.image_cache:
+        image = ctx.image_cache[image_id]
     else:
         no_data_value = var.attrs.get('_FillValue')
         valid_range = var.attrs.get('valid_range')
@@ -83,49 +81,47 @@ def get_dataset_tile(ctx: ServiceContext,
         cmap_vmin = np.nanmin(array.values) if np.isnan(cmap_vmin) else cmap_vmin
         cmap_vmax = np.nanmax(array.values) if np.isnan(cmap_vmax) else cmap_vmax
 
-        def array_image_id_factory(level):
-            return 'arr-%s/%s' % (array_id, level)
+        tile_grid = ctx.get_tile_grid(ds_id)
 
-        tile_grid = get_tile_grid(ctx, ds_id, var_name, var)
+        image = NdarrayImage(array,
+                             image_id=f'ndai-{image_id}',
+                             tile_size=tile_grid.tile_size,
+                             trace_perf=trace_perf)
+        image = TransformArrayImage(image,
+                                    image_id=f'tai-{image_id}',
+                                    flip_y=tile_grid.geo_extent.inv_y,
+                                    force_masked=True,
+                                    no_data_value=no_data_value,
+                                    valid_range=valid_range,
+                                    # tile_cache=ctx.mem_tile_cache,
+                                    trace_perf=trace_perf)
+        image = ColorMappedRgbaImage(image,
+                                     image_id=f'rgb-{image_id}',
+                                     value_range=(cmap_vmin, cmap_vmax),
+                                     cmap_name=cmap_cbar,
+                                     encode=True,
+                                     format='PNG',
+                                     tile_cache=ctx.mem_tile_cache,
+                                     trace_perf=trace_perf)
 
-        pyramid = ImagePyramid.create_from_array(array, tile_grid,
-                                                 level_image_id_factory=array_image_id_factory,
-                                                 tile_cache=ctx.mem_tile_cache,
-                                                 trace_perf=trace_perf)
-        pyramid = pyramid.apply(lambda image, level:
-                                TransformArrayImage(image,
-                                                    image_id='tra-%s/%d' % (array_id, level),
-                                                    flip_y=tile_grid.geo_extent.inv_y,
-                                                    force_masked=True,
-                                                    no_data_value=no_data_value,
-                                                    valid_range=valid_range,
-                                                    tile_cache=ctx.mem_tile_cache,
-                                                    trace_perf=trace_perf))
-        pyramid = pyramid.apply(lambda image, level:
-                                ColorMappedRgbaImage(image,
-                                                     image_id='rgb-%s/%d' % (image_id, level),
-                                                     value_range=(cmap_vmin, cmap_vmax),
-                                                     cmap_name=cmap_cbar,
-                                                     encode=True,
-                                                     format='PNG',
-                                                     tile_cache=ctx.rgb_tile_cache,
-                                                     trace_perf=trace_perf))
-        ctx.pyramid_cache[image_id] = pyramid
+        ctx.image_cache[image_id] = image
         if trace_perf:
-            _LOG.info('Created pyramid "%s":' % image_id)
-            _LOG.info('  tile_size:', pyramid.tile_size)
-            _LOG.info('  num_level_zero_tiles:', pyramid.num_level_zero_tiles)
-            _LOG.info('  num_levels:', pyramid.num_levels)
-            _LOG.info('  min_width:', pyramid.tile_grid.min_width)
-            _LOG.info('  min_height:', pyramid.tile_grid.min_height)
-            _LOG.info('  max_width:', pyramid.tile_grid.max_width)
-            _LOG.info('  max_height:', pyramid.tile_grid.max_height)
+            _LOG.info('Created tiled image "%s":' % image_id)
+            _LOG.info('  size:', image.size)
+            _LOG.info('as part of tile grid:')
+            _LOG.info('  tile_size:', tile_grid.tile_size)
+            _LOG.info('  num_levels:', tile_grid.num_levels)
+            _LOG.info('  num_level_zero_tiles:', tile_grid.num_tiles(0))
+            _LOG.info('  min_width:', tile_grid.min_width)
+            _LOG.info('  min_height:', tile_grid.min_height)
+            _LOG.info('  max_width:', tile_grid.max_width)
+            _LOG.info('  max_height:', tile_grid.max_height)
 
     if trace_perf:
         _LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
 
     with measure_time() as measured_time:
-        tile = pyramid.get_tile(x, y, z)
+        tile = image.get_tile(x, y)
 
     if trace_perf:
         _LOG.info(f'<<< tile {image_id}/{z}/{y}/{x}: took ' + '%.2f seconds' % measured_time.duration)
@@ -180,8 +176,7 @@ def get_dataset_tile_grid(ctx: ServiceContext,
                           var_name: str,
                           tile_client: str,
                           base_url: str) -> Dict[str, Any]:
-    dataset, variable = ctx.get_dataset_and_variable(ds_id, var_name)
-    tile_grid = get_tile_grid(ctx, ds_id, var_name, variable)
+    tile_grid = ctx.get_tile_grid(ds_id)
     if tile_client == 'ol4' or tile_client == 'cesium':
         return get_tile_source_options(tile_grid,
                                        get_dataset_tile_url(ctx, ds_id, var_name, base_url),
@@ -192,13 +187,6 @@ def get_dataset_tile_grid(ctx: ServiceContext,
 
 def get_dataset_tile_url(ctx: ServiceContext, ds_id: str, var_name: str, base_url: str):
     return ctx.get_service_url(base_url, 'datasets', ds_id, 'vars', var_name, 'tiles', '{z}/{x}/{y}.png')
-
-
-def get_tile_grid(ctx: ServiceContext, ds_id: str, var_name: str, var: xr.DataArray):
-    tile_grid = get_or_compute_tile_grid(ctx, ds_id, var)
-    if tile_grid is None:
-        raise ServiceError(f'Failed computing tile grid for variable "{var_name}" of dataset "{ds_id}"')
-    return tile_grid
 
 
 # noinspection PyUnusedLocal
@@ -220,19 +208,6 @@ def get_ne2_tile_grid(ctx: ServiceContext, tile_client: str, base_url: str):
 
 def get_ne2_tile_url(ctx: ServiceContext, base_url: str):
     return ctx.get_service_url(base_url, 'ne2', 'tiles', '{z}/{x}/{y}.jpg')
-
-
-def get_or_compute_tile_grid(ctx: ServiceContext, ds_id: str, var: xr.DataArray):
-    ctx.get_dataset(ds_id)  # make sure ds_id provides a cached entry
-    _, _, tile_grid_cache = ctx.dataset_cache[ds_id]
-    shape = var.shape
-    tile_grid_key = f'tg_{shape[-1]}_{shape[-2]}'
-    if tile_grid_key in tile_grid_cache:
-        tile_grid = tile_grid_cache[tile_grid_key]
-    else:
-        tile_grid = compute_tile_grid(var)
-        tile_grid_cache[tile_grid_key] = tile_grid
-    return tile_grid
 
 
 def get_tile_source_options(tile_grid: TileGrid, url: str, client: str = 'ol4'):

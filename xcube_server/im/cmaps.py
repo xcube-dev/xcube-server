@@ -141,7 +141,6 @@ def ensure_cmaps_loaded():
                                                     (1.0, 1.0, 1.0))
                         new_cmap = matplotlib.colors.LinearSegmentedColormap(new_name, new_segmentdata)
                         cm.register_cmap(cmap=new_cmap)
-                        # print("INFO: new colormap '" + new_name + "'")
                     elif type(cmap) == matplotlib.colors.ListedColormap:
                         new_name = cmap.name + '_alpha'
                         new_colors = list(cmap.colors)

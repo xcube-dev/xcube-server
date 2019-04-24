@@ -46,5 +46,4 @@ FILE_TILE_CACHE_PATH = './image-cache'
 
 MEM_TILE_CACHE_CAPACITY = 2 * _GIGAS
 
-
 API_PREFIX = f"/api/{__version__}"

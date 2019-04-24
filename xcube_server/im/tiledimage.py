@@ -18,7 +18,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import io
 import uuid
 from abc import ABCMeta, abstractmethod
@@ -28,17 +27,14 @@ import matplotlib.cm as cm
 import numpy as np
 from PIL import Image
 
-from xcube_server.perf import measure_time_cm
 from .cmaps import ensure_cmaps_loaded
 from .geoextent import GeoExtent
 from .tilegrid import TileGrid
 from .utils import downsample_ndarray, aggregate_ndarray_first
-from ..cache import Cache, MemoryCacheStore
+from ..cache import Cache
+from ..perf import measure_time_cm
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
-
-_DEFAULT_TILE_CACHE = None
-_DEBUG_OP_IMAGE = False
 
 X = int
 Y = int
@@ -56,21 +52,6 @@ TileAggregator = Callable[[Tile, Tile, Tile, Tile], Tile]
 LevelImageIdFactory = Callable[[int], str]
 
 
-def set_default_tile_cache(cache=None, no_cache=False, capacity=64 * 1024 * 1024, threshold=0.75):
-    global _DEFAULT_TILE_CACHE
-    if no_cache:
-        _DEFAULT_TILE_CACHE = None
-    elif cache is None:
-        _DEFAULT_TILE_CACHE = Cache(MemoryCacheStore(), capacity=capacity, threshold=threshold)
-    else:
-        _DEFAULT_TILE_CACHE = cache
-
-
-def get_default_tile_cache() -> Cache:
-    global _DEFAULT_TILE_CACHE
-    return _DEFAULT_TILE_CACHE
-
-
 class TiledImage(metaclass=ABCMeta):
     """
     The interface for tiled images.
@@ -83,7 +64,6 @@ class TiledImage(metaclass=ABCMeta):
         Return a unique image identifier.
         :return: A unique (string) object
         """
-        pass
 
     @property
     @abstractmethod
@@ -92,7 +72,6 @@ class TiledImage(metaclass=ABCMeta):
         Return a format string such as 'PNG', 'JPG', 'RAW', etc, or None according to PIL.
         :return: A string indicating the image (file) format.
         """
-        pass
 
     @property
     @abstractmethod
@@ -102,7 +81,6 @@ class TiledImage(metaclass=ABCMeta):
         See http://pillow.readthedocs.org/en/3.0.x/handbook/concepts.html#modes
         :return: A string indicating the image mode
         """
-        pass
 
     @property
     @abstractmethod
@@ -110,7 +88,6 @@ class TiledImage(metaclass=ABCMeta):
         """
         :return: The size of the image as a (width, height) tuple
         """
-        pass
 
     @property
     @abstractmethod
@@ -118,7 +95,6 @@ class TiledImage(metaclass=ABCMeta):
         """
         :return: The size of the image as a (tile_width, tile_height) tuple
         """
-        pass
 
     @property
     @abstractmethod
@@ -126,23 +102,22 @@ class TiledImage(metaclass=ABCMeta):
         """
         :return: The number of tiles as a (num_tiles_x, num_tiles_y) tuple
         """
-        pass
 
     @abstractmethod
     def get_tile(self, tile_x, tile_y) -> Tile:
         """
-        :param tile_x: the tile coordinate in Y direction
-        :param tile_y: the tile coordinate in X direction
+        Get the tile at tile indices *tile_x*, *tile_y*.
+
+        :param tile_x: the tile index in X direction
+        :param tile_y: the tile index in Y direction
         :return: The image's tile data at tile_x, tile_y.
         """
-        pass
 
     @abstractmethod
     def dispose(self) -> None:
         """
-        Disposes this images.
+        Dispose resources allocated by this image.
         """
-        pass
 
 
 class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
@@ -199,7 +174,6 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
         """
         Does nothing.
         """
-        pass
 
     def get_tile_id(self, tile_x, tile_y):
         return '%s/%d/%d' % (self.id, tile_x, tile_y)
@@ -208,7 +182,7 @@ class AbstractTiledImage(TiledImage, metaclass=ABCMeta):
 class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     """
     An abstract base class for images that compute their tiles.
-    Derived classes must implement the compute_tile(tile_x, tile_y, rect) method only.
+    Derived classes must implement the compute_tile(tile_x, tile_y, rectangle) method only.
 
     :param size: the image size as (width, height)
     :param tile_size: optional tile size as (tile_width, tile_height)
@@ -217,13 +191,14 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
     :param format: optional format string
     :param image_id: optional unique image identifier
     :param tile_cache: optional tile cache
+    :param trace_perf: whether to trace runtime performance information
     """
 
     def __init__(self, size: Size2D, tile_size: Size2D, num_tiles: Size2D,
                  mode: str = None, format: str = None, image_id: str = None, tile_cache: Cache = None,
                  trace_perf=False):
         super().__init__(size, tile_size, num_tiles, mode=mode, format=format, image_id=image_id)
-        self._tile_cache = tile_cache if tile_cache is not None else get_default_tile_cache()
+        self._tile_cache = tile_cache
         self._trace_perf = trace_perf
 
     @property
@@ -235,29 +210,37 @@ class OpImage(AbstractTiledImage, metaclass=ABCMeta):
         measure_time = self.measure_time
         tile_id = self.get_tile_id(tile_x, tile_y)
         tile_tag = self.__get_tile_tag(tile_id)
-        cache = self._tile_cache
+        tile_cache = self._tile_cache
 
-        if cache:
-            with measure_time(tile_tag + 'queried in cache'):
-                tile = cache.get_value(tile_id)
+        if tile_cache:
+            with measure_time(tile_tag + 'queried in tile cache'):
+                tile = tile_cache.get_value(tile_id)
             if tile is not None:
                 if self._trace_perf:
-                    print(tile_tag + 'restored from cache')
+                    _LOG.info(tile_tag + 'restored from tile cache')
                 return tile
 
         with measure_time(tile_tag + 'computed'):
             tw, th = self.tile_size
             tile = self.compute_tile(tile_x, tile_y, (tw * tile_x, th * tile_y, tw, th))
 
-        if cache:
-            with measure_time(tile_tag + 'stored in cache'):
-                cache.put_value(tile_id, tile)
+        if tile_cache:
+            with measure_time(tile_tag + 'stored in tile cache'):
+                tile_cache.put_value(tile_id, tile)
 
         return tile
 
     @abstractmethod
     def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
-        pass
+        """
+        Compute a tile at tile indices *tile_x*, *tile_y*.
+        The tile's boundaries are provided in *rectangle* given in image pixel coordinates.
+
+        :param tile_x: the tile index in X direction
+        :param tile_y: the tile index in Y direction
+        :param rectangle: tile rectangle is given in image pixel coordinates.
+        :return: a new tile
+        """
 
     def dispose(self) -> None:
         cache = self._tile_cache
@@ -293,6 +276,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
     :param format: optional format string
     :param mode: optional mode string
     :param tile_cache: optional tile cache
+    :param log_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -328,7 +312,15 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
                                       tile_x: int, tile_y: int,
                                       rectangle: Rectangle2D,
                                       source_tile: Tile) -> Tile:
-        pass
+        """
+        Compute a tile from the given *source_tile*.
+
+        :param tile_x: the tile index in X direction
+        :param tile_y: the tile index in Y direction
+        :param rectangle: tile rectangle is given in image pixel coordinates.
+        :param source_tile: the source tile
+        :return: a new tile computed from the source tile
+        """
 
 
 class TransformArrayImage(DecoratorImage):
@@ -342,6 +334,7 @@ class TransformArrayImage(DecoratorImage):
     :param force_masked: weather to force creation of masked arrays
     :param no_data_value: optional no-data value for mask creation
     :param tile_cache: optional tile cache
+    :param log_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -433,6 +426,7 @@ class ColorMappedRgbaImage(DecoratorImage):
     :param encode: Whether to create tiles that are encoded image bytes according to *format*.
     :param format: Image format, e.g. "JPEG", "PNG"
     :param tile_cache: optional tile cache
+    :param log_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -638,7 +632,6 @@ class NdarrayDownsamplingImage(DownsamplingImage):
             agg_y = target_positions[i][1]
             agg_tile = agg_tiles[i]
             agg_h, agg_w = agg_tile.shape[-2], agg_tile.shape[-1]
-            # print('agg_tile h, w: ', agg_h, agg_w)
             target_tile[..., agg_y:agg_y + agg_h, agg_x:agg_x + agg_w] = agg_tile
         return target_tile
 
@@ -689,7 +682,8 @@ class FastNdarrayDownsamplingImage(OpImage):
         w *= s
         h *= s
 
-        # TODO by forman: check why this is 10x slower than without it
+        # Note by forman: check why this is 10x slower than without it
+        #
         # num_tiles_x, num_tiles_y = self.num_tiles
         # if tile_x < 0 or tile_x > num_tiles_x - 1 or tile_y < 0 or tile_y > num_tiles_y - 1:
         #     print("Empty: ", tile_y, tile_x)
@@ -723,26 +717,47 @@ class FastNdarrayDownsamplingImage(OpImage):
             tile = tile[..., ::s, ::s]
 
         # ensure that our tile size is w x h: resize and fill in background value.
-        with measure_time(tile_tag + "pad"):
-            tile = self.pad_tile(tile, self.tile_size)
+        with measure_time(tile_tag + "trim"):
+            tile = trim_tile(tile, self.tile_size)
 
         return tile
 
-    @staticmethod
-    def pad_tile(tile: Tile, target_tile_size: Size2D, fill_value: float = np.nan) -> Tile:
-        (target_width, target_height) = target_tile_size
-        tile_width, tile_heigth = tile.shape[-1], tile.shape[-2]
-        if target_width > tile_width:
-            # expand in width
-            h_pad = np.empty((tile_heigth, target_width - tile_width))
-            h_pad.fill(fill_value)
-            tile = np.hstack((tile, h_pad))
-        if target_height > tile_heigth:
-            # expand in height
-            v_pad = np.empty((target_height - tile_heigth, target_width))
-            v_pad.fill(fill_value)
-            tile = np.vstack((tile, v_pad))
-        return tile
+
+class NdarrayImage(OpImage):
+    """
+    A tiled image created an numpy ndarray-like data array.
+
+    :param array: a numpy ndarray-like data array
+    :param tile_size: the tile size
+    :param image_id: optional unique image identifier
+    :param tile_cache: an optional tile cache
+    """
+
+    def __init__(self,
+                 array,
+                 tile_size: Size2D,
+                 image_id: str = None,
+                 tile_cache: Cache = None,
+                 trace_perf=False):
+        width, height = array.shape[-1], array.shape[-2]
+        tile_width, tile_height = tile_size
+        num_tiles = (width + tile_width - 1) // tile_width, (height + tile_height - 1) // tile_height
+        super().__init__((width, height),
+                         tile_size=tile_size,
+                         num_tiles=num_tiles,
+                         mode=str(array.dtype),
+                         format=None,
+                         image_id=image_id,
+                         tile_cache=tile_cache,
+                         trace_perf=trace_perf)
+        self._array = array
+        self._empty_tile = None
+
+    def compute_tile(self, tile_x: int, tile_y: int, rectangle: Rectangle2D) -> Tile:
+        x, y, w, h = rectangle
+        tile = self._array[..., y:y + h, x:x + w]
+        # ensure that our tile size is w x h
+        return trim_tile(tile, self.tile_size)
 
 
 LC_STANDARD_NAMES = {'land_cover_lccs algorithmic_confidence', 'land_cover_lccs status_flag', 'land_cover_lccs',
@@ -881,3 +896,32 @@ def create_ndarray_downsampling_image(source_image: TiledImage,
                                       step_exp: int,
                                       **kwargs) -> TiledImage:
     return NdarrayDownsamplingImage(higher_level_image, **kwargs)
+
+
+def trim_tile(tile: Tile, expected_tile_size: Size2D, fill_value: float = np.nan) -> Tile:
+    """
+    Trim a tile.
+
+    If to small, expand and pad with background value. If to large, crop.
+
+    :param tile: The tile
+    :param expected_tile_size: expected tile size
+    :param fill_value: fill value for padding
+    :return: the trimmed tile
+    """
+    expected_width, expected_height = expected_tile_size
+    actual_width, actual_height = tile.shape[-1], tile.shape[-2]
+    if expected_width > actual_width:
+        # expand in width and pad with fill_value
+        h_pad = np.empty((actual_height, expected_width - actual_width))
+        h_pad.fill(fill_value)
+        tile = np.hstack((tile, h_pad))
+    if expected_height > actual_height:
+        # expand in height and pad with fill_value
+        v_pad = np.empty((expected_height - actual_height, expected_width))
+        v_pad.fill(fill_value)
+        tile = np.vstack((tile, v_pad))
+    if expected_width < actual_width or expected_height < actual_height:
+        # crop
+        tile = tile[..., 0:expected_height, 0:expected_width]
+    return tile

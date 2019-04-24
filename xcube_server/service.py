@@ -42,7 +42,6 @@ from .context import ServiceContext
 from .defaults import DEFAULT_ADDRESS, DEFAULT_PORT, DEFAULT_CONFIG_FILE, DEFAULT_UPDATE_PERIOD, DEFAULT_LOG_PREFIX, \
     DEFAULT_TILE_CACHE_SIZE, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceBadRequestError
-from .im import set_default_tile_cache
 from .reqparams import RequestParams
 from .undefined import UNDEFINED
 
@@ -95,6 +94,8 @@ class Service:
         options.log_to_stderr = log_to_stderr
         enable_pretty_logging()
 
+        tile_cache_config = parse_tile_cache_config(tile_cache_size)
+
         self.config_file = os.path.abspath(config_file) if config_file else None
         self.config_mtime = None
         self.update_period = update_period
@@ -104,12 +105,12 @@ class Service:
                                  address=address,
                                  started=datetime.now().isoformat(sep=' '),
                                  pid=os.getpid())
+
         self.context = ServiceContext(name=name,
                                       base_dir=os.path.dirname(self.config_file or os.path.abspath('')),
-                                      trace_perf=trace_perf)
+                                      log_perf=trace_perf,
+                                      mem_tile_cache_capacity=tile_cache_config.get("capacity"))
         self._maybe_load_config()
-
-        set_default_tile_cache(**parse_tile_cache_config(tile_cache_size))
 
         application.service_context = self.context
         application.time_of_last_activity = time.clock()
