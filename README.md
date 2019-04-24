@@ -55,7 +55,7 @@ Initially, checkout code and create conda environment `xcube-server-dev`:
     $ cd xcube-server
     $ conda env create
 
-If the last command fails because `xcube-server-dev` environment already exists, then just update it
+If the last command fails because the `xcube` environment already exists, then just update it
 
     $ conda env update
 
@@ -66,7 +66,7 @@ Once in a while
 
 Install
 
-    $ source activate xcube-server-dev
+    $ source activate xcube
     $ python setup.py develop
     $ pytest --cov=xcube_server
 

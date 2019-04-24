@@ -1,3 +1,6 @@
+#
+# IMPORTANT: keep in sync with xcube/environment.yml until we've merged this repo into xcube
+#
 name: xcube
 channels:
   - conda-forge

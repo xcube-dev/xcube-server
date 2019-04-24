@@ -24,8 +24,14 @@
 
 from setuptools import setup, find_packages
 
-# in alphabetical oder
 requirements = [
+    #
+    # xcube requirements are given in file ./environment.yml.
+    #
+    # All packages here have been commented out, because otherwise setuptools will install
+    # additional pip packages although conda packages with same name are already available
+    # in the conda environment defined by file ./environment.yml.
+    #
     # 'affine',
     # 'click',
     # 'cmocean',
