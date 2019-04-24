@@ -56,6 +56,13 @@
                             </ows:AllowedValues>
                         </ows:Constraint>
                     </ows:Get>
+                    <ows:Get xlink:href="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/WMTSCapabilities.xml">
+                        <ows:Constraint name="GetEncoding">
+                            <ows:AllowedValues>
+                                <ows:Value>REST</ows:Value>
+                            </ows:AllowedValues>
+                        </ows:Constraint>
+                    </ows:Get>
                 </ows:HTTP>
             </ows:DCP>
         </ows:Operation>
@@ -66,6 +73,13 @@
                         <ows:Constraint name="GetEncoding">
                             <ows:AllowedValues>
                                 <ows:Value>KVP</ows:Value>
+                            </ows:AllowedValues>
+                        </ows:Constraint>
+                    </ows:Get>
+                    <ows:Get xlink:href="http://bibo/xcube/api/0.1.0.dev6/wmts/1.0.0/">
+                        <ows:Constraint name="GetEncoding">
+                            <ows:AllowedValues>
+                                <ows:Value>REST</ows:Value>
                             </ows:AllowedValues>
                         </ows:Constraint>
                     </ows:Get>

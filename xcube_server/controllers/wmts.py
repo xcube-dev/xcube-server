@@ -61,6 +61,8 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
     )
 
     wmts_kvp_url = ctx.get_service_url(base_url, 'wmts/kvp?')
+    wmts_rest_cap_url = ctx.get_service_url(base_url, 'wmts/1.0.0/WMTSCapabilities.xml')
+    wmts_rest_tile_url = ctx.get_service_url(base_url, 'wmts/1.0.0/')
 
     operations_metadata_xml = (
         f"\n"
@@ -75,6 +77,13 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         f"                            </ows:AllowedValues>\n"
         f"                        </ows:Constraint>\n"
         f"                    </ows:Get>\n"
+        f"                    <ows:Get xlink:href=\"{wmts_rest_cap_url}\">\n"
+        f"                        <ows:Constraint name=\"GetEncoding\">\n"
+        f"                            <ows:AllowedValues>\n"
+        f"                                <ows:Value>REST</ows:Value>\n"
+        f"                            </ows:AllowedValues>\n"
+        f"                        </ows:Constraint>\n"
+        f"                    </ows:Get>\n"
         f"                </ows:HTTP>\n"
         f"            </ows:DCP>\n"
         f"        </ows:Operation>\n"
@@ -85,6 +94,13 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
         f"                        <ows:Constraint name=\"GetEncoding\">\n"
         f"                            <ows:AllowedValues>\n"
         f"                                <ows:Value>KVP</ows:Value>\n"
+        f"                            </ows:AllowedValues>\n"
+        f"                        </ows:Constraint>\n"
+        f"                    </ows:Get>\n"
+        f"                    <ows:Get xlink:href=\"{wmts_rest_tile_url}\">\n"
+        f"                        <ows:Constraint name=\"GetEncoding\">\n"
+        f"                            <ows:AllowedValues>\n"
+        f"                                <ows:Value>REST</ows:Value>\n"
         f"                            </ows:AllowedValues>\n"
         f"                        </ows:Constraint>\n"
         f"                    </ows:Get>\n"
