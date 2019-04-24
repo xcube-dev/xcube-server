@@ -19,22 +19,18 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import argparse
 import os
-import sys
 
 from tornado.web import Application, StaticFileHandler
 
-from xcube_server import __version__, __description__
-from xcube_server.defaults import DEFAULT_PORT, DEFAULT_NAME, DEFAULT_ADDRESS, DEFAULT_UPDATE_PERIOD, \
-    DEFAULT_CONFIG_FILE, DEFAULT_TILE_CACHE_SIZE, API_PREFIX
+from xcube_server.defaults import DEFAULT_NAME, API_PREFIX
 from xcube_server.handlers import GetNE2TileHandler, GetDatasetVarTileHandler, InfoHandler, GetNE2TileGridHandler, \
     GetDatasetVarTileGridHandler, GetWMTSCapabilitiesXmlHandler, GetColorBarsJsonHandler, GetColorBarsHtmlHandler, \
     GetDatasetsHandler, FindPlacesHandler, FindDatasetPlacesHandler, \
     GetDatasetCoordsHandler, GetTimeSeriesInfoHandler, GetTimeSeriesForPointHandler, WMTSKvpHandler, \
     GetTimeSeriesForGeometryHandler, GetTimeSeriesForFeaturesHandler, GetTimeSeriesForGeometriesHandler, \
     GetPlaceGroupsHandler, GetDatasetVarLegendHandler, GetDatasetHandler
-from xcube_server.service import url_pattern, Service
+from xcube_server.service import url_pattern
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
@@ -106,67 +102,3 @@ def new_application(name: str = DEFAULT_NAME):
          GetTimeSeriesForFeaturesHandler),
     ])
     return application
-
-
-def new_service(args=None) -> Service:
-    if args is None:
-        args = sys.argv[1:]
-
-    parser = argparse.ArgumentParser(description=__description__)
-    parser.add_argument('--version', '-V', action='version', version=__version__)
-    parser.add_argument('--name', '-n', dest='name', metavar='NAME',
-                        help='Service name. '
-                        f'Defaults to {DEFAULT_NAME!r}.',
-                        default=DEFAULT_NAME)
-    parser.add_argument('--address', '-a', dest='address', metavar='ADDRESS',
-                        help='Server address. '
-                        f'Defaults to {DEFAULT_ADDRESS!r}.',
-                        default=DEFAULT_ADDRESS)
-    parser.add_argument('--port', '-p', dest='port', metavar='PORT', type=int,
-                        default=DEFAULT_PORT,
-                        help='Port number where the service will listen on. '
-                        f'Defaults to {DEFAULT_PORT}.')
-    parser.add_argument('--update', '-u', dest='update_period', metavar='UPDATE_PERIOD', type=float,
-                        default=DEFAULT_UPDATE_PERIOD,
-                        help='Service will update after given seconds of inactivity. Zero or a negative value will '
-                             'disable update checks. '
-                        f'Defaults to {DEFAULT_UPDATE_PERIOD!r}.')
-    parser.add_argument('--config', '-c', dest='config_file', metavar='CONFIG_FILE', default=None,
-                        help='Datasets configuration file. '
-                        f'Defaults to {DEFAULT_CONFIG_FILE!r}.')
-    parser.add_argument('--tilecache', '-t', dest='tile_cache', metavar='TILE_CACHE', default=DEFAULT_TILE_CACHE_SIZE,
-                        help=f'In-memory tile cache size in bytes. '
-                        f'Unit suffixes {"K"!r}, {"M"!r}, {"G"!r} may be used. '
-                        f'Defaults to {DEFAULT_TILE_CACHE_SIZE!r}. '
-                        f'The special value {"OFF"!r} disables tile caching.')
-    parser.add_argument('--verbose', '-v', dest='verbose', action='store_true',
-                        help="Delegate logging will be delegated to the console (stderr).")
-    parser.add_argument('--traceperf', dest='trace_perf', action='store_true',
-                        help="Print performance diagnostics (stdout).")
-
-    args_obj = parser.parse_args(args)
-
-    return Service(new_application(args_obj.name),
-                   name=args_obj.name,
-                   log_to_stderr=args_obj.verbose,
-                   port=args_obj.port,
-                   address=args_obj.address,
-                   config_file=args_obj.config_file,
-                   tile_cache_size=args_obj.tile_cache,
-                   update_period=args_obj.update_period,
-                   trace_perf=args_obj.trace_perf)
-
-
-def main(args=None) -> int:
-    try:
-        print(f'{__description__}, version {__version__}')
-        service = new_service(args)
-        service.start()
-        return 0
-    except Exception as e:
-        print('error: %s' % e)
-        return 1
-
-
-if __name__ == '__main__':
-    sys.exit(main())

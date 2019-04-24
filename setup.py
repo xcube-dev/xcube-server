@@ -53,6 +53,7 @@ requirements = [
     # 'tornado',
     # 'xarray',
     # 'zarr',
+    'xcube',
 ]
 
 packages = find_packages(exclude=["test", "test.*"])
@@ -74,8 +75,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'xcs = xcube_server.app:main',
-            'xcube-server = xcube_server.app:main',
+            'xcube-server = xcube_server.cli:main',
         ],
     },
     install_requires=requirements,
