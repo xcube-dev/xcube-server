@@ -204,7 +204,7 @@ class ServiceContext:
         if not path:
             raise ServiceConfigError(f"Missing 'path' entry in dataset descriptor {ds_id}")
 
-        t1 = time.clock()
+        t1 = time.perf_counter()
 
         fs_type = dataset_descriptor.get('FileSystem', 'local')
         if fs_type == 'obs':
@@ -296,7 +296,7 @@ class ServiceContext:
         else:
             raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
 
-        t2 = time.clock()
+        t2 = time.perf_counter()
 
         if self.config.get("trace_perf", False):
             _LOG.info(f'Opening {ds_id!r} took {t2 - t1} seconds')

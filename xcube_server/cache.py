@@ -196,7 +196,7 @@ POLICY_LFU = _policy_lfu
 #: Discard items by Random Replacement
 POLICY_RR = _policy_rr
 
-_T0 = time.clock()
+_T0 = time.process_time()
 
 
 class Cache:
@@ -251,7 +251,7 @@ class Cache:
             self.stored_size = stored_size
 
         def _access(self):
-            self.access_time = time.clock() - _T0
+            self.access_time = time.process_time() - _T0
             self.access_count += 1
 
     def __init__(self, store=MemoryCacheStore(), capacity=1000, threshold=0.75, policy=POLICY_LRU, parent_cache=None):

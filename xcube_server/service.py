@@ -108,12 +108,12 @@ class Service:
 
         self.context = ServiceContext(name=name,
                                       base_dir=os.path.dirname(self.config_file or os.path.abspath('')),
-                                      log_perf=trace_perf,
+                                      trace_perf=trace_perf,
                                       mem_tile_cache_capacity=tile_cache_config.get("capacity"))
         self._maybe_load_config()
 
         application.service_context = self.context
-        application.time_of_last_activity = time.clock()
+        application.time_of_last_activity = time.process_time()
         self.application = application
 
         self.server = application.listen(port, address=address or 'localhost')
@@ -236,7 +236,7 @@ class ServiceRequestHandler(RequestHandler):
         """
         Store time of last activity so we can measure time of inactivity and then optionally auto-exit.
         """
-        self.application.time_of_last_activity = time.clock()
+        self.application.time_of_last_activity = time.process_time()
 
     def write_error(self, status_code, **kwargs):
         self.set_header('Content-Type', 'application/json')
