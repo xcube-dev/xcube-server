@@ -95,7 +95,7 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
     )
 
     dataset_descriptors = ctx.get_dataset_descriptors()
-    tile_grids = dict()
+    written_tile_grids = []
     indent = '    '
 
     layer_base_url = ctx.get_service_url(base_url, 'wmts/1.0.0/tile/%s/%s/{TileMatrix}/{TileRow}/{TileCol}.png')
@@ -111,31 +111,30 @@ def get_wmts_capabilities_xml(ctx: ServiceContext, base_url: str):
             if len(var.shape) <= 2 or var.dims[-1] != 'lon' or var.dims[-2] != 'lat':
                 continue
 
-            tile_grid_id = 'TileGrid_%s_%s' % (var.shape[-1], var.shape[-2])
-            write_tile_matrix_set = False
-            if tile_grid_id in tile_grids:
-                tile_grid = tile_grids[tile_grid_id]
+            tile_grid = ctx.get_tile_grid(ds_name)
+            tile_grid_written = tile_grid in written_tile_grids
+            if tile_grid_written:
+                tile_grid_index = written_tile_grids.index(tile_grid)
             else:
-                tile_grid = ctx.get_tile_grid(ds_name)
-                if tile_grid is not None:
-                    tile_grids[tile_grid_id] = tile_grid
-                    write_tile_matrix_set = True
+                tile_grid_index = len(written_tile_grids)
+                written_tile_grids.append(tile_grid)
+            tile_grid_id = f"TileGrid_{tile_grid_index}"
 
             supported_crs = "urn:ogc:def:crs:OGC:1.3:CRS84"
             # supported_crs = "http://www.opengis.net/def/crs/EPSG/9.5.3/4326"
 
             if tile_grid is not None:
-                tile_size_x = tile_grid.tile_size[0]
-                tile_size_y = tile_grid.tile_size[1]
-                lon1 = tile_grid.geo_extent.west
-                lat1 = tile_grid.geo_extent.south
-                lon2 = tile_grid.geo_extent.east
-                lat2 = tile_grid.geo_extent.north
-                tile_span_y = (lat2 - lat1) / tile_grid.num_level_zero_tiles_y
-                pixel_span = tile_span_y / tile_size_y
-                scale_denominator_0 = pixel_span * _WGS84_METERS_PER_DEGREE / _STD_PIXEL_SIZE_IN_METERS
+                if not tile_grid_written:
+                    tile_size_x = tile_grid.tile_size[0]
+                    tile_size_y = tile_grid.tile_size[1]
+                    lon1 = tile_grid.geo_extent.west
+                    lat1 = tile_grid.geo_extent.south
+                    lon2 = tile_grid.geo_extent.east
+                    lat2 = tile_grid.geo_extent.north
+                    tile_span_y = (lat2 - lat1) / tile_grid.num_level_zero_tiles_y
+                    pixel_span = tile_span_y / tile_size_y
+                    scale_denominator_0 = pixel_span * _WGS84_METERS_PER_DEGREE / _STD_PIXEL_SIZE_IN_METERS
 
-                if write_tile_matrix_set:
                     contents_xml_lines.append((2, '<TileMatrixSet>'))
                     contents_xml_lines.append((3, f'<ows:Identifier>{tile_grid_id}</ows:Identifier>'))
                     contents_xml_lines.append((3, f'<ows:SupportedCRS>{supported_crs}</ows:SupportedCRS>'))
