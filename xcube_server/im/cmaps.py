@@ -28,7 +28,12 @@ import matplotlib.cm as cm
 import matplotlib.colors
 import numpy as np
 from PIL import Image
-import cmocean.cm as ocm    # needs to be kept, because it is used in line 126
+
+try:
+    import cmocean.cm as ocm
+except ImportError:
+    ocm = None
+
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 _LOG = logging.getLogger('xcube')
@@ -113,6 +118,8 @@ def ensure_cmaps_loaded():
         if not _CBARS_LOADED:
             new_cmaps = []
             for cmap_category, cmap_description, cmap_names in _CMAPS:
+                if cmap_category == 'Ocean' and ocm is None:
+                    continue
                 cbar_list = []
                 for cmap_name in cmap_names:
                     try:
