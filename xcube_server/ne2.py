@@ -21,7 +21,7 @@
 
 import os
 
-from xcube_server.im.geoextent import GeoExtent
+from xcube_server.im import GLOBAL_GEO_EXTENT
 from xcube_server.im.tiledimage import AbstractTiledImage, ImagePyramid
 from xcube_server.im.tilegrid import TileGrid
 
@@ -56,7 +56,8 @@ class NaturalEarth2Image(AbstractTiledImage):
                                      NaturalEarth2Image.NUM_LEVEL_0_TILES_Y,
                                      NaturalEarth2Image.TILE_SIZE,
                                      NaturalEarth2Image.TILE_SIZE,
-                                     GeoExtent()),
+                                     GLOBAL_GEO_EXTENT,
+                                     inv_y=False),
                             [NaturalEarth2Image(dir_path, level) for level in range(NaturalEarth2Image.NUM_LEVELS)])
 
     def __init__(self, dir_path, z_index):

@@ -19,6 +19,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import io
+import logging
 import uuid
 from abc import ABCMeta, abstractmethod
 from typing import Tuple, Sequence, Union, Any, Callable, Optional
@@ -28,13 +29,14 @@ import numpy as np
 from PIL import Image
 
 from .cmaps import ensure_cmaps_loaded
-from .geoextent import GeoExtent
-from .tilegrid import TileGrid
+from .tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
 from .utils import downsample_ndarray, aggregate_ndarray_first
 from ..cache import Cache
 from ..perf import measure_time_cm
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
+
+_LOG = logging.getLogger('xcube')
 
 X = int
 Y = int
@@ -276,7 +278,7 @@ class DecoratorImage(OpImage, metaclass=ABCMeta):
     :param format: optional format string
     :param mode: optional mode string
     :param tile_cache: optional tile cache
-    :param log_perf: whether to log runtime performance information
+    :param trace_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -334,7 +336,7 @@ class TransformArrayImage(DecoratorImage):
     :param force_masked: weather to force creation of masked arrays
     :param no_data_value: optional no-data value for mask creation
     :param tile_cache: optional tile cache
-    :param log_perf: whether to log runtime performance information
+    :param trace_perf: whether to log runtime performance information
     """
 
     def __init__(self,
@@ -344,7 +346,7 @@ class TransformArrayImage(DecoratorImage):
                  force_masked: bool = True,
                  force_2d: bool = False,
                  no_data_value: Number = None,
-                 valid_range: Tuple[Number] = None,
+                 valid_range: Tuple[Number, Number] = None,
                  tile_cache: Cache = None,
                  trace_perf: bool = False):
         super().__init__(source_image, image_id=image_id, tile_cache=tile_cache, trace_perf=trace_perf)
@@ -792,7 +794,7 @@ class ImagePyramid:
         :return: a new ImagePyramid instance
         """
         if geo_extent is None:
-            geo_extent = GeoExtent()
+            geo_extent = GLOBAL_GEO_EXTENT
         tile_grid = TileGrid.create(source_image.size[0], source_image.size[1],
                                     source_image.tile_size[0], source_image.tile_size[1],
                                     geo_extent)

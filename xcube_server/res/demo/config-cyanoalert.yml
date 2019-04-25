@@ -1,21 +1,21 @@
 Datasets:
 
   - Identifier: Sweden_SE
-    Title: "Sverige"
-    FileSystem: "local"
-    Path: "D:\\EOData\\CyanoAlert\\DataCubes\\Sweden\\LakesSE\\OLCI-SE-L2C-CUBE-v2-20180708_1_375_509.zarr"
+    Title: Sverige
+    FileSystem: local
+    Path: "C:\\Users\\Norman\\Brockmann Consult GmbH\\CyanoAlert Project Site - Data\\OLCI-SE-L2C-CUBE-v2-20180708_1_500_509.zarr"
     Format: zarr
     Style: default
     PlaceGroups:
       - PlaceGroupRef: Sweden_SE_Lakes
 
   - Identifier: Sweden_SE_1W
-    Title: "Sverige 1W"
+    Title: Sverige 1W
     Style: default
-    FileSystem: "computed"
+    FileSystem: memory
     Path: "resample_in_time.py"
     Function: "compute_dataset"
-    Args: ["@Sweden_SE@", "1W"]
+    InputDatasets: ["Sweden_SE"]
     PlaceGroups:
       - PlaceGroupRef: Sweden_SE_Lakes
 

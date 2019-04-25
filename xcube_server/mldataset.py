@@ -1,14 +1,14 @@
 import os
 import threading
 from abc import abstractmethod, ABCMeta
-from typing import Sequence, Callable, Any, Dict, Optional
+from typing import Sequence, Any, Dict, Callable
 
 import xarray as xr
 
-from xcube_server.im import TileGrid, GeoExtent
-
-
+from xcube_server.im import TileGrid
 # TODO (forman): issue #46: write unit level tests for concrete classes in here
+from xcube_server.perf import measure_time
+from xcube_server.utils import get_dataset_bounds
 
 
 class MultiLevelDataset(metaclass=ABCMeta):
@@ -136,7 +136,7 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
     """
     A stored multi-level dataset whose level datasets are lazily read from storage location.
 
-    :param num_levels: The number of levels.
+    :param dir_path: The directory containing the level datasets.
     :param zarr_kwargs: Keyword arguments accepted by the ``xarray.open_zarr()`` function.
     """
 
@@ -163,6 +163,11 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
         super().__init__(kwargs=zarr_kwargs)
         self._dir_path = dir_path
         self._level_paths = level_paths
+        self._num_levels = num_levels
+
+    @property
+    def num_levels(self) -> int:
+        return self._num_levels
 
     def get_dataset_lazily(self, index: int, **zarr_kwargs) -> xr.Dataset:
         """
@@ -176,6 +181,14 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
             with open(file_path, "r") as fp:
                 file_path = fp.read()
         return xr.open_zarr(file_path, **zarr_kwargs)
+
+    def get_tile_grid_lazily(self):
+        """
+        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
+
+        :return: the dataset for the level at *index*.
+        """
+        return _get_dataset_tile_grid(self.get_dataset(0), num_levels=self._num_levels)
 
 
 class BaseMultiLevelDataset(LazyMultiLevelDataset):
@@ -216,40 +229,74 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
 
 class ComputedMultiLevelDataset(LazyMultiLevelDataset):
     """
-    A multi-level dataset whose level datasets are a computed from the levels of a source multi-level dataset.
-
-    :param source: The source multi-level dataset.
-    :param tile_grid: The source multi-level dataset.
+    A multi-level dataset whose level datasets are a computed from the levels of other multi-level datasets.
     """
 
     def __init__(self,
-                 function: Callable[[Optional[xr.Dataset], int], xr.Dataset],
-                 source: MultiLevelDataset = None,
-                 tile_grid: TileGrid = None,
-                 kwargs: Dict[str, Any] = None):
-        if source is None and tile_grid is None:
-            raise ValueError("either source or tile_grid must be given")
-        super().__init__(tile_grid=tile_grid, kwargs=kwargs)
-        self._source = source
-        self._function = function
+                 ds_id: str,
+                 callable_name: str,
+                 callable_obj: Callable[..., xr.Dataset],
+                 input_ml_dataset_ids: Sequence[str],
+                 input_ml_dataset_getter: Callable[[str], MultiLevelDataset],
+                 input_parameters: Dict[str, Any]):
+        super().__init__(kwargs=input_parameters)
+        self._ds_id = ds_id
+        self._callable_name = callable_name
+        self._callable_obj = callable_obj
+        self._input_ml_dataset_ids = input_ml_dataset_ids
+        self._input_ml_dataset_getter = input_ml_dataset_getter
 
     def get_tile_grid_lazily(self) -> TileGrid:
-        if self._source is not None:
-            return self._source.tile_grid
-        return super().get_tile_grid_lazily()
+        return self._input_ml_dataset_getter(self._input_ml_dataset_ids[0]).tile_grid
 
     def get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
-        level_source = self._source.get_dataset(index) if self._source is not None else None
-        return self._function(level_source, index, **kwargs)
+        input_datasets = [self._input_ml_dataset_getter(ds_id).get_dataset(index)
+                          for ds_id in self._input_ml_dataset_ids]
+        try:
+            with measure_time(tag=f"computed in-memory dataset {self._ds_id!r} at level {index}"):
+                computed_value = self._callable_obj(*input_datasets, **kwargs)
+        except Exception as e:
+            raise ValueError(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
+                             f"from function {self._callable_name!r}: {e}") from e
+        if not isinstance(computed_value, xr.Dataset):
+            raise ValueError(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
+                             f"from function {self._callable_name!r}: "
+                             f"expected an xarray.Dataset but got {type(computed_value)}")
+        return computed_value
 
 
-def _get_dataset_tile_grid(dataset: xr.Dataset):
-    geo_extent = GeoExtent.from_coord_arrays(dataset.lon.values, dataset.lat.values)
+def _get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None):
+    geo_extent = get_dataset_bounds(dataset)
+    inv_y = float(dataset.lat[0]) < float(dataset.lat[-1])
     width, height, tile_width, tile_height = _get_cube_spatial_sizes(dataset)
-    try:
-        tile_grid = TileGrid.create(width, height, tile_width, tile_height, geo_extent)
-    except ValueError:
-        tile_grid = TileGrid(1, 1, 1, width, height, geo_extent)
+    if num_levels is not None and tile_width is not None and tile_height is not None:
+        width_0 = width
+        height_0 = height
+        for i in range(num_levels):
+            width_0 = (width_0 + 1) // 2
+            height_0 = (height_0 + 1) // 2
+        num_level_zero_tiles_x = (width_0 + tile_width - 1) // tile_width
+        num_level_zero_tiles_y = (height_0 + tile_height - 1) // tile_height
+        tile_grid = TileGrid(num_levels,
+                             num_level_zero_tiles_x, num_level_zero_tiles_y,
+                             tile_width, tile_height,
+                             geo_extent, inv_y)
+        print(80 * "*")
+        print(tile_grid)
+        print(80 * "*")
+    else:
+        try:
+            tile_grid = TileGrid.create(width, height,
+                                        tile_width, tile_height,
+                                        geo_extent, inv_y)
+        except ValueError:
+            num_levels = 1
+            num_level_zero_tiles_x = 1
+            num_level_zero_tiles_y = 1
+            tile_grid = TileGrid(num_levels,
+                                 num_level_zero_tiles_x, num_level_zero_tiles_y,
+                                 width, height, geo_extent, inv_y)
+
     return tile_grid
 
 
