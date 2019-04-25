@@ -1,5 +1,14 @@
 Datasets:
 
+  - Identifier: s2p
+    Title: "S2+"
+    FileSystem: local
+    Path: "D:\\Projects\\xcube\\xcube\\cli\\PROJ_WGS84_DCS4COP_S2A_0021_FLANDERS_20180802T105621Z_31UCS_V003.zarr"
+    Format: zarr
+    # Path: "D:\\Projects\\xcube\\xcube\\cli\\PROJ_WGS84_DCS4COP_S2A_0021_FLANDERS_20180802T105621Z_31UCS_V003.levels"
+    # Format: levels
+    Style: default
+
   - Identifier: Sweden_SE
     Title: Sverige
     FileSystem: local
@@ -19,31 +28,11 @@ Datasets:
     PlaceGroups:
       - PlaceGroupRef: Sweden_SE_Lakes
 
-  - Identifier: Germany_SH
-    Title: "Deutschland/SH"
-    FileSystem: "local"
-    Path: "D:\\EOData\\CyanoAlert\\DataCubes\\Germany\\LakesSH\\OLCI-GER-L2C-CUBE-v2-20180708_1_218_238.zarr"
-    Format: zarr
-    Style: default
-    PlaceGroups:
-      - PlaceGroupRef: German_SH_Lakes
-      - PlaceGroupRef: German_SH_Stations
-
-  - Identifier: Germany_SH_1W
-    Title: "Deutschland/SH 1W"
-    Style: default
-    FileSystem: "computed"
-    Path: "resample_in_time.py"
-    Function: "compute_dataset"
-    Args: ["@Germany_SH@", "1W"]
-    PlaceGroups:
-      - PlaceGroupRef: Sweden_SE_Lakes
 
 PlaceGroups:
   - Identifier: Sweden_SE_Lakes
     Title: "Svenska Sj\u00f6arna"
-    # Path: "places/Sweden-Lakes.geojson"
-    Path: "C:\\Users\\Norman\\PycharmProjects\\cyanoalert-regions\\input\\L2_Sweden\\L2C_LakesSE\\Selected_Monitoring_Lakes_wgs84.shp"
+    Path: "places/Sweden-Lakes.geojson"
     CharacterEncoding: utf-8
     PropertyMapping:
       label: "SJONAMN"
@@ -64,6 +53,9 @@ PlaceGroups:
 Styles:
   - Identifier: default
     ColorMappings:
+      rrs_443:
+        ColorBar: "gray"
+        ValueRange: [0., 0.03]
       conc_chl:
         ColorBar: "plasma"
         ValueRange: [0., 24.]
