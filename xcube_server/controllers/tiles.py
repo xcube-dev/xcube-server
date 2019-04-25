@@ -89,7 +89,7 @@ def get_dataset_tile(ctx: ServiceContext,
                              trace_perf=trace_perf)
         image = TransformArrayImage(image,
                                     image_id=f'tai-{image_id}',
-                                    flip_y=tile_grid.geo_extent.inv_y,
+                                    flip_y=tile_grid.inv_y,
                                     force_masked=True,
                                     no_data_value=no_data_value,
                                     valid_range=valid_range,
@@ -106,16 +106,12 @@ def get_dataset_tile(ctx: ServiceContext,
 
         ctx.image_cache[image_id] = image
         if trace_perf:
-            _LOG.info('Created tiled image "%s":' % image_id)
-            _LOG.info('  size:', image.size)
-            _LOG.info('as part of tile grid:')
-            _LOG.info('  tile_size:', tile_grid.tile_size)
-            _LOG.info('  num_levels:', tile_grid.num_levels)
-            _LOG.info('  num_level_zero_tiles:', tile_grid.num_tiles(0))
-            _LOG.info('  min_width:', tile_grid.min_width)
-            _LOG.info('  min_height:', tile_grid.min_height)
-            _LOG.info('  max_width:', tile_grid.max_width)
-            _LOG.info('  max_height:', tile_grid.max_height)
+            _LOG.info(f'Created tiled image {image_id!r} of size {image.size} with tile grid:')
+            _LOG.info(f'  num_levels: {tile_grid.num_levels}')
+            _LOG.info(f'  num_level_zero_tiles: {tile_grid.num_tiles(0)}')
+            _LOG.info(f'  tile_size: {tile_grid.tile_size}')
+            _LOG.info(f'  geo_extent: {tile_grid.geo_extent}')
+            _LOG.info(f'  inv_y: {tile_grid.inv_y}')
 
     if trace_perf:
         _LOG.info(f'>>> tile {image_id}/{z}/{y}/{x}')
@@ -232,16 +228,16 @@ def _tile_grid_to_ol4x_xyz_source_options(tile_grid: TileGrid, url: str):
     :param url: source url
     :return:
     """
-    ge = tile_grid.geo_extent
-    res0 = (ge.north - ge.south) / tile_grid.height(0)
+    west, south, east, north = tile_grid.geo_extent
+    res0 = (north - south) / tile_grid.height(0)
     #   https://openlayers.org/en/latest/examples/xyz.html
     #   https://openlayers.org/en/latest/apidoc/ol.source.XYZ.html
     return dict(url=url,
                 projection='EPSG:4326',
                 minZoom=0,
                 maxZoom=tile_grid.num_levels - 1,
-                tileGrid=dict(extent=[ge.west, ge.south, ge.east, ge.north],
-                              origin=[ge.west, ge.south if ge.inv_y else ge.north],
+                tileGrid=dict(extent=[west, south, east, north],
+                              origin=[west, south if tile_grid.inv_y else north],
                               tileSize=[tile_grid.tile_size[0], tile_grid.tile_size[1]],
                               resolutions=[res0 / (2 ** i) for i in range(tile_grid.num_levels)]))
 
@@ -258,8 +254,8 @@ def _tile_grid_to_cesium1x_source_options(tile_grid: TileGrid, url: str):
     :param url: source url
     :return:
     """
-    ge = tile_grid.geo_extent
-    rectangle = dict(west=ge.west, south=ge.south, east=ge.east, north=ge.north)
+    west, south, east, north = tile_grid.geo_extent
+    rectangle = dict(west=west, south=south, east=east, north=north)
     return dict(url=url,
                 rectangle=rectangle,
                 minimumLevel=0,

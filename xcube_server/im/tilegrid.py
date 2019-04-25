@@ -21,15 +21,18 @@
 
 
 import functools
+import math
 from typing import Optional, Any, Tuple
-
-from .geoextent import GeoExtent
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"
 
 MODE_LE = -1
 MODE_EQ = 0
 MODE_GE = 1
+
+GeoExtent = Tuple[float, float, float, float]
+
+GLOBAL_GEO_EXTENT = -180.0, -90.0, +180.0, +90.0
 
 
 class TileGrid:
@@ -50,13 +53,29 @@ class TileGrid:
                  num_level_zero_tiles_y: int,
                  tile_width: int,
                  tile_height: int,
-                 geo_extent: GeoExtent):
+                 geo_extent: GeoExtent,
+                 inv_y: bool = False):
+        if num_levels < 1:
+            raise ValueError(f"{num_levels} is an invalid value for num_levels")
+        if num_level_zero_tiles_x < 1:
+            raise ValueError(f"{num_level_zero_tiles_x} is an invalid value for num_level_zero_tiles_x")
+        if num_level_zero_tiles_y < 1:
+            raise ValueError(f"{num_level_zero_tiles_y} is an invalid value for num_level_zero_tiles_x")
+        if tile_width < 1:
+            raise ValueError(f"{tile_width} is an invalid value for tile_width")
+        if tile_height < 1:
+            raise ValueError(f"{tile_height} is an invalid value for tile_height")
+        west, south, east, north = geo_extent
+        if west < -180.0 or south < -90.0 or east > 180.0 or north > 90.0 \
+                or west == east or south >= north:
+            raise ValueError(f"{geo_extent} is an invalid value for geo_extent")
         self.num_levels = num_levels
         self.tile_width = tile_width
         self.tile_height = tile_height
         self.num_level_zero_tiles_x = num_level_zero_tiles_x
         self.num_level_zero_tiles_y = num_level_zero_tiles_y
-        self.geo_extent = geo_extent
+        self.geo_extent = west, south, east, north
+        self.inv_y = inv_y
 
     def num_tiles(self, level: int) -> Tuple[int, int]:
         return self.num_tiles_x(level), self.num_tiles_y(level)
@@ -102,6 +121,7 @@ class TileGrid:
                + 4 * self.tile_height \
                + 8 * self.num_level_zero_tiles_x \
                + 16 * self.num_level_zero_tiles_y \
+               + 32 * int(self.inv_y) \
                + hash(self.geo_extent)  # noqa: E126
 
     def __eq__(self, o: Any) -> bool:
@@ -111,23 +131,28 @@ class TileGrid:
                    and self.tile_height == o.tile_height \
                    and self.num_level_zero_tiles_x == o.num_level_zero_tiles_x \
                    and self.num_level_zero_tiles_y == o.num_level_zero_tiles_y \
+                   and self.inv_y == o.inv_y \
                    and self.geo_extent == o.geo_extent  # noqa: E126
         except AttributeError:
             return False
 
     def __str__(self):
-        return '\n'.join(['number of pyramid levels: {nl}'.format(nl=self.num_levels),
-                          'number of tiles at level zero: {nx} x {ny}'.format(nx=self.num_level_zero_tiles_x,
-                                                                              ny=self.num_level_zero_tiles_y),
-                          'pyramid tile size: {tw} x {th}'.format(tw=self.tile_width, th=self.tile_height),
-                          'image size at level zero: {w} x {h}'.format(w=self.min_width, h=self.min_height),
-                          'image size at level {k}: {w} x {h}'.format(k=self.num_levels - 1,
-                                                                      w=self.max_width, h=self.max_height)])
+        return '\n'.join([f'number of pyramid levels: {self.num_levels}',
+                          f'number of tiles at level zero: {self.num_level_zero_tiles_x} x {self.num_level_zero_tiles_y}',
+                          f'pyramid tile size: {self.tile_width} x {self.tile_height}',
+                          f'image size at level zero: {self.min_width} x {self.min_height}',
+                          f'image size at level {self.num_levels - 1}: {self.max_width} x {self.max_height}',
+                          f'geographic extent: {self.geo_extent}',
+                          f'y-axis points down: {"no" if self.inv_y else "yes"}'])
 
     def __repr__(self):
-        return 'TileGrid(%s, %s, %s, %s, %s, %s)' % (
-            self.num_levels, self.num_level_zero_tiles_x, self.num_level_zero_tiles_y,
-            self.tile_width, self.tile_height, repr(self.geo_extent))
+        return (f'TileGrid({self.num_levels}, '
+                f'{self.num_level_zero_tiles_x}, '
+                f'{self.num_level_zero_tiles_y}, '
+                f'{self.tile_width}, '
+                f'{self.tile_height}, '
+                f'{repr(self.geo_extent)}, '
+                f'inv_y={self.inv_y})')
 
     def to_json(self):
         return dict(numLevelZeroTilesX=self.num_level_zero_tiles_x,
@@ -135,103 +160,93 @@ class TileGrid:
                     tileWidth=self.tile_width,
                     tileHeight=self.tile_height,
                     numLevels=self.num_levels,
-                    invY=self.geo_extent.inv_y,
-                    extent=dict(west=self.geo_extent.west,
-                                south=self.geo_extent.south,
-                                east=self.geo_extent.east,
-                                north=self.geo_extent.north))
+                    invY=self.inv_y,
+                    extent=dict(west=self.geo_extent[0],
+                                south=self.geo_extent[1],
+                                east=self.geo_extent[2],
+                                north=self.geo_extent[3]))
 
     @classmethod
     def create(cls,
                w: int, h: int,
-               tile_width: int, tile_height: int,
-               geo_extent: GeoExtent) -> 'TileGrid':
+               tile_width: Optional[int], tile_height: Optional[int],
+               geo_extent: GeoExtent,
+               inv_y: bool = False) -> 'TileGrid':
         """
-        Create a new TilingScheme object for image size given by *w* and *h*.
-
-        *geo_spatial_rect* is a tuple (*x1*, *y1*, *x2*, *y2*) and is the geo-spatial rectangle
-        that covers all grid cells and is extracted directly from the geo-location information
-        in the (NetCDF/CF) file:
-        * *x1* longitude of center of first row and first column in image;
-        * *y1* latitude of center of first row and first column in image;
-        * *x2* longitude of center of last row and last column in image;
-        * *y2* latitude of center of last row and last column in image.
-
-        Note that
-        * *x1* may be greater than *x2* which means that the anti-meridian is crossed;
-        * *y1* is usually greater than *y2* meaning that the latitude axis is flipped.
+        Create a new TileGrid.
 
         :param w: original image width
         :param h: original image height
         :param tile_width: optimal tile width
         :param tile_height: optimal tile height
         :param geo_extent: The geo-spatial extent
+        :param inv_y: True, if the positive y-axis (latitude) points up
         :return: A new TilingScheme object
         """
-        gsb_x1, gsb_y1, gsb_x2, gsb_y2 = geo_extent.coords
-
+        west, south, east, north = map(_adjust_to_floor, geo_extent)
         w_mode = MODE_GE
-        if gsb_x1 == -180. and gsb_x2 == 180.:
+        if west == -180.0 and east == 180.0:
             w_mode = MODE_EQ
         h_mode = MODE_GE
-        if gsb_y1 == -90. and gsb_y1 == 90. or gsb_y1 == 90. and gsb_y2 == -90.:
+        if south == -90.0 and north == 90.0:
             h_mode = MODE_EQ
 
         (w_new, h_new), (tw, th), (nt0x, nt0y), nl = pow2_2d_subdivision(w, h,
-                                                                         w_mode=w_mode, h_mode=h_mode,
+                                                                         w_mode=w_mode,
+                                                                         h_mode=h_mode,
                                                                          tw_opt=min(w, tile_width or 256),
                                                                          th_opt=min(h, tile_height or 256))
 
-        new_extent = cls.adjust_geo_extent(geo_extent, w, h, w_new, h_new)
-        return TileGrid(nl, nt0x, nt0y, tw, th, new_extent)
+        new_extent = cls._adjust_geo_extent((west, south, east, north), w, h, w_new, h_new, inv_y=inv_y)
+        return TileGrid(nl, nt0x, nt0y, tw, th, new_extent, inv_y=inv_y)
 
     @classmethod
-    def adjust_geo_extent(cls, geo_extent, w_old, h_old, w_new, h_new) -> GeoExtent:
+    def _adjust_geo_extent(cls, geo_extent: GeoExtent, w_old, h_old, w_new, h_new, inv_y: bool = False) -> GeoExtent:
 
         assert w_new >= w_old
         assert h_new >= h_old
 
-        gsb_x1, gsb_y1, gsb_x2, gsb_y2 = geo_extent.coords
+        lon1, lat1, lon2, lat2 = geo_extent
 
-        if gsb_x1 < gsb_x2:
-            # crossing_anti-meridian = False
-            gsb_w = gsb_x2 - gsb_x1
+        if lon1 < lon2:
+            # not crossing anti-meridian
+            delta_lon = lon2 - lon1
         else:
-            # crossing_anti-meridian = True
-            gsb_w = 360. + gsb_x2 - gsb_x1
-        gsb_h = gsb_y2 - gsb_y1
+            # crossing anti-meridian
+            delta_lon = 360. + lon2 - lon1
+        delta_lat = lat2 - lat1
 
         if w_new > w_old:
-            gsb_w_new = w_new * gsb_w / w_old
-            # We cannot adjust gsb_x1, because we expect x to increase with x indices
+            delta_lon_new = w_new * delta_lon / w_old
+            # We cannot adjust lon1, because we expect x to increase with x indices
             # and hence we would later on have to read from negative x indexes
-            gsb_x2_new = gsb_x1 + gsb_w_new
-            if gsb_x2_new > 180.:
-                gsb_x2_new = gsb_x2_new - 360.
+            lon2_new = lon1 + delta_lon_new
+            if lon2_new > 180.:
+                lon2_new = lon2_new - 360.
         else:
-            gsb_x2_new = gsb_x2
+            lon2_new = lon2
 
         if h_new > h_old:
-            gsb_h_new = h_new * gsb_h / h_old
-            if geo_extent.inv_y:
-                # We cannot adjust gsb_y2, because we expect y to decrease with y indices
+            delta_lat_new = h_new * delta_lat / h_old
+            if inv_y:
+                # We cannot adjust lat2, because we expect y to decrease with y indices
                 # and hence we would later on have to read from negative y indexes
-                gsb_y2_new = gsb_y2
-                gsb_y1_new = gsb_y2_new - gsb_h_new
+                lat2_new = lat2
+                lat1_new = lat2_new - delta_lat_new
             else:
-                # We cannot adjust gsb_y1, because we expect y to increase with y indices
+                # We cannot adjust lat1, because we expect y to increase with y indices
                 # and hence we would later on have to read from negative y indexes
-                gsb_y1_new = gsb_y1
-                gsb_y2_new = gsb_y1_new + gsb_h_new
+                lat1_new = lat1
+                lat2_new = lat1_new + delta_lat_new
         else:
-            gsb_y1_new, gsb_y2_new = gsb_y1, gsb_y2
+            lat1_new, lat2_new = lat1, lat2
 
-        return GeoExtent(west=gsb_x1,
-                         south=gsb_y1_new,
-                         east=gsb_x2_new,
-                         north=gsb_y2_new,
-                         inv_y=geo_extent.inv_y,
-                         eps=geo_extent.eps)
+        return lon1, lat1_new, lon2_new, lat2_new
+
+
+def _adjust_to_floor(x: float) -> float:
+    fx = math.floor(x)
+    return fx if abs(fx - x) < 1e-10 else x
 
 
 @functools.lru_cache(maxsize=256)

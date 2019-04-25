@@ -128,7 +128,9 @@ class Service:
     def start(self):
         address = self.service_info['address']
         port = self.service_info['port']
-        _LOG.info(f'service running, listening on {address}:{port} (press CTRL+C to stop service)')
+        test_url = self.context.get_service_url(f"http://{address}:{port}", "datasets")
+        _LOG.info(f'service running, listening on {address}:{port}, try {test_url}')
+        _LOG.info(f'press CTRL+C to stop service')
         if len(self.context.config.get('Datasets', {})) == 0:
             _LOG.warning('no datasets configured')
         IOLoop.current().start()
@@ -187,7 +189,7 @@ class Service:
             self.config_mtime = stat.st_mtime
             try:
                 with open(config_file) as stream:
-                    self.context.config = yaml.load(stream)
+                    self.context.config = yaml.safe_load(stream)
                 self.config_error = None
                 _LOG.info(f'configuration file {config_file!r} successfully loaded')
             except (yaml.YAMLError, OSError) as e:

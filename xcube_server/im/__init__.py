@@ -21,9 +21,8 @@
 
 
 from .cmaps import get_cmaps
-from .geoextent import GeoExtent
 from .tiledimage import *
-from .tilegrid import TileGrid
+from .tilegrid import TileGrid, GeoExtent, GLOBAL_GEO_EXTENT
 from .utils import *
 
 __author__ = "Norman Fomferra (Brockmann Consult GmbH)"

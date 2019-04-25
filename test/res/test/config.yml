@@ -1,35 +1,37 @@
 Datasets:
   - Identifier: demo
-    Title: "xcube-server Demonstration L2C Cube"
-    Path: "../../../xcube_server/res/demo/cube.nc"
+    Title: xcube-server Demonstration L2C Cube
+    Path: ../../../xcube_server/res/demo/cube.nc
     Style: default
 
   - Identifier: demo-1w
-    Title: "xcube-server Demonstration L3 Cube"
-    FileSystem: "computed"
-    Path: "script.py"
-    Args: ["@demo@", "1W"]
+    Title: xcube-server Demonstration L3 Cube
+    FileSystem: memory
+    Path: script.py
+    InputDatasets: ["demo"]
+    InputParameters:
+      period: "1W"
     Style: default
 
 PlaceGroups:
   - Identifier: inside-cube
     Title: Points inside the cube
-    Path: "places/inside-cube.geojson"
+    Path: places/inside-cube.geojson
   - Identifier: outside-cube
     Title: Points outside the cube
-    Path: "places/outside-cube.geojson"
+    Path: places/outside-cube.geojson
 
 Styles:
   - Identifier: default
     ColorMappings:
       conc_chl:
-        ColorBar: "plasma"
+        ColorBar: plasma
         ValueRange: [0., 24.]
       conc_tsm:
-        ColorBar: "PuBuGn"
+        ColorBar: PuBuGn
         ValueRange: [0., 100.]
       kd489:
-        ColorBar: "jet"
+        ColorBar: jet
         ValueRange: [0., 6.]
 
 ServiceProvider:

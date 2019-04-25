@@ -33,13 +33,14 @@ import s3fs
 import xarray as xr
 import zarr
 
+from xcube_server.im import TileGrid
 from . import __version__
 from .cache import MemoryCacheStore, Cache, FileCacheStore
 from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, FILE_TILE_CACHE_PATH, \
     API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from .mldataset import StoredMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset
+from .mldataset import StoredMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, ComputedMultiLevelDataset
 from .perf import measure_time
 from .reqparams import RequestParams
 
@@ -164,7 +165,7 @@ class ServiceContext:
             raise ServiceResourceNotFoundError(f'Dataset "{ds_id}" not found')
         return dataset_descriptor
 
-    def get_tile_grid(self, ds_id: str):
+    def get_tile_grid(self, ds_id: str) -> TileGrid:
         ml_dataset, _ = self._get_dataset_entry(ds_id)
         return ml_dataset.tile_grid
 
@@ -209,6 +210,7 @@ class ServiceContext:
         fs_type = dataset_descriptor.get('FileSystem', 'local')
         if fs_type == 'obs':
             data_format = dataset_descriptor.get('Format', 'zarr')
+            # TODO (forman): issue #46: also support data format "levels"
             if data_format != 'zarr':
                 raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
             client_kwargs = {}
@@ -240,59 +242,28 @@ class ServiceContext:
                     ml_dataset = StoredMultiLevelDataset(path)
             else:
                 raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
-        elif fs_type == 'computed':
+        elif fs_type == 'memory':
             if not os.path.isabs(path):
                 path = os.path.join(self.base_dir, path)
-            with open(path) as fp:
-                python_code = fp.read()
-
-            local_env = dict()
-            global_env = None
-            try:
-                exec(python_code, global_env, local_env)
-            except Exception as e:
-                raise ServiceError(f"Failed to compute dataset {ds_id!r} from {path!r}: {e}") from e
 
             callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
-            callable_args = dataset_descriptor.get('Args', [])
-            callable_kwargs = dataset_descriptor.get('Kwargs', {})
+            input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
+            input_parameters = dataset_descriptor.get('InputParameters', {})
 
-            callable_obj = local_env.get(callable_name)
-            if callable_obj is None:
-                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                         f"no callable named {callable_name!r} found in {path!r}")
-            elif not callable(callable_obj):
-                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                         f"object {callable_name!r} in {path!r} is not callable")
+            for input_dataset_id in input_dataset_ids:
+                if not self.get_dataset_descriptor(input_dataset_id):
+                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
+                                             f"Input dataset {input_dataset_id!r} of callable {callable_name!r} "
+                                             f"must reference another dataset")
 
-            def parse_arg_value(arg_value):
-                if isinstance(arg_value, str) and len(arg_value) > 2 \
-                        and arg_value.startswith('@') and arg_value.endswith('@'):
-                    ref_ds_name = arg_value[1:-1]
-                    if not self.get_dataset_descriptor(ref_ds_name):
-                        raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                                 f"argument {arg_value!r} of callable {callable_name!r} "
-                                                 f"must reference another dataset")
-                    return self.get_dataset(ref_ds_name)
-                return arg_value
+            ml_dataset = ComputedMultiLevelDataset(ds_id,
+                                                   path,
+                                                   callable_name,
+                                                   input_dataset_ids,
+                                                   self.get_ml_dataset,
+                                                   input_parameters,
+                                                   exception_type=ServiceConfigError)
 
-            args = [parse_arg_value(arg) for arg in callable_args]
-            kwargs = {kw: parse_arg_value(arg) for kw, arg in callable_kwargs.items()}
-
-            try:
-                with measure_time(tag=f"created computed dataset {ds_id}"):
-                    ds = callable_obj(*args, **kwargs)
-
-                # TODO (forman): issue #46: instead use ComputedMultiLevelDatasets.
-                ml_dataset = BaseMultiLevelDataset(ds)
-
-            except Exception as e:
-                raise ServiceError(f"Failed to compute dataset {ds_id!r} "
-                                   f"from function {callable_name!r} in {path!r}: {e}") from e
-            if not isinstance(ds, xr.Dataset):
-                raise ServiceError(f"Failed to compute dataset {ds_id!r} "
-                                   f"from function {callable_name!r} in {path!r}: "
-                                   f"expected an xarray.Dataset but got a {type(ds)}")
         else:
             raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")
 

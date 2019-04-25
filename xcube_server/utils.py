@@ -8,8 +8,6 @@ import shapely.geometry
 import shapely.geometry
 import xarray as xr
 
-from xcube_server.im import GeoExtent
-
 Bounds = Tuple[float, float, float, float]
 SplitBounds = Tuple[Bounds, Optional[Bounds]]
 
@@ -17,8 +15,6 @@ SplitBounds = Tuple[Bounds, Optional[Bounds]]
 def get_dataset_geometry(dataset: Union[xr.Dataset, xr.DataArray]) -> shapely.geometry.base.BaseGeometry:
     return get_box_split_bounds_geometry(*get_dataset_bounds(dataset))
 
-
-# TODO: issue #46: use together with GeoExtent.from_coord_arrays()
 
 def get_dataset_bounds(dataset: Union[xr.Dataset, xr.DataArray]) -> Bounds:
     lon_var = dataset.coords.get("lon")
@@ -72,22 +68,6 @@ def get_box_split_bounds_geometry(lon_min: float, lat_min: float,
         return shapely.geometry.MultiPolygon(polygons=[shapely.geometry.box(*box_1), shapely.geometry.box(*box_2)])
     else:
         return shapely.geometry.box(*box_1)
-
-
-# TODO: issue #46: get rid of function, use get_dataset_bounds()
-
-def get_extent_from_var(var: xr.DataArray) -> Optional[GeoExtent]:
-    """
-    Compute geographic extent for given variable.
-
-    :param var: A variable of an xarray dataset.
-    :return:  a new TileGrid object or None if *var* cannot be represented as a spatial image
-    """
-    if 'lon' not in var.coords:
-        raise ValueError("Missing coordinate variable 'lon'")
-    if 'lat' not in var.coords:
-        raise ValueError("Missing coordinate variable 'lat'")
-    return GeoExtent.from_coord_arrays(var.coords['lon'], var.coords['lat'])
 
 
 def get_geometry_mask(width: int, height: int,

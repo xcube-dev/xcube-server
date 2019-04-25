@@ -55,8 +55,8 @@ class TilesControllerTest(unittest.TestCase):
             'projection': 'EPSG:4326',
             'minZoom': 0,
             'maxZoom': 2,
-            'tileGrid': {'extent': [2.168404344971009e-19, 50.0, 5.0, 52.5],
-                         'origin': [2.168404344971009e-19, 52.5],
+            'tileGrid': {'extent': [0.0, 50.0, 5.0, 52.5],
+                         'origin': [0.0, 52.5],
                          'resolutions': [0.01, 0.005, 0.0025],
                          'tileSize': [250, 250]},
         }, tile_grid)
@@ -64,12 +64,12 @@ class TilesControllerTest(unittest.TestCase):
         tile_grid = get_dataset_tile_grid(ctx, 'demo', 'conc_chl', 'cesium', 'http://bibo')
         self.assertEqual({
             'url': self.base_url + '/datasets/demo/vars/conc_chl/tiles/{z}/{x}/{y}.png',
-            'rectangle': dict(west=2.168404344971009e-19, south=50.0, east=5.0, north=52.5),
+            'rectangle': dict(west=0.0, south=50.0, east=5.0, north=52.5),
             'minimumLevel': 0,
             'maximumLevel': 2,
             'tileWidth': 250,
             'tileHeight': 250,
-            'tilingScheme': {'rectangle': dict(west=2.168404344971009e-19, south=50.0, east=5.0, north=52.5),
+            'tilingScheme': {'rectangle': dict(west=0.0, south=50.0, east=5.0, north=52.5),
                              'numberOfLevelZeroTilesX': 2,
                              'numberOfLevelZeroTilesY': 1},
         }, tile_grid)

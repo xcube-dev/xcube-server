@@ -2,47 +2,48 @@ Datasets:
   - Identifier: local
     Title: "Local OLCI L2C cube for region SNS"
     BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: "local"
+    FileSystem: local
     Path: "cube.nc"
-    #Path: "C:/Users/Norman/EOData/DCS4COP/OLCI-SNS-RAW-CUBE.zarr"
-    #Format: zarr
     Style: default
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
 
-#    # CyanoAlert Places
-#    BoundingBox: [0, 50, 5, 52.5]
-#    PlaceGroups:
-#      - Identifier: region
-#        Path: "places/germany.geojson"
-#        Places:
-#        - Identifier: lakes
-#          Path: "places/germany/lakes.geojson"
-#          Places:
-#          -  Identifier: stations
-#             Path: "places/germany/lakes/${LAKE_ID}-stations.geojson"
-
   - Identifier: remote
-    Title: "Remote OLCI L2C cube for region SNS"
+    Title: Remote OLCI L2C cube for region SNS
     BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: obs
     Endpoint: "http://obs.eu-de.otc.t-systems.com"
     Path: "dcs4cop-obs-01/OLCI-SNS-RAW-CUBE-2.zarr"
-    FileSystem: "obs"
     Region: "eu-de"
     Style: default
     PlaceGroups:
       - PlaceGroupRef: inside-cube
       - PlaceGroupRef: outside-cube
 
-  - Identifier: computed
-    Title: "Computed OLCI weekly L3 cube for region SNS"
+  - Identifier: local_1w
+    Title: OLCI weekly L3 cube for region SNS computed from local L2C cube
     BoundingBox: [0.0, 50, 5.0, 52.5]
-    FileSystem: "computed"
+    FileSystem: memory
     Path: "resample_in_time.py"
     Function: "compute_dataset"
-    #Args: ["@remote@", "1W"]
-    Args: ["@local@", "1W"]
+    InputDatasets: ["local"]
+    InputParameters:
+      period: "1W"
+    Style: default
+    PlaceGroups:
+      - PlaceGroupRef: inside-cube
+      - PlaceGroupRef: outside-cube
+
+  - Identifier: remote_1w
+    Title: OLCI weekly L3 cube for region SNS computed from remote L2C cube
+    BoundingBox: [0.0, 50, 5.0, 52.5]
+    FileSystem: memory
+    Path: "resample_in_time.py"
+    Function: "compute_dataset"
+    InputDatasets: ["remote"]
+    InputParameters:
+      period: "1W"
     Style: default
     PlaceGroups:
       - PlaceGroupRef: inside-cube
