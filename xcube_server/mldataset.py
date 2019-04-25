@@ -5,11 +5,12 @@ from typing import Sequence, Any, Dict, Callable
 
 import xarray as xr
 
-from xcube_server.im import TileGrid
-# TODO (forman): issue #46: write unit level tests for concrete classes in here
-from xcube_server.perf import measure_time
-from xcube_server.utils import get_dataset_bounds
+from .im import TileGrid
+from .perf import measure_time
+from .utils import get_dataset_bounds
 
+
+# TODO (forman): issue #46: write unit level tests for concrete classes in here
 
 class MultiLevelDataset(metaclass=ABCMeta):
     """
