@@ -262,10 +262,9 @@ class ServiceContext:
             if callable_obj is None:
                 raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                          f"no callable named {callable_name!r} found in {path!r}")
-            elif not callable(callable_obj):
+            if not callable(callable_obj):
                 raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                          f"object {callable_name!r} in {path!r} is not callable")
-
 
             input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
             if not input_dataset_ids:
@@ -289,7 +288,8 @@ class ServiceContext:
                                                    callable_obj,
                                                    input_dataset_ids,
                                                    self.get_ml_dataset,
-                                                   input_parameters)
+                                                   input_parameters,
+                                                   exception_type=ServiceConfigError)
 
         else:
             raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")

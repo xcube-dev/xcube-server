@@ -238,13 +238,15 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
                  callable_obj: Callable[..., xr.Dataset],
                  input_ml_dataset_ids: Sequence[str],
                  input_ml_dataset_getter: Callable[[str], MultiLevelDataset],
-                 input_parameters: Dict[str, Any]):
+                 input_parameters: Dict[str, Any],
+                 exception_type=ValueError):
         super().__init__(kwargs=input_parameters)
         self._ds_id = ds_id
         self._callable_name = callable_name
         self._callable_obj = callable_obj
         self._input_ml_dataset_ids = input_ml_dataset_ids
         self._input_ml_dataset_getter = input_ml_dataset_getter
+        self._exception_type = exception_type
 
     def get_tile_grid_lazily(self) -> TileGrid:
         return self._input_ml_dataset_getter(self._input_ml_dataset_ids[0]).tile_grid
@@ -256,12 +258,12 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
             with measure_time(tag=f"computed in-memory dataset {self._ds_id!r} at level {index}"):
                 computed_value = self._callable_obj(*input_datasets, **kwargs)
         except Exception as e:
-            raise ValueError(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
-                             f"from function {self._callable_name!r}: {e}") from e
+            raise self._exception_type(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
+                                       f"from function {self._callable_name!r}: {e}") from e
         if not isinstance(computed_value, xr.Dataset):
-            raise ValueError(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
-                             f"from function {self._callable_name!r}: "
-                             f"expected an xarray.Dataset but got {type(computed_value)}")
+            raise self._exception_type(f"Failed to compute in-memory dataset {self._ds_id!r} at level {index} "
+                                       f"from function {self._callable_name!r}: "
+                                       f"expected an xarray.Dataset but got {type(computed_value)}")
         return computed_value
 
 
