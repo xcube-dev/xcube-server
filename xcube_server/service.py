@@ -189,7 +189,7 @@ class Service:
             self.config_mtime = stat.st_mtime
             try:
                 with open(config_file) as stream:
-                    self.context.config = yaml.load(stream)
+                    self.context.config = yaml.safe_load(stream)
                 self.config_error = None
                 _LOG.info(f'configuration file {config_file!r} successfully loaded')
             except (yaml.YAMLError, OSError) as e:
