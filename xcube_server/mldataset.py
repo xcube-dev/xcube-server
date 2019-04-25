@@ -181,6 +181,10 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
         if ext == ".link":
             with open(file_path, "r") as fp:
                 file_path = fp.read()
+                # if file_path is a relative path, resolve it against the levels directory
+                if not os.path.isabs(file_path):
+                    base_dir = os.path.dirname(self._dir_path)
+                    file_path = os.path.join(base_dir, file_path)
         return xr.open_zarr(file_path, **zarr_kwargs)
 
     def get_tile_grid_lazily(self):
