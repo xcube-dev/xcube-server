@@ -210,6 +210,7 @@ class ServiceContext:
         fs_type = dataset_descriptor.get('FileSystem', 'local')
         if fs_type == 'obs':
             data_format = dataset_descriptor.get('Format', 'zarr')
+            # TODO (forman): issue #46: also support data format "levels"
             if data_format != 'zarr':
                 raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
             client_kwargs = {}
