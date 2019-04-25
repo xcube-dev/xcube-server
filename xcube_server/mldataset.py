@@ -10,8 +10,6 @@ from .perf import measure_time
 from .utils import get_dataset_bounds
 
 
-# TODO (forman): issue #46: write unit level tests for concrete classes in here
-
 class MultiLevelDataset(metaclass=ABCMeta):
     """
     A multi-level dataset of decreasing spatial resolutions (a multi-resolution pyramid).
@@ -90,7 +88,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
     def tile_grid(self) -> TileGrid:
         if self._tile_grid is None:
             with self._lock:
-                self._tile_grid = self.get_tile_grid_lazily()
+                self._tile_grid = self._get_tile_grid_lazily()
         return self._tile_grid
 
     def get_dataset(self, index: int) -> xr.Dataset:
@@ -104,12 +102,12 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
             kwargs = self._kwargs if self._kwargs is not None else {}
             with self._lock:
                 # noinspection PyTypeChecker
-                self._level_datasets[index] = self.get_dataset_lazily(index, **kwargs)
+                self._level_datasets[index] = self._get_dataset_lazily(index, **kwargs)
         # noinspection PyTypeChecker
         return self._level_datasets[index]
 
     @abstractmethod
-    def get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
         """
         Retrieve, i.e. read or compute, the dataset for the level at given *index*.
 
@@ -118,7 +116,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
         :return: the dataset for the level at *index*.
         """
 
-    def get_tile_grid_lazily(self):
+    def _get_tile_grid_lazily(self):
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
@@ -170,11 +168,12 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
     def num_levels(self) -> int:
         return self._num_levels
 
-    def get_dataset_lazily(self, index: int, **zarr_kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, **zarr_kwargs) -> xr.Dataset:
         """
         Read the dataset for the level at given *index*.
 
         :param index: the level index
+        :param zarr_kwargs: kwargs passed to xr.open_zarr()
         :return: the dataset for the level at *index*.
         """
         ext, file_path = self._level_paths[index]
@@ -187,7 +186,7 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
                     file_path = os.path.join(base_dir, file_path)
         return xr.open_zarr(file_path, **zarr_kwargs)
 
-    def get_tile_grid_lazily(self):
+    def _get_tile_grid_lazily(self):
         """
         Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
 
@@ -209,7 +208,7 @@ class BaseMultiLevelDataset(LazyMultiLevelDataset):
             raise ValueError("base_dataset must be given")
         self._base_dataset = base_dataset
 
-    def get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
         """
         Compute the dataset at level *index*: If *index* is zero, return the base image passed to constructor,
         otherwise down-sample the dataset for the level at given *index*.
@@ -239,13 +238,50 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
 
     def __init__(self,
                  ds_id: str,
+                 script_path: str,
                  callable_name: str,
-                 callable_obj: Callable[..., xr.Dataset],
                  input_ml_dataset_ids: Sequence[str],
                  input_ml_dataset_getter: Callable[[str], MultiLevelDataset],
                  input_parameters: Dict[str, Any],
                  exception_type=ValueError):
         super().__init__(kwargs=input_parameters)
+
+        try:
+            with open(script_path) as fp:
+                python_code = fp.read()
+        except OSError as e:
+            raise exception_type(
+                f"Failed to read Python code for in-memory dataset {ds_id!r} from {script_path!r}: {e}") from e
+
+        local_env = dict()
+        global_env = None
+        try:
+            exec(python_code, global_env, local_env)
+        except Exception as e:
+            raise exception_type(f"Failed to compute in-memory dataset {ds_id!r} from {script_path!r}: {e}") from e
+
+        if not callable_name or not callable_name.isidentifier():
+            raise exception_type(f"Invalid dataset descriptor {ds_id!r}: "
+                                 f"{callable_name!r} is not a valid Python identifier")
+        callable_obj = local_env.get(callable_name)
+        if callable_obj is None:
+            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                                 f"no callable named {callable_name!r} found in {script_path!r}")
+        if not callable(callable_obj):
+            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                                 f"object {callable_name!r} in {script_path!r} is not callable")
+
+        if not callable_name or not callable_name.isidentifier():
+            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                                 f"{callable_name!r} is not a valid Python identifier")
+        if not input_ml_dataset_ids:
+            raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                                 f"Input dataset(s) missing for callable {callable_name!r}")
+        for input_param_name in input_parameters.keys():
+            if not input_param_name or not input_param_name.isidentifier():
+                raise exception_type(f"Invalid in-memory dataset descriptor {ds_id!r}: "
+                                     f"Input parameter {input_param_name!r} for callable {callable_name!r} "
+                                     f"is not a valid Python identifier")
         self._ds_id = ds_id
         self._callable_name = callable_name
         self._callable_obj = callable_obj
@@ -253,10 +289,10 @@ class ComputedMultiLevelDataset(LazyMultiLevelDataset):
         self._input_ml_dataset_getter = input_ml_dataset_getter
         self._exception_type = exception_type
 
-    def get_tile_grid_lazily(self) -> TileGrid:
+    def _get_tile_grid_lazily(self) -> TileGrid:
         return self._input_ml_dataset_getter(self._input_ml_dataset_ids[0]).tile_grid
 
-    def get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
+    def _get_dataset_lazily(self, index: int, **kwargs) -> xr.Dataset:
         input_datasets = [self._input_ml_dataset_getter(ds_id).get_dataset(index)
                           for ds_id in self._input_ml_dataset_ids]
         try:
@@ -288,9 +324,6 @@ def _get_dataset_tile_grid(dataset: xr.Dataset, num_levels: int = None):
                              num_level_zero_tiles_x, num_level_zero_tiles_y,
                              tile_width, tile_height,
                              geo_extent, inv_y)
-        print(80 * "*")
-        print(tile_grid)
-        print(80 * "*")
     else:
         try:
             tile_grid = TileGrid.create(width, height,

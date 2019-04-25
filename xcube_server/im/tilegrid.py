@@ -146,9 +146,13 @@ class TileGrid:
                           f'y-axis points down: {"no" if self.inv_y else "yes"}'])
 
     def __repr__(self):
-        return 'TileGrid(%s, %s, %s, %s, %s, %s, inv_y=%s)' % (
-            self.num_levels, self.num_level_zero_tiles_x, self.num_level_zero_tiles_y,
-            self.tile_width, self.tile_height, repr(self.geo_extent), self.inv_y)
+        return (f'TileGrid({self.num_levels}, '
+                f'{self.num_level_zero_tiles_x}, '
+                f'{self.num_level_zero_tiles_y}, '
+                f'{self.tile_width}, '
+                f'{self.tile_height}, '
+                f'{repr(self.geo_extent)}, '
+                f'inv_y={self.inv_y})')
 
     def to_json(self):
         return dict(numLevelZeroTilesX=self.num_level_zero_tiles_x,

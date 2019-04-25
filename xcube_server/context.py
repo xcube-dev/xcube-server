@@ -245,48 +245,20 @@ class ServiceContext:
         elif fs_type == 'memory':
             if not os.path.isabs(path):
                 path = os.path.join(self.base_dir, path)
-            with open(path) as fp:
-                python_code = fp.read()
-
-            local_env = dict()
-            global_env = None
-            try:
-                exec(python_code, global_env, local_env)
-            except Exception as e:
-                raise ServiceError(f"Failed to compute dataset {ds_id!r} from {path!r}: {e}") from e
 
             callable_name = dataset_descriptor.get('Function', COMPUTE_DATASET)
-            if not callable_name or not callable_name.isidentifier():
-                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                         f"{callable_name!r} is not a valid Python identifier")
-            callable_obj = local_env.get(callable_name)
-            if callable_obj is None:
-                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                         f"no callable named {callable_name!r} found in {path!r}")
-            if not callable(callable_obj):
-                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                         f"object {callable_name!r} in {path!r} is not callable")
-
             input_dataset_ids = dataset_descriptor.get('InputDatasets', [])
-            if not input_dataset_ids:
-                raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                         f"Input dataset(s) missing for callable {callable_name!r}")
+            input_parameters = dataset_descriptor.get('InputParameters', {})
+
             for input_dataset_id in input_dataset_ids:
                 if not self.get_dataset_descriptor(input_dataset_id):
                     raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
                                              f"Input dataset {input_dataset_id!r} of callable {callable_name!r} "
                                              f"must reference another dataset")
 
-            input_parameters = dataset_descriptor.get('InputParameters', {})
-            for input_param_name in input_parameters.keys():
-                if not input_param_name or not input_param_name.isidentifier():
-                    raise ServiceConfigError(f"Invalid dataset descriptor {ds_id!r}: "
-                                             f"Input parameter {input_param_name!r} for callable {callable_name!r} "
-                                             f"is not a valid Python identifier")
-
             ml_dataset = ComputedMultiLevelDataset(ds_id,
+                                                   path,
                                                    callable_name,
-                                                   callable_obj,
                                                    input_dataset_ids,
                                                    self.get_ml_dataset,
                                                    input_parameters,
