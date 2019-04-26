@@ -12,9 +12,9 @@ import numpy as np
 from ..context import ServiceContext
 from ..defaults import DEFAULT_CMAP_WIDTH, DEFAULT_CMAP_HEIGHT
 from ..errors import ServiceBadRequestError, ServiceResourceNotFoundError
-from ..im import NdarrayImage
-from ..im import TransformArrayImage, ColorMappedRgbaImage, TileGrid, measure_time_cm
+from ..im import NdarrayImage, TransformArrayImage, ColorMappedRgbaImage, ColorMappedRgbaImage2, TileGrid
 from ..ne2 import NaturalEarth2Image
+from ..perf import measure_time_cm
 from ..reqparams import RequestParams
 
 _LOG = logging.getLogger('xcube')
@@ -29,7 +29,9 @@ def get_dataset_tile(ctx: ServiceContext,
     y = RequestParams.to_int('y', y)
     z = RequestParams.to_int('z', z)
 
+    tile_comp_mode = params.get_query_argument_int('mode', ctx.tile_comp_mode)
     trace_perf = params.get_query_argument_int('debug', ctx.trace_perf) != 0
+
     measure_time = measure_time_cm(logger=_LOG, disabled=not trace_perf)
 
     var = ctx.get_variable_for_z(ds_id, var_name, z)
@@ -83,26 +85,41 @@ def get_dataset_tile(ctx: ServiceContext,
 
         tile_grid = ctx.get_tile_grid(ds_id)
 
-        image = NdarrayImage(array,
-                             image_id=f'ndai-{image_id}',
-                             tile_size=tile_grid.tile_size,
-                             trace_perf=trace_perf)
-        image = TransformArrayImage(image,
-                                    image_id=f'tai-{image_id}',
-                                    flip_y=tile_grid.inv_y,
-                                    force_masked=True,
-                                    no_data_value=no_data_value,
-                                    valid_range=valid_range,
-                                    # tile_cache=ctx.mem_tile_cache,
-                                    trace_perf=trace_perf)
-        image = ColorMappedRgbaImage(image,
-                                     image_id=f'rgb-{image_id}',
-                                     value_range=(cmap_vmin, cmap_vmax),
-                                     cmap_name=cmap_cbar,
-                                     encode=True,
-                                     format='PNG',
-                                     tile_cache=ctx.mem_tile_cache,
-                                     trace_perf=trace_perf)
+        if not tile_comp_mode:
+            image = NdarrayImage(array,
+                                 image_id=f'ndai-{image_id}',
+                                 tile_size=tile_grid.tile_size,
+                                 # tile_cache=ctx.mem_tile_cache,
+                                 trace_perf=trace_perf)
+            image = TransformArrayImage(image,
+                                        image_id=f'tai-{image_id}',
+                                        flip_y=tile_grid.inv_y,
+                                        force_masked=True,
+                                        no_data_value=no_data_value,
+                                        valid_range=valid_range,
+                                        # tile_cache=ctx.mem_tile_cache,
+                                        trace_perf=trace_perf)
+            image = ColorMappedRgbaImage(image,
+                                         image_id=f'rgb-{image_id}',
+                                         value_range=(cmap_vmin, cmap_vmax),
+                                         cmap_name=cmap_cbar,
+                                         encode=True,
+                                         format='PNG',
+                                         tile_cache=ctx.mem_tile_cache,
+                                         trace_perf=trace_perf)
+        else:
+            image = ColorMappedRgbaImage2(array,
+                                          image_id=f'rgb-{image_id}',
+                                          tile_size=tile_grid.tile_size,
+                                          cmap_range=(cmap_vmin, cmap_vmax),
+                                          cmap_name=cmap_cbar,
+                                          encode=True,
+                                          format='PNG',
+                                          flip_y=tile_grid.inv_y,
+                                          no_data_value=no_data_value,
+                                          valid_range=valid_range,
+                                          tile_cache=ctx.mem_tile_cache,
+                                          trace_perf=trace_perf)
 
         ctx.image_cache[image_id] = image
         if trace_perf:

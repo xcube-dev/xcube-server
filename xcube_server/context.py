@@ -61,6 +61,7 @@ class ServiceContext:
                  base_dir: str = None,
                  config: Config = None,
                  trace_perf: bool = DEFAULT_TRACE_PERF,
+                 tile_comp_mode: int = None,
                  mem_tile_cache_capacity: int = None,
                  file_tile_cache_capacity: int = None):
         self._name = name
@@ -68,6 +69,7 @@ class ServiceContext:
         self._config = config if config is not None else dict()
         self._place_group_cache = dict()
         self._feature_index = 0
+        self._tile_comp_mode = tile_comp_mode
         self._trace_perf = trace_perf
         self._lock = threading.RLock()
 
@@ -122,6 +124,10 @@ class ServiceContext:
                     self.rgb_tile_cache.clear()
 
         self._config = config
+
+    @property
+    def tile_comp_mode(self) -> int:
+        return self._tile_comp_mode
 
     @property
     def trace_perf(self) -> bool:
