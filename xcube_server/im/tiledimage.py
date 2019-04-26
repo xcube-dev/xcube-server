@@ -552,18 +552,23 @@ class ColorMappedRgbaImage2(OpImage):
                          mode='RGBA',
                          tile_cache=tile_cache,
                          trace_perf=trace_perf)
+        valid_range = valid_range if valid_range is not None else (-np.inf, np.inf)
+        valid_range = tuple(map(float, valid_range))
+        no_data_value = float(no_data_value) if no_data_value is not None else float(np.nan)
+        cmap_range = cmap_range if cmap_range is not None else (0.0, 1.0)
+        cmap_range = tuple(map(float, cmap_range))
+        cmap_name = cmap_name if cmap_name else 'jet'
         self._array = array
         self._valid_range = valid_range
         self._no_data_value = no_data_value
-        self._cmap_range = cmap_range
-        self._cmap_name = cmap_name if cmap_name else 'jet'
-        ensure_cmaps_loaded()
-        self._cmap = cm.get_cmap(self._cmap_name, num_colors)
-        # self._cmap.set_bad('k', 0)
-        self._colors = self._cmap(np.linspace(0, 1, num_colors))
         self._encode = encode
         self._flip_y = flip_y
         self._num_colors = num_colors
+        ensure_cmaps_loaded()
+        self._cmap_range = cmap_range
+        cmap = cm.get_cmap(cmap_name, num_colors)
+        # cmap.set_bad('k', 0)
+        self._colors = cmap(np.linspace(0, 1, num_colors))
 
     def compute_tile(self,
                      tile_x: int, tile_y: int,
@@ -572,23 +577,9 @@ class ColorMappedRgbaImage2(OpImage):
         measure_time = self.measure_time
         tile_tag = self._get_tile_tag(tile_x, tile_y)
 
-        if self._valid_range is not None:
-            valid_min, valid_max = self._valid_range
-        else:
-            valid_min, valid_max = -np.inf, np.inf
-
-        valid_min = float(valid_min)
-        valid_max = float(valid_max)
-
-        no_data_value = float(self._no_data_value if self._no_data_value is not None else np.nan)
-
-        if self._cmap_range is not None:
-            cmap_min, cmap_max = self._cmap_range
-        else:
-            cmap_min, cmap_max = 0.0, 1.0
-
-        cmap_min = float(cmap_min)
-        cmap_max = float(cmap_max)
+        valid_min, valid_max = self._valid_range
+        no_data_value = self._no_data_value
+        cmap_min, cmap_max = self._cmap_range
 
         x, y, w, h = rectangle
         sy = 1
