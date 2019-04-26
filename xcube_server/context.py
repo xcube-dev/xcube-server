@@ -210,20 +210,33 @@ class ServiceContext:
         fs_type = dataset_descriptor.get('FileSystem', 'local')
         if fs_type == 'obs':
             data_format = dataset_descriptor.get('Format', 'zarr')
-            # TODO (forman): issue #46: also support data format "levels"
-            if data_format != 'zarr':
-                raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
-            client_kwargs = {}
+            s3_client_kwargs = {}
             if 'Endpoint' in dataset_descriptor:
-                client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
+                s3_client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
             if 'Region' in dataset_descriptor:
-                client_kwargs['region_name'] = dataset_descriptor['Region']
-            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
-            store = s3fs.S3Map(root=path, s3=s3, check=False)
-            cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-            with measure_time(tag=f"opened remote dataset {path}"):
-                ds = xr.open_zarr(cached_store)
-            ml_dataset = BaseMultiLevelDataset(ds)
+                s3_client_kwargs['region_name'] = dataset_descriptor['Region']
+            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=s3_client_kwargs)
+            if data_format == 'zarr':
+                store = s3fs.S3Map(root=path, s3=s3, check=False)
+                cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+                with measure_time(tag=f"opened remote dataset {path}"):
+                    ds = xr.open_zarr(cached_store)
+                ml_dataset = BaseMultiLevelDataset(ds)
+            elif data_format == 'levels':
+                # TODO (forman): issue #46: also support data format "levels"
+                level_paths = {}
+                for entry in s3.walk(path):
+                    basename = None
+                    if entry.endswith(".zarr") and s3.isdir(entry):
+                        basename, _ = os.path.splitext(entry)
+                    elif entry.endswith(".link") and s3.isfile(entry):
+                        basename, _ = os.path.splitext(entry)
+                    if basename is not None:
+                        level = int(basename)
+                        level_paths[level] = path + "/" + entry
+                raise NotImplementedError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
+            else:
+                raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
         elif fs_type == 'local':
             if not os.path.isabs(path):
                 path = os.path.join(self.base_dir, path)
