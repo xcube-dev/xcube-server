@@ -40,7 +40,8 @@ from .defaults import DEFAULT_CMAP_CBAR, DEFAULT_CMAP_VMIN, \
     DEFAULT_CMAP_VMAX, FILE_TILE_CACHE_PATH, \
     API_PREFIX, DEFAULT_NAME, DEFAULT_TRACE_PERF
 from .errors import ServiceConfigError, ServiceError, ServiceBadRequestError, ServiceResourceNotFoundError
-from .mldataset import StoredMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, ComputedMultiLevelDataset
+from .mldataset import FileStorageMultiLevelDataset, BaseMultiLevelDataset, MultiLevelDataset, \
+    ComputedMultiLevelDataset, ObjectStorageMultiLevelDataset
 from .perf import measure_time
 from .reqparams import RequestParams
 
@@ -210,20 +211,24 @@ class ServiceContext:
         fs_type = dataset_descriptor.get('FileSystem', 'local')
         if fs_type == 'obs':
             data_format = dataset_descriptor.get('Format', 'zarr')
-            # TODO (forman): issue #46: also support data format "levels"
-            if data_format != 'zarr':
-                raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
-            client_kwargs = {}
+            s3_client_kwargs = {}
             if 'Endpoint' in dataset_descriptor:
-                client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
+                s3_client_kwargs['endpoint_url'] = dataset_descriptor['Endpoint']
             if 'Region' in dataset_descriptor:
-                client_kwargs['region_name'] = dataset_descriptor['Region']
-            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=client_kwargs)
-            store = s3fs.S3Map(root=path, s3=s3, check=False)
-            cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
-            with measure_time(tag=f"opened remote dataset {path}"):
-                ds = xr.open_zarr(cached_store)
-            ml_dataset = BaseMultiLevelDataset(ds)
+                s3_client_kwargs['region_name'] = dataset_descriptor['Region']
+            obs_file_system = s3fs.S3FileSystem(anon=True, client_kwargs=s3_client_kwargs)
+            if data_format == 'zarr':
+                store = s3fs.S3Map(root=path, s3=obs_file_system, check=False)
+                cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+                with measure_time(tag=f"opened remote zarr dataset {path}"):
+                    ds = xr.open_zarr(cached_store)
+                ml_dataset = BaseMultiLevelDataset(ds)
+            elif data_format == 'levels':
+                with measure_time(tag=f"opened remote levels dataset {path}"):
+                    ml_dataset = ObjectStorageMultiLevelDataset(ds_id, obs_file_system, path,
+                                                                exception_type=ServiceConfigError)
+            else:
+                raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
         elif fs_type == 'local':
             if not os.path.isabs(path):
                 path = os.path.join(self.base_dir, path)
@@ -232,14 +237,14 @@ class ServiceContext:
             if data_format == 'nc':
                 with measure_time(tag=f"opened local NetCDF dataset {path}"):
                     ds = xr.open_dataset(path)
-                ml_dataset = BaseMultiLevelDataset(ds)
+                    ml_dataset = BaseMultiLevelDataset(ds)
             elif data_format == 'zarr':
                 with measure_time(tag=f"opened local zarr dataset {path}"):
                     ds = xr.open_zarr(path)
-                ml_dataset = BaseMultiLevelDataset(ds)
+                    ml_dataset = BaseMultiLevelDataset(ds)
             elif data_format == 'levels':
-                with measure_time(tag=f"opened local multi-level dataset {path}"):
-                    ml_dataset = StoredMultiLevelDataset(path)
+                with measure_time(tag=f"opened local levels dataset {path}"):
+                    ml_dataset = FileStorageMultiLevelDataset(path)
             else:
                 raise ServiceConfigError(f"Invalid format={data_format!r} in dataset descriptor {ds_id!r}")
         elif fs_type == 'memory':
@@ -256,13 +261,14 @@ class ServiceContext:
                                              f"Input dataset {input_dataset_id!r} of callable {callable_name!r} "
                                              f"must reference another dataset")
 
-            ml_dataset = ComputedMultiLevelDataset(ds_id,
-                                                   path,
-                                                   callable_name,
-                                                   input_dataset_ids,
-                                                   self.get_ml_dataset,
-                                                   input_parameters,
-                                                   exception_type=ServiceConfigError)
+            with measure_time(tag=f"opened memory dataset {path}"):
+                ml_dataset = ComputedMultiLevelDataset(ds_id,
+                                                       path,
+                                                       callable_name,
+                                                       input_dataset_ids,
+                                                       self.get_ml_dataset,
+                                                       input_parameters,
+                                                       exception_type=ServiceConfigError)
 
         else:
             raise ServiceConfigError(f"Invalid fs={fs_type!r} in dataset descriptor {ds_id!r}")

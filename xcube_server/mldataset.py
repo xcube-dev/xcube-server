@@ -3,7 +3,9 @@ import threading
 from abc import abstractmethod, ABCMeta
 from typing import Sequence, Any, Dict, Callable
 
+import s3fs
 import xarray as xr
+import zarr
 
 from .im import TileGrid
 from .perf import measure_time
@@ -131,7 +133,7 @@ class LazyMultiLevelDataset(MultiLevelDataset, metaclass=ABCMeta):
                     dataset.close()
 
 
-class StoredMultiLevelDataset(LazyMultiLevelDataset):
+class FileStorageMultiLevelDataset(LazyMultiLevelDataset):
     """
     A stored multi-level dataset whose level datasets are lazily read from storage location.
 
@@ -176,15 +178,87 @@ class StoredMultiLevelDataset(LazyMultiLevelDataset):
         :param zarr_kwargs: kwargs passed to xr.open_zarr()
         :return: the dataset for the level at *index*.
         """
-        ext, file_path = self._level_paths[index]
+        ext, level_path = self._level_paths[index]
         if ext == ".link":
-            with open(file_path, "r") as fp:
-                file_path = fp.read()
+            with open(level_path, "r") as fp:
+                level_path = fp.read()
                 # if file_path is a relative path, resolve it against the levels directory
-                if not os.path.isabs(file_path):
+                if not os.path.isabs(level_path):
                     base_dir = os.path.dirname(self._dir_path)
-                    file_path = os.path.join(base_dir, file_path)
-        return xr.open_zarr(file_path, **zarr_kwargs)
+                    level_path = os.path.join(base_dir, level_path)
+        with measure_time(tag=f"opened local dataset {level_path} for level {index}"):
+            return xr.open_zarr(level_path, **zarr_kwargs)
+
+    def _get_tile_grid_lazily(self):
+        """
+        Retrieve, i.e. read or compute, the tile grid used by the multi-level dataset.
+
+        :return: the dataset for the level at *index*.
+        """
+        return _get_dataset_tile_grid(self.get_dataset(0), num_levels=self._num_levels)
+
+
+class ObjectStorageMultiLevelDataset(LazyMultiLevelDataset):
+    """
+    A multi-level dataset whose level datasets are lazily read from object storage locations.
+
+    :param dir_path: The directory containing the level datasets.
+    :param zarr_kwargs: Keyword arguments accepted by the ``xarray.open_zarr()`` function.
+    """
+
+    def __init__(self, ds_id: str,
+                 obs_file_system: s3fs.S3FileSystem,
+                 dir_path: str,
+                 zarr_kwargs: Dict[str, Any] = None, exception_type=ValueError):
+
+        level_paths = {}
+        for entry in obs_file_system.walk(dir_path, directories=True):
+            basename = None
+            if entry.endswith(".zarr") and obs_file_system.isdir(entry):
+                basename, _ = os.path.splitext(entry)
+            elif entry.endswith(".link") and obs_file_system.isfile(entry):
+                basename, _ = os.path.splitext(entry)
+            if basename is not None and basename.isdigit():
+                level = int(basename)
+                level_paths[level] = dir_path + "/" + entry
+
+        num_levels = len(level_paths)
+        # Consistency check
+        for level in range(num_levels):
+            if level not in level_paths:
+                raise exception_type(f"Invalid dataset descriptor {ds_id!r}: missing level {level} in {dir_path}")
+
+        super().__init__(kwargs=zarr_kwargs)
+        self._obs_file_system = obs_file_system
+        self._dir_path = dir_path
+        self._level_paths = level_paths
+        self._num_levels = num_levels
+
+    @property
+    def num_levels(self) -> int:
+        return self._num_levels
+
+    def _get_dataset_lazily(self, index: int, **zarr_kwargs) -> xr.Dataset:
+        """
+        Read the dataset for the level at given *index*.
+
+        :param index: the level index
+        :param zarr_kwargs: kwargs passed to xr.open_zarr()
+        :return: the dataset for the level at *index*.
+        """
+        ext, level_path = self._level_paths[index]
+        if ext == ".link":
+            with self._obs_file_system.open(level_path, "w") as fp:
+                level_path = fp.read()
+                # if file_path is a relative path, resolve it against the levels directory
+                if not os.path.isabs(level_path):
+                    base_dir = os.path.dirname(self._dir_path)
+                    level_path = os.path.join(base_dir, level_path)
+
+        store = s3fs.S3Map(root=level_path, s3=self._obs_file_system, check=False)
+        cached_store = zarr.LRUStoreCache(store, max_size=2 ** 28)
+        with measure_time(tag=f"opened remote dataset {level_path} for level {index}"):
+            return xr.open_zarr(cached_store, **zarr_kwargs)
 
     def _get_tile_grid_lazily(self):
         """
